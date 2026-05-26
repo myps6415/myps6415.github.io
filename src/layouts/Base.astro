@@ -1,0 +1,55 @@
+---
+import "../styles/global.css";
+import LanguageToggle from "../components/LanguageToggle.astro";
+import type { Locale } from "../i18n/strings";
+
+interface Props {
+  title: string;
+  description: string;
+  lang: Locale;
+}
+
+const { title, description, lang } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+
+const htmlLang = lang === "zh" ? "zh-Hant" : "en";
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <link rel="alternate" hreflang="en" href={new URL("/", Astro.site).toString()} />
+    <link rel="alternate" hreflang="zh-Hant" href={new URL("/zh/", Astro.site).toString()} />
+    <link rel="alternate" hreflang="x-default" href={new URL("/", Astro.site).toString()} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={lang === "zh" ? "zh_TW" : "en_US"} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-ink-50 text-ink-900 min-h-screen">
+    <LanguageToggle current={lang} />
+    <slot />
+  </body>
+</html>

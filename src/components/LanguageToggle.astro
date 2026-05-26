@@ -1,0 +1,41 @@
+---
+import type { Locale } from "../i18n/strings";
+
+interface Props {
+  current: Locale;
+}
+
+const { current } = Astro.props;
+
+const en = { href: "/", label: "EN" };
+const zh = { href: "/zh/", label: "中文" };
+---
+
+<div
+  class="fixed top-4 right-4 md:top-6 md:right-6 z-50 flex items-center gap-1 bg-white/80 backdrop-blur-sm border border-ink-200 rounded-full px-1 py-1 font-mono text-xs"
+>
+  <a
+    href={en.href}
+    aria-current={current === "en" ? "page" : undefined}
+    class:list={[
+      "px-3 py-1 rounded-full transition-colors",
+      current === "en"
+        ? "bg-ink-900 text-ink-50"
+        : "text-ink-500 hover:text-ink-900",
+    ]}
+  >
+    {en.label}
+  </a>
+  <a
+    href={zh.href}
+    aria-current={current === "zh" ? "page" : undefined}
+    class:list={[
+      "px-3 py-1 rounded-full transition-colors",
+      current === "zh"
+        ? "bg-ink-900 text-ink-50"
+        : "text-ink-500 hover:text-ink-900",
+    ]}
+  >
+    {zh.label}
+  </a>
+</div>

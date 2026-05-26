@@ -1,0 +1,16 @@
+---
+import Section from "./Section.astro";
+import type { SiteContent } from "../i18n/strings";
+
+interface Props {
+  data: SiteContent["about"];
+}
+
+const { data } = Astro.props;
+---
+
+<Section id="about" label={data.label}>
+  <div class="space-y-5 text-lg text-ink-700 leading-relaxed">
+    {data.paragraphs.map((p) => <p>{p}</p>)}
+  </div>
+</Section>
