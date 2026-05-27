@@ -1,0 +1,46 @@
+---
+type Status = "ok" | "bad" | "warn";
+
+interface Item {
+  time: string;
+  text: string;
+  sub?: string;
+  status?: Status;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+
+const dotClass: Record<Status, string> = {
+  ok: "bg-emerald-500 border-emerald-200",
+  bad: "bg-red-500 border-red-200",
+  warn: "bg-amber-500 border-amber-200",
+};
+---
+
+<ol class="my-7 ml-2 border-l border-ink-200 pl-6 space-y-5">
+  {
+    items.map((item) => (
+      <li class="relative">
+        <span
+          class:list={[
+            "absolute -left-[1.85rem] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ring-1 ring-ink-200",
+            dotClass[item.status ?? "ok"],
+          ]}
+        />
+        <div class="font-mono text-[11px] text-ink-500 mb-0.5">
+          {item.time}
+        </div>
+        <div class="text-ink-900 text-[0.95rem] leading-relaxed">
+          {item.text}
+        </div>
+        {item.sub && (
+          <div class="font-mono text-[12px] text-ink-500 mt-1">{item.sub}</div>
+        )}
+      </li>
+    ))
+  }
+</ol>

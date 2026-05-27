@@ -1,0 +1,58 @@
+---
+type Variant = "info" | "warn" | "err" | "ok";
+
+interface Props {
+  variant?: Variant;
+  title: string;
+}
+
+const { variant = "info", title } = Astro.props;
+
+const styles: Record<
+  Variant,
+  { box: string; bar: string; title: string }
+> = {
+  info: {
+    box: "bg-blue-50/60",
+    bar: "border-blue-400",
+    title: "text-blue-700",
+  },
+  warn: {
+    box: "bg-amber-50/70",
+    bar: "border-amber-400",
+    title: "text-amber-700",
+  },
+  err: {
+    box: "bg-red-50/70",
+    bar: "border-red-400",
+    title: "text-red-700",
+  },
+  ok: {
+    box: "bg-emerald-50/70",
+    bar: "border-emerald-400",
+    title: "text-emerald-700",
+  },
+};
+
+const s = styles[variant];
+---
+
+<aside
+  class:list={[
+    "my-6 rounded-lg border border-ink-200 border-l-[3px] px-5 py-4",
+    s.box,
+    s.bar,
+  ]}
+>
+  <div
+    class:list={[
+      "font-mono text-[11px] uppercase tracking-widest font-medium mb-1.5",
+      s.title,
+    ]}
+  >
+    {title}
+  </div>
+  <div class="text-ink-700 text-[0.95rem] leading-relaxed">
+    <slot />
+  </div>
+</aside>

@@ -1,0 +1,52 @@
+---
+type Status = "ok" | "bad" | "warn";
+
+interface Step {
+  marker: string;
+  title: string;
+  desc: string;
+  status?: Status;
+}
+
+interface Props {
+  steps: Step[];
+}
+
+const { steps } = Astro.props;
+
+const markerClass: Record<Status, string> = {
+  ok: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  bad: "bg-red-50 text-red-700 border-red-200",
+  warn: "bg-amber-50 text-amber-700 border-amber-200",
+};
+---
+
+<div class="my-7 border border-ink-200 rounded-xl bg-white px-6 py-2">
+  {
+    steps.map((s, i) => (
+      <div
+        class:list={[
+          "flex items-start gap-4 py-4",
+          i < steps.length - 1 && "border-b border-ink-200",
+        ]}
+      >
+        <span
+          class:list={[
+            "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-medium border",
+            markerClass[s.status ?? "ok"],
+          ]}
+        >
+          {s.marker}
+        </span>
+        <div class="flex-1">
+          <div class="text-ink-900 text-[0.95rem] font-medium mb-0.5">
+            {s.title}
+          </div>
+          <div class="font-mono text-[12px] text-ink-500 leading-relaxed">
+            {s.desc}
+          </div>
+        </div>
+      </div>
+    ))
+  }
+</div>

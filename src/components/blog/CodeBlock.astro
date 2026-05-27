@@ -1,0 +1,19 @@
+---
+interface Props {
+  label?: string;
+  lang?: string;
+}
+
+const { label, lang } = Astro.props;
+---
+
+<pre
+  class="relative my-5 bg-ink-50 border border-ink-200 rounded-xl px-5 py-4 overflow-x-auto"><code
+    data-lang={lang}
+    class="font-mono text-[12.5px] leading-[1.65] text-ink-900"><slot /></code>{
+  label && (
+    <span class="absolute top-2.5 right-3 font-mono text-[11px] text-ink-500">
+      {label}
+    </span>
+  )
+}</pre>

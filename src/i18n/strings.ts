@@ -20,6 +20,13 @@ export interface SiteContent {
       tags: string[];
     }>;
   };
+  writing: {
+    label: string;
+    intro: string;
+    readMore: string;
+    indexTitle: string;
+    indexDescription: string;
+  };
   now: {
     label: string;
     intro: string;
@@ -98,6 +105,14 @@ export const content: Record<Locale, SiteContent> = {
           tags: ["Cloudflare Pages", "OAuth", "DX"],
         },
       ],
+    },
+    writing: {
+      label: "Writing",
+      intro: "Postmortems and longer-form notes.",
+      readMore: "Read all posts →",
+      indexTitle: "Writing — John Tung",
+      indexDescription:
+        "Postmortems, write-ups, and longer-form notes from John Tung — Principal Data Engineer.",
     },
     now: {
       label: "Currently",
@@ -192,6 +207,14 @@ export const content: Record<Locale, SiteContent> = {
           tags: ["Cloudflare Pages", "OAuth", "DX"],
         },
       ],
+    },
+    writing: {
+      label: "寫作",
+      intro: "Postmortem 跟比較長的工作筆記。",
+      readMore: "看全部文章 →",
+      indexTitle: "寫作 — 童曉瑜",
+      indexDescription:
+        "童曉瑜的 postmortem、技術整理、以及比較長的工作筆記。",
     },
     now: {
       label: "正在做",

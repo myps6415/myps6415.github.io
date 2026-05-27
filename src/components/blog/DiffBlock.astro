@@ -1,0 +1,44 @@
+---
+type LineKind = "add" | "del" | "ctx" | "hunk";
+
+interface Line {
+  kind: LineKind;
+  text: string;
+}
+
+interface Props {
+  header: string;
+  lines: Line[];
+}
+
+const { header, lines } = Astro.props;
+
+const lineClass: Record<LineKind, string> = {
+  add: "bg-emerald-50 text-emerald-800",
+  del: "bg-red-50 text-red-800",
+  ctx: "text-ink-500",
+  hunk: "bg-blue-50 text-blue-700",
+};
+---
+
+<div class="my-6 border border-ink-200 rounded-xl bg-white overflow-hidden">
+  <div
+    class="bg-ink-50 px-4 py-2 font-mono text-[12px] text-ink-500 border-b border-ink-200"
+  >
+    {header}
+  </div>
+  <div class="py-2 overflow-x-auto">
+    {
+      lines.map((l) => (
+        <div
+          class:list={[
+            "font-mono text-[12.5px] leading-[1.65] px-4 py-[1px] whitespace-pre",
+            lineClass[l.kind],
+          ]}
+        >
+          {l.text}
+        </div>
+      ))
+    }
+  </div>
+</div>

@@ -3,12 +3,16 @@ import type { Locale } from "../i18n/strings";
 
 interface Props {
   current: Locale;
+  alternateHref?: { en?: string; zh?: string };
 }
 
-const { current } = Astro.props;
+const { current, alternateHref } = Astro.props;
 
-const en = { href: "/", label: "EN" };
-const zh = { href: "/zh/", label: "中文" };
+const enHref = alternateHref?.en ?? "/";
+const zhHref = alternateHref?.zh ?? "/zh/";
+
+const en = { href: enHref, label: "EN" };
+const zh = { href: zhHref, label: "中文" };
 ---
 
 <div
