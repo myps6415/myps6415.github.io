@@ -15,6 +15,23 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "openclaw-issue87291-postmortem",
+    date: "2026-05-28",
+    en: {
+      title:
+        "How to write an issue so good someone else sends the PR",
+      description:
+        "A silent 500-character truncation in OpenClaw's reply-context handler. I filed the issue; someone else opened the PR.",
+      tag: "Postmortem · Open Source",
+    },
+    zh: {
+      title: "把 issue 寫到好到讓別人替你送 PR",
+      description:
+        "OpenClaw 回覆上下文處理裡一個無聲的 500 字元截斷 bug — 我寫了 issue，別人送了 PR。",
+      tag: "Postmortem · 開源貢獻",
+    },
+  },
+  {
     slug: "openclaw-pr84890-postmortem",
     date: "2026-05-22",
     en: {

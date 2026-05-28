@@ -1,0 +1,298 @@
+---
+import BlogPost from "../../layouts/BlogPost.astro";
+import StatRow from "../../components/blog/StatRow.astro";
+import Callout from "../../components/blog/Callout.astro";
+import Flow from "../../components/blog/Flow.astro";
+import DiffBlock from "../../components/blog/DiffBlock.astro";
+import Lesson from "../../components/blog/Lesson.astro";
+import CodeBlock from "../../components/blog/CodeBlock.astro";
+import { posts } from "../../data/posts";
+
+const post = posts.find((p) => p.slug === "openclaw-issue87291-postmortem")!;
+const loc = post.en;
+---
+
+<BlogPost
+  lang="en"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[
+    { text: "myps6415" },
+    {
+      text: "Issue #87291 · openclaw/openclaw",
+      href: "https://github.com/openclaw/openclaw/issues/87291",
+    },
+  ]}
+>
+  <p class="text-ink-500 italic">
+    The fix was someone else's commit. The diagnosis was mine.
+  </p>
+
+  <StatRow
+    stats={[
+      { value: "375k", label: "GitHub Stars" },
+      { value: "🦞", label: "Diamond lobster" },
+      { value: "P2", label: "Issue priority" },
+    ]}
+  />
+
+  <h2>Background</h2>
+
+  <p>
+    OpenClaw is a 375k-star open source AI assistant framework. I run it in
+    my homelab as a Telegram bot — it handles multi-turn conversations, does
+    analysis, and occasionally asks me <em>"Option A, B, or C — which one?"</em>
+  </p>
+
+  <p>That last part is where things broke.</p>
+
+  <p>
+    One morning I sent the bot a short reply: <code>"A"</code>. It responded
+    as if it had never heard of options A, B, or C. It asked me to re-paste
+    my question. It even introduced itself with a slightly different persona
+    than before.
+  </p>
+
+  <p>
+    From the user side, the bot just "got confused." Easy to blame the
+    model. But I'd seen this pattern before: it always happened after the
+    session had sat idle for a while.
+  </p>
+
+  <h2>Root cause</h2>
+
+  <p>
+    OpenClaw has an idle session reset — after{" "}
+    <code>session.reset.idleMinutes=15</code> (default), the session is
+    cleared. When a user then replies to a previous bot message, the prior
+    message is injected into the new session as <code>[reply target]</code>{" "}
+    context. This is the only surviving signal from the old conversation.
+  </p>
+
+  <p>
+    The problem is in <code>src/auto-reply/reply/inbound-meta.ts</code>:
+  </p>
+
+  <CodeBlock label="src/auto-reply/reply/inbound-meta.ts" lang="typescript">
+{`const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;
+
+function sanitizeTranscriptField(value) {
+  // used for ALL fields: sender, message_id, media_type, media_ref... and body
+}
+
+// in formatChatWindowMessage:
+const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars`}
+  </CodeBlock>
+
+  <p>
+    The same function and the same 500-character constant handle both short
+    metadata fields (<code>sender</code>, <code>message_id</code>) and
+    long-form body content. 500 is fine for a sender name. It is not fine
+    for a multi-paragraph analysis that ends with actionable options.
+  </p>
+
+  <p>Real-world numbers from my own deployment on 2026-05-27:</p>
+
+  <ul>
+    <li>
+      Original bot message: <strong>~1,800 characters</strong> — analysis
+      with options A/B/C at the end
+    </li>
+    <li>
+      Injected <code>[reply target]</code> body in the new session:{" "}
+      <strong>truncated at ~486 chars</strong>
+    </li>
+    <li>Options A/B/C: <strong>never reached</strong></li>
+    <li>
+      Bot in new session: claimed a different role, asked user to re-paste
+      context
+    </li>
+  </ul>
+
+  <Callout variant="err" title="Silent failure mode">
+    No error. No warning. The bot just loses its memory and the user
+    assumes the model is broken. The most dangerous bugs look like model
+    failures.
+  </Callout>
+
+  <h2>The issue</h2>
+
+  <p>
+    I filed <a
+      href="https://github.com/openclaw/openclaw/issues/87291"
+      target="_blank"
+      rel="noreferrer">Issue #87291</a> with five sections:
+  </p>
+
+  <ul>
+    <li><strong>Summary</strong> — what breaks and why it matters</li>
+    <li>
+      <strong>Repro</strong> — exact five-step reproduction, including the
+      idle-reset trigger
+    </li>
+    <li>
+      <strong>Real-world evidence</strong> — my own deployment numbers,
+      redacted
+    </li>
+    <li>
+      <strong>Root cause</strong> — the exact file, constant, and function
+      responsible
+    </li>
+    <li><strong>Proposed fix</strong> — a concrete diff</li>
+  </ul>
+
+  <p>The proposed fix was simple: split the body cap from the generic field cap.</p>
+
+  <DiffBlock
+    header="src/auto-reply/reply/inbound-meta.ts"
+    lines={[
+      { kind: "ctx", text: "  const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;" },
+      { kind: "add", text: "+ const MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS = 8000;" },
+      { kind: "ctx", text: "" },
+      { kind: "ctx", text: "  function sanitizeTranscriptField(value) { /* unchanged */ }" },
+      { kind: "add", text: "+ function sanitizeTranscriptBody(value) {" },
+      { kind: "add", text: "+   const body = sanitizePromptBody(value);" },
+      { kind: "add", text: "+   if (!body) return;" },
+      { kind: "add", text: "+   const truncated = body.length <= MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS" },
+      { kind: "add", text: "+     ? body" },
+      { kind: "add", text: "+     : `${truncateUtf16Safe(body, MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS - 14).trimEnd()}…[truncated]`;" },
+      { kind: "add", text: "+   return neutralizeMarkdownFences(truncated).replace(/\\s+/g, \" \").trim();" },
+      { kind: "add", text: "+ }" },
+      { kind: "ctx", text: "" },
+      { kind: "ctx", text: "  // in formatChatWindowMessage:" },
+      { kind: "del", text: "- const body = sanitizeTranscriptField(value[\"body\"]);" },
+      { kind: "add", text: "+ const body = sanitizeTranscriptBody(value[\"body\"]);" },
+    ]}
+  />
+
+  <p>
+    8,000 was chosen deliberately: generous enough for multi-paragraph
+    reasoning plus a mid-sized table, still a hard cap against
+    untrusted-content prompt-budget abuse.
+  </p>
+
+  <p>
+    I ended with: <em>"Happy to send a PR if direction is acceptable."</em>
+  </p>
+
+  <h2>What happened next</h2>
+
+  <p>ClawSweeper reviewed the issue within hours. Its verdict:</p>
+
+  <Callout variant="ok" title="ClawSweeper triage">
+    <strong>Keep open.</strong> Source path, likely files, and
+    regression-test boundary are clear. No product or security decision
+    required first. Queue a focused fix PR.
+  </Callout>
+
+  <p>
+    Labels added: <code>clawsweeper:source-repro</code>,{" "}
+    <code>clawsweeper:fix-shape-clear</code>,{" "}
+    <code>clawsweeper:queueable-fix</code>,{" "}
+    <code>issue-rating: 🦞 diamond lobster</code>.
+  </p>
+
+  <p>
+    Then SebTardif opened <a
+      href="https://github.com/openclaw/openclaw/pull/87311"
+      target="_blank"
+      rel="noreferrer">PR #87311</a> — using my proposed diff almost verbatim.
+  </p>
+
+  <Flow
+    steps={[
+      {
+        marker: "1",
+        status: "ok",
+        title: "Issue filed with root cause + proposed diff",
+        desc: "Five sections; 'Happy to send a PR if direction is acceptable.'",
+      },
+      {
+        marker: "2",
+        status: "ok",
+        title: "ClawSweeper triage — keep open, queueable fix",
+        desc: "Diamond lobster rating; labels signal the fix shape is clear",
+      },
+      {
+        marker: "3",
+        status: "ok",
+        title: "PR #87311 opened by SebTardif",
+        desc: "Patch quality: 🐚 platinum hermit — almost verbatim my diff",
+      },
+      {
+        marker: "!",
+        status: "warn",
+        title: "Blocked at 🦪 silver shellfish overall",
+        desc: "ClawSweeper wants live Telegram proof: real user reply to >500-char bot message, showing tail options survive",
+      },
+    ]}
+  />
+
+  <p>
+    The fix exists. The merge is waiting on proof that I — as the person
+    who filed the original real-world evidence — could provide in an
+    afternoon.
+  </p>
+
+  <p>I chose not to.</p>
+
+  <h2>On issue authorship</h2>
+
+  <p>
+    In open source, <em>"Happy to send a PR if direction is acceptable"</em>
+    is not a claim. It is an expression of intent. Anyone can move faster.
+  </p>
+
+  <p>That used to bother me. It doesn't anymore.</p>
+
+  <p>A well-written issue is a standalone contribution. Mine gave the maintainers:</p>
+
+  <ul>
+    <li>
+      A confirmed source-level reproduction with no ambiguity about root
+      cause
+    </li>
+    <li>A concrete diff they could hand to any contributor</li>
+    <li>Real deployment numbers that made the impact undeniable</li>
+  </ul>
+
+  <p>
+    SebTardif's commit will show up in <code>git log</code>. My name is on
+    the issue that made the commit possible. The diamond lobster rating is
+    a ClawSweeper signal that the issue itself was high quality — not just
+    a complaint, but a complete diagnosis.
+  </p>
+
+  <p>That's enough.</p>
+
+  <h2>Takeaways</h2>
+
+  <Lesson label="On issue quality">
+    A good issue is not a bug report. It's a transfer of understanding.
+    Root cause + proposed fix + real evidence means the PR author's job is
+    mostly mechanical. If someone can take your issue and open a PR in the
+    same day, you wrote a good issue.
+  </Lesson>
+
+  <Lesson label="On open source dynamics">
+    "Happy to send a PR" is not a reservation. If you want to own the fix,
+    open a draft PR the same day you file the issue. Intent without action
+    is just intent.
+  </Lesson>
+
+  <Lesson label="On letting go">
+    The goal is a working codebase, not credit. If the fix ships without
+    your commit, the users who hit the same bug in their Telegram bot
+    still benefit. That's the point.
+  </Lesson>
+
+  <Lesson label="On silent failures">
+    The most dangerous bugs are the ones that look like model failures. No
+    error, no stack trace — just a confused bot and a frustrated user who
+    blames the AI. If you see a behavior that's too consistent to be
+    random, it's probably a hard-coded constant somewhere.
+  </Lesson>
+</BlogPost>

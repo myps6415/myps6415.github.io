@@ -1,0 +1,262 @@
+---
+import BlogPost from "../../../layouts/BlogPost.astro";
+import StatRow from "../../../components/blog/StatRow.astro";
+import Callout from "../../../components/blog/Callout.astro";
+import Flow from "../../../components/blog/Flow.astro";
+import DiffBlock from "../../../components/blog/DiffBlock.astro";
+import Lesson from "../../../components/blog/Lesson.astro";
+import CodeBlock from "../../../components/blog/CodeBlock.astro";
+import { posts } from "../../../data/posts";
+
+const post = posts.find((p) => p.slug === "openclaw-issue87291-postmortem")!;
+const loc = post.zh;
+---
+
+<BlogPost
+  lang="zh"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[
+    { text: "myps6415" },
+    {
+      text: "Issue #87291 · openclaw/openclaw",
+      href: "https://github.com/openclaw/openclaw/issues/87291",
+    },
+  ]}
+>
+  <p class="text-ink-500 italic">
+    那個 fix 是別人的 commit，但診斷是我的。
+  </p>
+
+  <StatRow
+    stats={[
+      { value: "375k", label: "GitHub Stars" },
+      { value: "🦞", label: "Diamond lobster" },
+      { value: "P2", label: "Issue 優先級" },
+    ]}
+  />
+
+  <h2>背景</h2>
+
+  <p>
+    OpenClaw 是一個 375k stars 的開源 AI assistant 框架，我在 homelab 裡用它
+    跑 Telegram bot——處理多輪對話、做分析，偶爾會問我：<em>「選項 A、B、C，你要哪一個？」</em>
+  </p>
+
+  <p>就是這個地方壞了。</p>
+
+  <p>
+    某個早上我回了 bot 一個短回覆：<code>「A」</code>。它回我的訊息看起來像從來沒聽過
+    A、B、C 這幾個選項，要我把問題重新貼一次，甚至自我介紹的口吻都跟之前不太一樣。
+  </p>
+
+  <p>
+    從使用者角度看就是 bot「搞混了」，很容易直接怪到 model 頭上。但我之前見過這個模式：
+    這件事總是在 session 閒置一段時間之後才發生。
+  </p>
+
+  <h2>根本原因</h2>
+
+  <p>
+    OpenClaw 有 idle session reset 機制——預設 <code>session.reset.idleMinutes=15</code>
+    之後 session 會被清空。當使用者接著回覆某則先前的 bot 訊息時，舊訊息會被當作
+    <code>[reply target]</code> context 注入到新 session 裡。這是舊對話唯一存活下來的訊號。
+  </p>
+
+  <p>問題在 <code>src/auto-reply/reply/inbound-meta.ts</code>：</p>
+
+  <CodeBlock label="src/auto-reply/reply/inbound-meta.ts" lang="typescript">
+{`const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;
+
+function sanitizeTranscriptField(value) {
+  // 所有欄位共用：sender、message_id、media_type、media_ref... 還有 body
+}
+
+// 在 formatChatWindowMessage 裡：
+const body = sanitizeTranscriptField(value["body"]);  // ← 一律截到 500 字`}
+  </CodeBlock>
+
+  <p>
+    同一個 function、同一個 500 字常數，要處理短的 metadata 欄位（<code>sender</code>、
+    <code>message_id</code>），也要處理長篇的 body。500 字對 sender 名稱沒問題，
+    但對結尾才出現可行動選項的多段落分析來說，遠遠不夠。
+  </p>
+
+  <p>2026-05-27 我自己 deployment 的實際數字：</p>
+
+  <ul>
+    <li>原始 bot 訊息：<strong>約 1,800 字</strong>——結尾帶 A/B/C 選項的分析</li>
+    <li>
+      注入到新 session 的 <code>[reply target]</code> body：
+      <strong>大約在第 486 字被截斷</strong>
+    </li>
+    <li>A/B/C 選項：<strong>完全沒進去</strong></li>
+    <li>新 session 裡的 bot：宣稱自己是不同的角色，要使用者把 context 重貼一次</li>
+  </ul>
+
+  <Callout variant="err" title="無聲故障">
+    沒有 error、沒有 warning，bot 就是失憶，然後使用者直接認定 AI 壞了。最危險的 bug
+    通常長得像 model failure。
+  </Callout>
+
+  <h2>這個 issue</h2>
+
+  <p>
+    我提交了 <a
+      href="https://github.com/openclaw/openclaw/issues/87291"
+      target="_blank"
+      rel="noreferrer">Issue #87291</a>，內容分五段：
+  </p>
+
+  <ul>
+    <li><strong>Summary</strong>——哪裡壞了、為什麼重要</li>
+    <li><strong>Repro</strong>——精確的五步驟重現方式，包含 idle-reset 觸發條件</li>
+    <li><strong>Real-world evidence</strong>——我自己 deployment 的數據（已脫敏）</li>
+    <li><strong>Root cause</strong>——確切的檔案、常數、function</li>
+    <li><strong>Proposed fix</strong>——一份具體 diff</li>
+  </ul>
+
+  <p>修法很簡單：把 body 的字數上限從通用欄位上限拆開。</p>
+
+  <DiffBlock
+    header="src/auto-reply/reply/inbound-meta.ts"
+    lines={[
+      { kind: "ctx", text: "  const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;" },
+      { kind: "add", text: "+ const MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS = 8000;" },
+      { kind: "ctx", text: "" },
+      { kind: "ctx", text: "  function sanitizeTranscriptField(value) { /* 不變 */ }" },
+      { kind: "add", text: "+ function sanitizeTranscriptBody(value) {" },
+      { kind: "add", text: "+   const body = sanitizePromptBody(value);" },
+      { kind: "add", text: "+   if (!body) return;" },
+      { kind: "add", text: "+   const truncated = body.length <= MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS" },
+      { kind: "add", text: "+     ? body" },
+      { kind: "add", text: "+     : `${truncateUtf16Safe(body, MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS - 14).trimEnd()}…[truncated]`;" },
+      { kind: "add", text: "+   return neutralizeMarkdownFences(truncated).replace(/\\s+/g, \" \").trim();" },
+      { kind: "add", text: "+ }" },
+      { kind: "ctx", text: "" },
+      { kind: "ctx", text: "  // 在 formatChatWindowMessage 裡：" },
+      { kind: "del", text: "- const body = sanitizeTranscriptField(value[\"body\"]);" },
+      { kind: "add", text: "+ const body = sanitizeTranscriptBody(value[\"body\"]);" },
+    ]}
+  />
+
+  <p>
+    8,000 是刻意挑的：足以容納多段落推理加上中型表格，同時對 untrusted-content
+    的 prompt-budget 濫用仍是硬上限。
+  </p>
+
+  <p>
+    我在 issue 最後寫：<em>「Happy to send a PR if direction is acceptable.」</em>
+  </p>
+
+  <h2>之後發生的事</h2>
+
+  <p>ClawSweeper 在幾小時內 review 了這個 issue，判定如下：</p>
+
+  <Callout variant="ok" title="ClawSweeper triage">
+    <strong>Keep open.</strong> 程式碼路徑、相關檔案、regression-test 範圍都很明確；
+    不需要先做產品或安全決策。排入 focused fix PR 隊列。
+  </Callout>
+
+  <p>
+    加上的標籤：<code>clawsweeper:source-repro</code>、
+    <code>clawsweeper:fix-shape-clear</code>、
+    <code>clawsweeper:queueable-fix</code>、
+    <code>issue-rating: 🦞 diamond lobster</code>。
+  </p>
+
+  <p>
+    然後 SebTardif 開了 <a
+      href="https://github.com/openclaw/openclaw/pull/87311"
+      target="_blank"
+      rel="noreferrer">PR #87311</a>——幾乎逐字使用我提的 diff。
+  </p>
+
+  <Flow
+    steps={[
+      {
+        marker: "1",
+        status: "ok",
+        title: "Issue 提交，附 root cause + 提案 diff",
+        desc: "五段內容；結尾「Happy to send a PR if direction is acceptable.」",
+      },
+      {
+        marker: "2",
+        status: "ok",
+        title: "ClawSweeper triage：keep open、queueable fix",
+        desc: "Diamond lobster 評等；標籤顯示 fix shape 已清楚",
+      },
+      {
+        marker: "3",
+        status: "ok",
+        title: "SebTardif 開出 PR #87311",
+        desc: "Patch quality：🐚 platinum hermit，幾乎照抄我的 diff",
+      },
+      {
+        marker: "!",
+        status: "warn",
+        title: "整體卡在 🦪 silver shellfish",
+        desc: "ClawSweeper 要的是 live Telegram 證明：真實使用者回覆 >500 字的 bot 訊息，顯示尾段選項有保留下來",
+      },
+    ]}
+  />
+
+  <p>
+    Fix 已經存在。merge 卡在一份證明——而我，正是當初提供 real-world evidence 的人，
+    可以在一個下午內做出來。
+  </p>
+
+  <p>我選擇不做。</p>
+
+  <h2>關於 issue 作者身份</h2>
+
+  <p>
+    在開源裡，<em>「Happy to send a PR if direction is acceptable」</em>
+    不是一種主張，而是一種意願表達。任何人都可以走得更快。
+  </p>
+
+  <p>這件事以前會讓我介意，現在不會了。</p>
+
+  <p>一份寫得好的 issue 本身就是一份貢獻。我給 maintainer 的是：</p>
+
+  <ul>
+    <li>原始碼層級的、不模糊的 root cause 重現</li>
+    <li>一份可以交給任何 contributor 的具體 diff</li>
+    <li>讓影響無可否認的真實 deployment 數據</li>
+  </ul>
+
+  <p>
+    SebTardif 的 commit 會出現在 <code>git log</code> 裡。我的名字在那份讓 commit 得以成立的
+    issue 上。Diamond lobster 評等是 ClawSweeper 用來標示「issue 本身寫得好」的訊號——
+    不只是抱怨，而是一份完整的診斷。
+  </p>
+
+  <p>這樣就夠了。</p>
+
+  <h2>這次學到什麼</h2>
+
+  <Lesson label="關於 issue 品質">
+    一份好的 issue 不是 bug report，而是理解的移轉。Root cause + 提案 diff + 實際證據
+    意味著 PR 作者要做的事大部分是機械性的。如果有人能拿你的 issue 在同一天開出 PR，
+    那就是一份好 issue。
+  </Lesson>
+
+  <Lesson label="關於開源動態">
+    「Happy to send a PR」不是預約。如果你想擁有這個 fix，就在提交 issue 的同一天開一份
+    draft PR。沒有行動的意願就只是意願。
+  </Lesson>
+
+  <Lesson label="關於放手">
+    目標是讓 codebase 變好，不是搶名字。如果這個 fix 在你沒掛名的情況下 ship 出去，
+    那些在自己 Telegram bot 上撞到同樣 bug 的人還是受益了——這才是重點。
+  </Lesson>
+
+  <Lesson label="關於無聲故障">
+    最危險的 bug 是看起來像 model failure 的那種。沒有 error、沒有 stack trace——
+    只有一個搞混的 bot 跟一個怪 AI 的挫折使用者。如果你看到一種「太一致以致不像隨機」
+    的行為，多半是某處藏著一個寫死的常數。
+  </Lesson>
+</BlogPost>
