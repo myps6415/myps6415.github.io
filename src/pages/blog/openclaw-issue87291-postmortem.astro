@@ -27,10 +27,6 @@ const loc = post.en;
     },
   ]}
 >
-  <p class="text-ink-500 italic">
-    The fix was someone else's commit. The diagnosis was mine.
-  </p>
-
   <StatRow
     stats={[
       { value: "375k", label: "GitHub Stars" },
@@ -196,10 +192,10 @@ const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars
   </p>
 
   <p>
-    Then SebTardif opened <a
+    Then <a
       href="https://github.com/openclaw/openclaw/pull/87311"
       target="_blank"
-      rel="noreferrer">PR #87311</a> — using my proposed diff almost verbatim.
+      rel="noreferrer">PR #87311</a> was opened, adopting the proposed diff.
   </p>
 
   <Flow
@@ -219,54 +215,35 @@ const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars
       {
         marker: "3",
         status: "ok",
-        title: "PR #87311 opened by SebTardif",
-        desc: "Patch quality: 🐚 platinum hermit — almost verbatim my diff",
+        title: "PR #87311 opened, adopting the proposed diff",
+        desc: "Patch quality: 🐚 platinum hermit",
       },
       {
         marker: "!",
         status: "warn",
-        title: "Blocked at 🦪 silver shellfish overall",
-        desc: "ClawSweeper wants live Telegram proof: real user reply to >500-char bot message, showing tail options survive",
+        title: "In review pending live reproduction proof",
+        desc: "ClawSweeper wants a real user reply to a >500-char bot message, showing tail options survive — overall rating sits at 🦪 silver shellfish until then",
       },
     ]}
   />
-
-  <p>
-    The fix exists. The merge is waiting on proof that I — as the person
-    who filed the original real-world evidence — could provide in an
-    afternoon.
-  </p>
-
-  <p>I chose not to.</p>
 
   <h2>On issue authorship</h2>
 
   <p>
     In open source, <em>"Happy to send a PR if direction is acceptable"</em>
-    is not a claim. It is an expression of intent. Anyone can move faster.
+    is an expression of intent, not a claim. Anyone can move faster — and
+    that used to bother me. It doesn't anymore.
   </p>
-
-  <p>That used to bother me. It doesn't anymore.</p>
-
-  <p>A well-written issue is a standalone contribution. Mine gave the maintainers:</p>
-
-  <ul>
-    <li>
-      A confirmed source-level reproduction with no ambiguity about root
-      cause
-    </li>
-    <li>A concrete diff they could hand to any contributor</li>
-    <li>Real deployment numbers that made the impact undeniable</li>
-  </ul>
 
   <p>
-    SebTardif's commit will show up in <code>git log</code>. My name is on
-    the issue that made the commit possible. The diamond lobster rating is
-    a ClawSweeper signal that the issue itself was high quality — not just
-    a complaint, but a complete diagnosis.
+    A well-written issue is a standalone contribution: a source-level
+    reproduction, a concrete diff, and real deployment numbers that make
+    the impact undeniable. The diamond lobster rating is ClawSweeper's
+    signal that the issue itself was high quality — not just a complaint,
+    but a complete diagnosis.
   </p>
 
-  <p>That's enough.</p>
+  <p>That's the part worth owning. The commit can be anyone's.</p>
 
   <h2>Takeaways</h2>
 
@@ -275,12 +252,6 @@ const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars
     Root cause + proposed fix + real evidence means the PR author's job is
     mostly mechanical. If someone can take your issue and open a PR in the
     same day, you wrote a good issue.
-  </Lesson>
-
-  <Lesson label="On open source dynamics">
-    "Happy to send a PR" is not a reservation. If you want to own the fix,
-    open a draft PR the same day you file the issue. Intent without action
-    is just intent.
   </Lesson>
 
   <Lesson label="On letting go">
