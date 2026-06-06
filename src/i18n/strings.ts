@@ -129,9 +129,9 @@ export const content: Record<Locale, SiteContent> = {
             "Editorial content pipeline (Elasticsearch → BigQuery embeddings) so editors can do semantic search over historical archives.",
         },
         {
-          title: "Silent failure detection",
+          title: "GA4 analytics ingestion",
           body:
-            "Automated data-freshness checks plus Cloud Monitoring alerts so a broken upstream API can't go undetected for days.",
+            "Bringing a news site's web analytics into the platform via the GA4 Data API. The self-serve access page is shipped; the ingestion job follows once the property's GA4 admin grants Viewer access.",
         },
       ],
     },
@@ -231,9 +231,9 @@ export const content: Record<Locale, SiteContent> = {
             "編輯內容的 pipeline（Elasticsearch → BigQuery embeddings），讓編輯可以對歷史文章做語意搜尋。",
         },
         {
-          title: "Silent failure 偵測",
+          title: "GA4 網站分析 ingestion",
           body:
-            "自動化的資料新鮮度檢查 + Cloud Monitoring 通知，避免上游 API 壞掉好幾天才被發現。",
+            "把集團新聞網站的流量分析透過 GA4 Data API 接進平台。自助授權頁已上線，待對方 GA4 管理者開「檢視者」權限後就接 ingestion job。",
         },
       ],
     },
