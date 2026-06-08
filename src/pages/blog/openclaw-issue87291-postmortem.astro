@@ -266,4 +266,53 @@ const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars
     blames the AI. If you see a behavior that's too consistent to be
     random, it's probably a hard-coded constant somewhere.
   </Lesson>
+
+  <h2>Update (June 2026)</h2>
+
+  <p>
+    The story didn't end at "PR #87311 opened, adopting the proposed diff."
+    A month later, the real fix landed via a different path:
+  </p>
+
+  <ul>
+    <li>
+      <strong>PR #87311 was closed unmerged.</strong> Maintainers wanted
+      more than a raised cap. Lifting 500 → 8000 still leaves prefix-only
+      truncation, so the same failure mode reappears at 8000 the moment a
+      body grows past it — same shape of bug, different number.
+    </li>
+    <li>
+      <strong>I opened{" "}
+      <a
+        href="https://github.com/openclaw/openclaw/pull/87909"
+        target="_blank"
+        rel="noreferrer">PR #87909</a></strong>{" "}
+      with a head+tail truncation variant at a 6,000-char cap. Got an
+      independent review, tightened it twice — but by the time I caught up
+      with main, maintainers had already landed their own version.
+    </li>
+    <li>
+      <strong>The actual fix is commit{" "}
+      <a
+        href="https://github.com/openclaw/openclaw/commit/3753c5e2c8"
+        target="_blank"
+        rel="noreferrer"><code>3753c5e2c8</code></a></strong>{" "}
+      (closes #91042) — head+tail truncation at a 2,000-char cap, plus
+      coverage for ReplyChain JSON bodies and Telegram inline ReplyToBody
+      fallback that my own PR didn't touch.
+    </li>
+  </ul>
+
+  <p>
+    The split-cap direction from the original issue was adopted. The
+    specific 8,000-char prefix-only mechanism was not — and shouldn't have
+    been. Maintainers landed a better variant.
+  </p>
+
+  <p>
+    This is exactly what "the commit can be anyone's" means in practice.
+    The issue did its job: transferred enough understanding that someone
+    with deeper context on the surrounding paths could land a more
+    complete fix than I would have written.
+  </p>
 </BlogPost>
