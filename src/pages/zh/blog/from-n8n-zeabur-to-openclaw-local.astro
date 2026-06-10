@@ -47,15 +47,15 @@ const loc = post.zh;
   <h2>觸發點</h2>
 
   <p>
-    2026 年中，我為了完全不相關的理由，在家裡的機器上跑了 OpenClaw —— 長時間
-    執行的 agent session、Telegram bot、memory store。OpenClaw 把 cron 子系統
-    做完整之後，jobs registry 長得很快：gateway 自我修復、記憶備份、內容
-    生產線、Threads token 自動續期、每週投資研究。我數一下，本地已經有
-    <strong>二十個 cron job</strong>，而 Zeabur 上只剩一個 n8n workflow 在
-    燒每月 $7.88。
+    2026 年中，我把 OpenClaw 跑在家裡的機器上已經一段時間 ——
+    長到能放心交付真正在做的工作，也長到開始意識到：Zeabur 上
+    那個僅存的 n8n workflow 做的事，OpenClaw 本地早就做得到了。
   </p>
 
-  <p>一個 workflow 不該值一條 $7.88 的月費 line item。搬。</p>
+  <p>
+    當替代品就在同一張桌子上的時候，一個託管 workflow 撐不起
+    每月 $7.88 的 line item。搬。
+  </p>
 
   <h2>Case study：家人每日行程提醒</h2>
 
@@ -252,9 +252,8 @@ def fetch_today_events(access_token):
   </ul>
 
   <p>
-    二十個 job、同一台機器、同一個排程系統、運維狀態統一推到一個 Telegram
-    chat。把第 21 個（其實是第 20 個 —— 這次遷移是用本地的取代了 n8n 上的，
-    總數沒變）加進來的邊際成本基本上是 0。
+    全部跑在同一台機器、同一個排程系統、運維狀態統一推到一個 Telegram
+    chat。再塞一個同樣形狀的本地 job 來取代 n8n workflow，邊際成本基本上是 0。
   </p>
 
   <h2>心得</h2>

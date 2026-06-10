@@ -48,16 +48,16 @@ const loc = post.en;
   <h2>The trigger</h2>
 
   <p>
-    By mid-2026 I had OpenClaw running on my home machine for unrelated
-    reasons — long-running agent sessions, a Telegram bot, a memory store.
-    Once OpenClaw shipped a proper cron subsystem, the registry grew
-    quickly: gateway self-repair, memory backups, content pipelines,
-    Threads token refresh, weekly investment research. By the time I
-    counted, twenty cron jobs were running locally, and a single n8n
-    workflow on Zeabur was burning $7.88/month.
+    By mid-2026 I had been running OpenClaw on my home machine for long
+    enough to trust it with real work — and long enough to notice that
+    the single n8n workflow still sitting on Zeabur was doing nothing
+    OpenClaw couldn't already do locally.
   </p>
 
-  <p>One workflow doesn't justify a $7.88 line item. Migrate it.</p>
+  <p>
+    One hosted workflow doesn't justify a $7.88 monthly line item once
+    the alternative is sitting on the same desk. Migrate it.
+  </p>
 
   <h2>The case study: a daily family-schedule alert</h2>
 
@@ -266,10 +266,9 @@ def fetch_today_events(access_token):
   </ul>
 
   <p>
-    Twenty jobs, all on one machine, all using the same scheduler, all
-    delivering operational status to one Telegram chat. The marginal cost
-    of replacing the n8n workflow with the 21st (well, the 20th — this
-    migration kept the count flat) was essentially zero.
+    All running on the same machine, the same scheduler, the same
+    Telegram operations chat. The marginal cost of replacing the n8n
+    workflow with a same-shape local job was essentially zero.
   </p>
 
   <h2>Takeaways</h2>
