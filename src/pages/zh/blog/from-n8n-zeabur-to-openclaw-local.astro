@@ -32,8 +32,8 @@ const loc = post.zh;
 
   <p>
     過去一年，我在 Zeabur 上養著一個 n8n workflow：
-    <code>anhe_schedule_alert</code>。每天早上 6:00 抓 Google Calendar 當日的事件，
-    篩出 summary 含有 <strong>安禾</strong>（家人名字）的，整理成一段易讀的
+    <code>family_schedule_alert</code>。每天早上 6:00 抓 Google Calendar 當日的事件，
+    篩出 summary 含有<strong>家人名字</strong>的，整理成一段易讀的
     內容，推到一個照護群成員都在的 LINE 群組。
   </p>
 
@@ -57,7 +57,7 @@ const loc = post.zh;
 
   <p>一個 workflow 不該值一條 $7.88 的月費 line item。搬。</p>
 
-  <h2>Case study：安禾每日行程提醒</h2>
+  <h2>Case study：家人每日行程提醒</h2>
 
   <p>原本的 n8n graph 有十個 node：</p>
 
@@ -68,8 +68,8 @@ const loc = post.zh;
       <code>$today.plus(1, "day")</code> 之間的所有事件
     </li>
     <li>
-      <code>If_anhe_in_summary</code> — 用{" "}
-      <code>summary contains "安禾"</code> 篩
+      <code>If_keyword_in_summary</code> — 用{" "}
+      <code>summary contains &lt;家人名&gt;</code> 篩
     </li>
     <li><code>daily_schedule_list</code> — Set node，投影欄位</li>
     <li>
@@ -99,7 +99,7 @@ const loc = post.zh;
   </p>
 
   <CodeBlock
-    label="~/.openclaw/scripts/anhe_schedule_alert.py — 關鍵段落"
+    label="~/.openclaw/scripts/family_schedule_alert.py — 關鍵段落"
     lang="python"
   >
 {`def get_access_token():
@@ -141,10 +141,10 @@ def fetch_today_events(access_token):
   </CodeBlock>
 
   <p>
-    OAuth 拆成兩支腳本。<code>setup_google_oauth_anhe.py</code>{" "}
+    OAuth 拆成兩支腳本。<code>setup_google_oauth.py</code>{" "}
     跑一次：開瀏覽器、用本機 loopback 接 auth code、換 refresh token、
     把結果寫到{" "}
-    <code>~/.openclaw/credentials/google_oauth_token_anhe.json</code>{" "}
+    <code>~/.openclaw/credentials/google_oauth_token.json</code>{" "}
     （權限 <code>0600</code>）。之後每天的腳本只用 refresh token
     （不會過期），每次跑都換一個新的 access token。
   </p>
@@ -173,7 +173,7 @@ def fetch_today_events(access_token):
 
   <p>
     Google Calendar 對全日事件回傳的是 <code>start.date</code>，不是{" "}
-    <code>start.dateTime</code>。n8n 版本在第一次有人把「安禾」全日事件加進
+    <code>start.dateTime</code>。n8n 版本在第一次有人把家人的全日事件加進
     行事曆的當下就會炸。它從來沒炸 —— 是因為實務上還沒人這樣加而已。
     重寫的時候順手就修了，這種「閱讀時發現、不是 06:01 在 debug 時發現」的
     修法是最好的修法。
@@ -194,12 +194,12 @@ def fetch_today_events(access_token):
   >
 {`{
   "id": "86ce0520-afc8-47c7-a47f-7681fc6cba6f",
-  "name": "安禾每日行程提醒",
+  "name": "每日行程提醒",
   "schedule": { "kind": "cron", "expr": "0 6 * * *", "tz": "Asia/Taipei" },
   "agentId": "main",
   "payload": {
     "kind": "agentTurn",
-    "message": "Run this bash command and report nothing else: /usr/bin/python3 /Users/fish/.openclaw/scripts/anhe_schedule_alert.py",
+    "message": "Run this bash command and report nothing else: /usr/bin/python3 /Users/fish/.openclaw/scripts/family_schedule_alert.py",
     "timeoutSeconds": 60
   },
   "delivery": { "mode": "announce", "channel": "telegram", "to": "971742907" }
@@ -219,7 +219,7 @@ def fetch_today_events(access_token):
     Python 腳本把當日行程推到 <strong>LINE</strong> 群組 —— 給照護群成員看。
     OpenClaw 的 cron delivery channel 另外 announce 到我的{" "}
     <strong>Telegram</strong>：「job 跑完、status ok、耗時 11.9 秒、
-    summary：今日無『安禾』相關行程，跳過推播」。給使用者看的通知跟
+    summary：今日無相關行程，跳過推播」。給使用者看的通知跟
     給維運看的通知是兩條獨立通道。n8n 版只有第一條 —— 跑壞了我可能要
     過幾天有人問「今天怎麼沒收到提醒」才會知道。
   </Callout>

@@ -32,9 +32,8 @@ const loc = post.en;
 
   <p>
     For the past year I had a single n8n workflow running on Zeabur:
-    <code>anhe_schedule_alert</code>. Every morning at 6:00 it queried Google
-    Calendar for that day's events, filtered to anything involving{" "}
-    <strong>安禾</strong> (a family member's name), formatted the matched
+    <code>family_schedule_alert</code>. Every morning at 6:00 it queried Google
+    Calendar for that day's events, filtered to anything involving a family member's name, formatted the matched
     events into a readable block, and pushed the summary into a LINE group
     used by the people who coordinate her care.
   </p>
@@ -60,7 +59,7 @@ const loc = post.en;
 
   <p>One workflow doesn't justify a $7.88 line item. Migrate it.</p>
 
-  <h2>The case study: 安禾每日行程提醒</h2>
+  <h2>The case study: a daily family-schedule alert</h2>
 
   <p>The original n8n graph had ten nodes:</p>
 
@@ -71,8 +70,8 @@ const loc = post.en;
       <code>$today</code> and <code>$today.plus(1, "day")</code>
     </li>
     <li>
-      <code>If_anhe_in_summary</code> — filter by{" "}
-      <code>summary contains "安禾"</code>
+      <code>If_keyword_in_summary</code> — filter by{" "}
+      <code>summary contains &lt;name&gt;</code>
     </li>
     <li><code>daily_schedule_list</code> — Set node, project fields</li>
     <li>
@@ -104,7 +103,7 @@ const loc = post.en;
   </p>
 
   <CodeBlock
-    label="~/.openclaw/scripts/anhe_schedule_alert.py — key paths"
+    label="~/.openclaw/scripts/family_schedule_alert.py — key paths"
     lang="python"
   >
 {`def get_access_token():
@@ -147,10 +146,10 @@ def fetch_today_events(access_token):
 
   <p>
     OAuth is split into two scripts.{" "}
-    <code>setup_google_oauth_anhe.py</code> runs once: opens a browser,
+    <code>setup_google_oauth.py</code> runs once: opens a browser,
     captures the auth code on a localhost loopback, exchanges it for a
     refresh token, writes the result to{" "}
-    <code>~/.openclaw/credentials/google_oauth_token_anhe.json</code> with
+    <code>~/.openclaw/credentials/google_oauth_token.json</code> with
     mode <code>0600</code>. After that, the daily script only needs the
     refresh token — which doesn't expire — and asks for a fresh access
     token each run.
@@ -181,7 +180,7 @@ def fetch_today_events(access_token):
   <p>
     All-day events in Google Calendar return <code>start.date</code>, not{" "}
     <code>start.dateTime</code>. The n8n version would have thrown the
-    first time someone added an all-day "安禾" entry to the calendar. It
+    first time someone added an all-day matching entry to the calendar. It
     never threw because, in practice, nobody had — yet. The rewrite fixed
     it as a side effect, which is the best kind of fix: noticed while
     reading, not while debugging at 06:01.
@@ -203,12 +202,12 @@ def fetch_today_events(access_token):
   >
 {`{
   "id": "86ce0520-afc8-47c7-a47f-7681fc6cba6f",
-  "name": "安禾每日行程提醒",
+  "name": "每日行程提醒",
   "schedule": { "kind": "cron", "expr": "0 6 * * *", "tz": "Asia/Taipei" },
   "agentId": "main",
   "payload": {
     "kind": "agentTurn",
-    "message": "Run this bash command and report nothing else: /usr/bin/python3 /Users/fish/.openclaw/scripts/anhe_schedule_alert.py",
+    "message": "Run this bash command and report nothing else: /usr/bin/python3 /Users/fish/.openclaw/scripts/family_schedule_alert.py",
     "timeoutSeconds": 60
   },
   "delivery": { "mode": "announce", "channel": "telegram", "to": "971742907" }
@@ -230,7 +229,7 @@ def fetch_today_events(access_token):
     The Python script pushes the daily schedule to a <strong>LINE</strong>{" "}
     group — that's for the people coordinating care. OpenClaw's own cron
     delivery channel sends an "announce" to my <strong>Telegram</strong>:
-    "job ran, status ok, took 11.9s, summary: 今日無『安禾』相關行程，跳過推播."
+    "job ran, status ok, took 11.9s, summary: 今日無相關行程，跳過推播."
     The user-facing notification and the operator-facing one are on
     separate channels. The n8n version had only the first one — if a run
     failed, I'd find out days later when someone asked me what happened
