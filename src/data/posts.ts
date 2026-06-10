@@ -15,6 +15,24 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "from-n8n-zeabur-to-openclaw-local",
+    date: "2026-06-10",
+    en: {
+      title:
+        "Replacing a $7.88/mo n8n on Zeabur with a 178-line Python script on OpenClaw",
+      description:
+        "Migrating a family-schedule alert off hosted n8n into a local OpenClaw cron job — and the latent bug I noticed along the way.",
+      tag: "Migration · Cost discipline",
+    },
+    zh: {
+      title:
+        "把 $7.88/月的 n8n on Zeabur 換成 178 行的 OpenClaw 本地腳本",
+      description:
+        "把一個家庭行程提醒從託管的 n8n 搬到本地 OpenClaw cron — 順手修了一個還沒爆的 bug。",
+      tag: "遷移 · 成本紀律",
+    },
+  },
+  {
     slug: "openclaw-issue87291-postmortem",
     date: "2026-05-28",
     en: {

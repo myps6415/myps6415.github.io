@@ -1,0 +1,307 @@
+---
+import BlogPost from "../../layouts/BlogPost.astro";
+import StatRow from "../../components/blog/StatRow.astro";
+import Callout from "../../components/blog/Callout.astro";
+import DiffBlock from "../../components/blog/DiffBlock.astro";
+import Lesson from "../../components/blog/Lesson.astro";
+import CodeBlock from "../../components/blog/CodeBlock.astro";
+import { posts } from "../../data/posts";
+
+const post = posts.find((p) => p.slug === "from-n8n-zeabur-to-openclaw-local")!;
+const loc = post.en;
+---
+
+<BlogPost
+  lang="en"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[{ text: "myps6415" }]}
+>
+  <StatRow
+    stats={[
+      { value: "$7.88 → $0", label: "Monthly cost" },
+      { value: "10 → 1", label: "n8n nodes → Python file" },
+      { value: "+1", label: "Latent bug fixed" },
+    ]}
+  />
+
+  <h2>Background</h2>
+
+  <p>
+    For the past year I had a single n8n workflow running on Zeabur:
+    <code>anhe_schedule_alert</code>. Every morning at 6:00 it queried Google
+    Calendar for that day's events, filtered to anything involving{" "}
+    <strong>安禾</strong> (a family member's name), formatted the matched
+    events into a readable block, and pushed the summary into a LINE group
+    used by the people who coordinate her care.
+  </p>
+
+  <p>
+    Picking n8n was the path of least resistance: visual editor, built-in
+    Google Calendar OAuth, a Schedule trigger, an HTTP node for LINE Push.
+    Ten nodes, done. Zeabur ran the container, billed me monthly, and the
+    bot showed up at 6 AM. The bill peaked at <strong>USD $7.88</strong>.
+  </p>
+
+  <h2>The trigger</h2>
+
+  <p>
+    By mid-2026 I had OpenClaw running on my home machine for unrelated
+    reasons — long-running agent sessions, a Telegram bot, a memory store.
+    Once OpenClaw shipped a proper cron subsystem, the registry grew
+    quickly: gateway self-repair, memory backups, content pipelines,
+    Threads token refresh, weekly investment research. By the time I
+    counted, twenty cron jobs were running locally, and a single n8n
+    workflow on Zeabur was burning $7.88/month.
+  </p>
+
+  <p>One workflow doesn't justify a $7.88 line item. Migrate it.</p>
+
+  <h2>The case study: 安禾每日行程提醒</h2>
+
+  <p>The original n8n graph had ten nodes:</p>
+
+  <ul>
+    <li><code>Schedule Trigger</code> — fire at 06:00</li>
+    <li>
+      <code>Google Calendar</code> — get all events between{" "}
+      <code>$today</code> and <code>$today.plus(1, "day")</code>
+    </li>
+    <li>
+      <code>If_anhe_in_summary</code> — filter by{" "}
+      <code>summary contains "安禾"</code>
+    </li>
+    <li><code>daily_schedule_list</code> — Set node, project fields</li>
+    <li>
+      <code>if_location_undefined</code> + <code>add_location</code> +{" "}
+      <code>Merge</code> — fill missing <code>location</code> with "未標示"
+    </li>
+    <li><code>Aggregate</code> — collect items into a single payload</li>
+    <li>
+      <code>Code</code> — Python code node, format into one LINE-friendly
+      string
+    </li>
+    <li><code>line_push</code> — HTTP POST to LINE Push API</li>
+  </ul>
+
+  <p>
+    Visual graphs read well as screenshots, but every "node" here is a
+    thin wrapper around two or three lines of real logic, plus n8n-specific
+    expression syntax sprinkled across half a dozen JSON panels. The{" "}
+    <em>real</em> code lives inside the Python Code node, where n8n stops
+    helping and you write text-templated Python by hand anyway.
+  </p>
+
+  <h2>The OpenClaw rewrite</h2>
+
+  <p>
+    One file, 178 lines, pure Python stdlib — no n8n, no{" "}
+    <code>node_modules</code>, no third-party deps. The three real things
+    it does are token refresh, calendar fetch, and LINE push:
+  </p>
+
+  <CodeBlock
+    label="~/.openclaw/scripts/anhe_schedule_alert.py — key paths"
+    lang="python"
+  >
+{`def get_access_token():
+    with open(TOKEN_PATH) as f:
+        creds = json.load(f)
+    body = urllib.parse.urlencode({
+        "client_id": creds["client_id"],
+        "client_secret": creds["client_secret"],
+        "refresh_token": creds["refresh_token"],
+        "grant_type": "refresh_token",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        creds["token_uri"], data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))["access_token"]
+
+
+def fetch_today_events(access_token):
+    now_tw = dt.datetime.now(TZ)
+    today_start = now_tw.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + dt.timedelta(days=1)
+    params = {
+        "timeMin": today_start.isoformat(),
+        "timeMax": today_end.isoformat(),
+        "q": KEYWORD,           # server-side prefilter
+        "singleEvents": "true",
+        "orderBy": "startTime",
+    }
+    url = (f"https://www.googleapis.com/calendar/v3/calendars/"
+           f"{urllib.parse.quote(CALENDAR_ID)}/events"
+           f"?{urllib.parse.urlencode(params)}")
+    req = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {access_token}"}
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8")).get("items", [])`}
+  </CodeBlock>
+
+  <p>
+    OAuth is split into two scripts.{" "}
+    <code>setup_google_oauth_anhe.py</code> runs once: opens a browser,
+    captures the auth code on a localhost loopback, exchanges it for a
+    refresh token, writes the result to{" "}
+    <code>~/.openclaw/credentials/google_oauth_token_anhe.json</code> with
+    mode <code>0600</code>. After that, the daily script only needs the
+    refresh token — which doesn't expire — and asks for a fresh access
+    token each run.
+  </p>
+
+  <h2>A latent bug, fixed in transit</h2>
+
+  <p>The n8n Set node was projecting fields like this:</p>
+
+  <DiffBlock
+    header="formatting an event's start / end time"
+    lines={[
+      { kind: "del", text: "- date  = $json.start.dateTime.toDateTime().format('yyyy-MM-dd')" },
+      { kind: "del", text: "- start = $json.start.dateTime.toDateTime().format('HH:mm:ss')" },
+      { kind: "del", text: "- end   = $json.end.dateTime.toDateTime().format('HH:mm:ss')" },
+      { kind: "ctx", text: "" },
+      { kind: "add", text: "+ if 'dateTime' in start:" },
+      { kind: "add", text: "+     start_dt = dt.datetime.fromisoformat(start['dateTime']).astimezone(TZ)" },
+      { kind: "add", text: "+     date_s  = start_dt.strftime('%Y-%m-%d')" },
+      { kind: "add", text: "+     start_s = start_dt.strftime('%H:%M:%S')" },
+      { kind: "add", text: "+     end_s   = ..." },
+      { kind: "add", text: "+ else:  # all-day event" },
+      { kind: "add", text: "+     date_s = start.get('date', '')" },
+      { kind: "add", text: "+     start_s = end_s = '全日'" },
+    ]}
+  />
+
+  <p>
+    All-day events in Google Calendar return <code>start.date</code>, not{" "}
+    <code>start.dateTime</code>. The n8n version would have thrown the
+    first time someone added an all-day "安禾" entry to the calendar. It
+    never threw because, in practice, nobody had — yet. The rewrite fixed
+    it as a side effect, which is the best kind of fix: noticed while
+    reading, not while debugging at 06:01.
+  </p>
+
+  <h2>OpenClaw cron + agentTurn</h2>
+
+  <p>
+    OpenClaw's cron isn't a thin <code>crontab</code> wrapper. Each job's
+    payload is an <strong>agentTurn</strong> — the scheduler wakes an
+    agent, hands it a prompt, lets the agent run, and uses the agent's
+    final reply as the run summary. For this job the prompt is
+    deliberately blunt:
+  </p>
+
+  <CodeBlock
+    label="cron job 86ce0520-…-6cba6f payload"
+    lang="json"
+  >
+{`{
+  "id": "86ce0520-afc8-47c7-a47f-7681fc6cba6f",
+  "name": "安禾每日行程提醒",
+  "schedule": { "kind": "cron", "expr": "0 6 * * *", "tz": "Asia/Taipei" },
+  "agentId": "main",
+  "payload": {
+    "kind": "agentTurn",
+    "message": "Run this bash command and report nothing else: /usr/bin/python3 /Users/fish/.openclaw/scripts/anhe_schedule_alert.py",
+    "timeoutSeconds": 60
+  },
+  "delivery": { "mode": "announce", "channel": "telegram", "to": "971742907" }
+}`}
+  </CodeBlock>
+
+  <p>
+    Using an LLM agent to fire a one-line bash command does feel like
+    overkill — and at 290 input / 145 output tokens per fire, it isn't
+    free. But the same scheduling primitive that runs this dumb-cron job
+    also runs jobs whose payload is{" "}
+    <em>"summarize today's Threads comments and tell me if anything needs
+    my attention"</em>. One cron surface, one delivery layer, one history
+    viewer. The cost of using the agent for the trivial case is the price
+    of <em>not</em> running a second scheduler for the smart ones.
+  </p>
+
+  <Callout variant="info" title="Two delivery lanes, one job">
+    The Python script pushes the daily schedule to a <strong>LINE</strong>{" "}
+    group — that's for the people coordinating care. OpenClaw's own cron
+    delivery channel sends an "announce" to my <strong>Telegram</strong>:
+    "job ran, status ok, took 11.9s, summary: 今日無『安禾』相關行程，跳過推播."
+    The user-facing notification and the operator-facing one are on
+    separate channels. The n8n version had only the first one — if a run
+    failed, I'd find out days later when someone asked me what happened
+    to the morning ping.
+  </Callout>
+
+  <h2>What else OpenClaw is doing on this box</h2>
+
+  <p>
+    Migrating one workflow isn't really worth $7.88 in itself; the value
+    is amortizing it across everything else already on the same machine.
+    For context, the same OpenClaw cron registry runs:
+  </p>
+
+  <ul>
+    <li>
+      <strong>Three content pipelines</strong> — Distill{" "}
+      <em>data-engineering</em> (daily 07:00 / 07:30 / 07:35),{" "}
+      <em>money</em> (daily 13:00 / 13:20 / 13:25), and{" "}
+      <em>food-japan</em> (Sundays 18:00 / 18:20 / 18:25). Each is a
+      three-stage Writer → Publisher → Source flow that drafts, publishes,
+      and sources material for one vertical.
+    </li>
+    <li>
+      <strong>Threads operations</strong> — comment distillation every 6h,
+      a Monday weekly performance report, and a Sunday morning token
+      refresh that replaces what used to be a manual re-auth.
+    </li>
+    <li>
+      <strong>Investment / market</strong> — daily technical analysis scan
+      with LLM commentary, weekly portfolio deep-research, monthly{" "}
+      <em>"🦞 龍蝦哥理財月報"</em> — the cute name covers a non-trivial
+      pipeline.
+    </li>
+    <li>
+      <strong>Self-care infra</strong> — gateway repair every 30 minutes,
+      memory backup every hour, a 3 AM memory-promote step, monthly Daily
+      Log archive.
+    </li>
+    <li><strong>And, now, the family schedule alert.</strong></li>
+  </ul>
+
+  <p>
+    Twenty jobs, all on one machine, all using the same scheduler, all
+    delivering operational status to one Telegram chat. The marginal cost
+    of replacing the n8n workflow with the 21st (well, the 20th — this
+    migration kept the count flat) was essentially zero.
+  </p>
+
+  <h2>Takeaways</h2>
+
+  <Lesson label="On cost discipline">
+    $7.88/month is the kind of number that doesn't trigger alarms — three
+    coffees, a streaming subscription. But the discipline is to keep
+    asking "what is this paying for, and do I still need it?" Once the
+    answer is "one workflow I could rewrite in an afternoon", the
+    decision is made for you.
+  </Lesson>
+
+  <Lesson label="On visual workflows vs scripts">
+    Ten n8n nodes look like a lot of structure on a canvas. They are not
+    a lot of code. The moment a Code node appears — the universal
+    "I gave up on the visual abstraction" signal — most of the workflow's
+    real logic has already moved out of the graph. The graph is the
+    wrapper; the wrapper is what you're paying for.
+  </Lesson>
+
+  <Lesson label="On framework amortization">
+    A single cron job doesn't justify a scheduler. Twenty cron jobs do.
+    The right time to migrate is when you've already paid the framework
+    cost for unrelated reasons, and you're left maintaining a hosted tool
+    that only justifies itself with one workflow.
+  </Lesson>
+</BlogPost>
