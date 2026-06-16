@@ -44,22 +44,22 @@ export const content: Record<Locale, SiteContent> = {
     meta: {
       title: "John Tung — Principal Data Engineer",
       description:
-        "Principal Data Engineer based in Taiwan. Data platforms across GCP, AWS, and Azure. BigQuery, dbt, Airflow, Dagster, PySpark.",
+        "Principal Data Engineer based in Taiwan. Data platforms across GCP, AWS, and Azure. BigQuery, dbt, Airflow, PySpark.",
     },
     hero: {
       eyebrow: "John Tung · 童曉瑜",
       headline1: "Principal Data Engineer.",
-      headline2: "Data platforms sized to the problem, observable by default.",
+      headline2: "",
       body:
-        "I've shipped production systems on GCP, AWS, and Azure — orchestrated with Airflow, Dagster, or just a scheduler when that was the right answer. The best tool depends on the constraint in front of you, not on the trend cycle.",
+        "I've run production on GCP, AWS, and Azure, with orchestration on Airflow — or just a scheduler when that fit. Lately most of the work is taking something built too heavy and turning it back into a query that runs on a schedule. I pick tools to fit the problem.",
     },
     about: {
       label: "About",
       paragraphs: [
         "Based in Taiwan. I lead the social analytics data platform at a media group — owning everything from the Cloud Run Jobs that pull from the Meta Graph API to the dbt marts that surface in Looker Studio.",
-        "Across previous roles I've shipped on GCP, AWS, and Azure, orchestrating with Airflow, Dagster, and lightweight schedulers, and processed enough data with PySpark, dbt, and BigQuery to know that the right tool is the one that matches the actual requirement — including the team's ability to operate it. Spent 2.5 of those years as a Data Team Lead before switching back to a hands-on Principal IC role.",
+        "Across previous roles I've shipped on GCP, AWS, and Azure, orchestrating with Airflow and lightweight schedulers, and processed enough data with PySpark, dbt, and BigQuery to know that the right tool is the one that matches the actual requirement — including the team's ability to operate it. Spent 2.5 of those years as a Data Team Lead before switching back to a hands-on Principal IC role.",
         "I spend equal time on data modeling and on the boring infrastructure that keeps tokens fresh, jobs idempotent, and bills small.",
-        "Currently going deep on LLM-augmented data pipelines and BigQuery Vector Search for editorial workflows — closer to a return to the text mining and sentiment analysis I came up through than a trend chase.",
+        "The work I'm most invested in now — LLM-augmented pipelines and semantic search over the editorial archive — is really a return to the text mining and sentiment analysis I started out in.",
       ],
     },
     work: {
@@ -141,22 +141,22 @@ export const content: Record<Locale, SiteContent> = {
     meta: {
       title: "童曉瑜 — Principal Data Engineer",
       description:
-        "Principal Data Engineer，人在台灣。在 GCP、AWS、Azure 都做過資料平台，工具涵蓋 BigQuery、dbt、Airflow、Dagster、PySpark。",
+        "Principal Data Engineer，人在台灣。在 GCP、AWS、Azure 都做過資料平台，工具涵蓋 BigQuery、dbt、Airflow、PySpark。",
     },
     hero: {
       eyebrow: "童曉瑜 · John Tung",
       headline1: "Principal Data Engineer。",
-      headline2: "資料平台不過度設計，可觀測性是預設。",
+      headline2: "",
       body:
-        "GCP、AWS、Azure 都上過 production，orchestration 用過 Airflow、Dagster，需求單純的時候直接用 scheduler。最適合的工具是條件挑出來的，不是看當下哪個話題熱。",
+        "GCP、AWS、Azure 上都跑過 production，工作流程編排用過 Airflow，需求單純時直接用 scheduler。這幾年最常做的，其實是把別人搭得太重的東西改回一個會照排程跑的 query——工具看需求挑。",
     },
     about: {
       label: "關於我",
       paragraphs: [
         "人在台灣。目前在一家媒體集團負責社群分析資料平台，從 Meta Graph API 的 Cloud Run Jobs，到存入 Looker Studio 的 dbt marts，都由自己負責建置。",
-        "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，orchestration 用過 Airflow、Dagster 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個，不是當下話題最熱的那一個。其中 2.5 年擔任 Data Team Lead，之後選擇回到 Principal IC 的角色繼續動手做事。",
+        "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，工作流程編排用過 Airflow 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個。其中 2.5 年擔任 Data Team Lead，之後選擇回到 Principal IC 的角色繼續動手做事。",
         "資料建模和基礎建設這兩塊花的時間差不多 — 後者像是讓 token 不會過期、讓 job 保持 idempotent、讓帳單一直停在很小的數字。",
-        "現在主力在做 LLM-augmented data pipelines，以及 BigQuery Vector Search 在編輯端的應用。這對我而言比較像回到本業（中文文字探勘與輿情分析），而非追逐潮流。",
+        "現在最投入的，是 LLM 強化的資料管線，以及讓編輯對歷史文章做語意搜尋——其實就是回到本業：中文文字探勘與輿情分析。",
       ],
     },
     work: {

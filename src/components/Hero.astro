@@ -16,8 +16,12 @@ const { data } = Astro.props;
     <h1
       class="text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05] text-ink-900"
     >
-      {data.headline1}<br />
-      <span class="text-ink-500">{data.headline2}</span>
+      {data.headline1}{data.headline2 && (
+        <>
+          <br />
+          <span class="text-ink-500">{data.headline2}</span>
+        </>
+      )}
     </h1>
     <p class="mt-8 text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl">
       {data.body}
