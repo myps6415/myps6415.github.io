@@ -8,7 +8,14 @@ interface Props {
 
 const { data } = Astro.props;
 
+const isZh = Astro.url.pathname.startsWith("/zh");
+
 const links = [
+  {
+    label: "CV",
+    value: isZh ? "開放全遠端" : "Open to remote",
+    href: isZh ? "/zh/cv" : "/cv",
+  },
   { label: "GitHub", value: "@myps6415", href: "https://github.com/myps6415" },
   {
     label: "LinkedIn",

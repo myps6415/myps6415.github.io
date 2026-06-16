@@ -46,6 +46,22 @@ src/
 2. Create `src/pages/blog/<slug>.astro` and `src/pages/zh/blog/<slug>.astro`. Use the existing OpenClaw post as a template — both files wrap content in `<BlogPost>` and pull metadata via `posts.find(p => p.slug === "<slug>")`.
 3. Done. The homepage `Writing` section and `/blog/`, `/zh/blog/` index pages auto-render from `posts.ts`.
 
+## `/cv` one-pager (job-hunt leave-behind)
+
+A standalone bilingual one-pager in `public/`, served verbatim by Astro (not part of the Astro page pipeline):
+
+- `public/cv/index.html` — EN, served at `/cv`
+- `public/zh/cv/index.html` — ZH, served at `/zh/cv`
+
+Deliberately **not** the site design system:
+
+- Self-contained HTML with its own inline CSS — IBM Plex Sans TC / Mono and a green accent (`--accent:#1C6B57`), not Geist/orange. It's an intentional standalone artifact; don't fold it into `Base.astro` or restyle it to match the site.
+- Has `@media print` styles — it doubles as a PDF leave-behind for recruiters.
+- Language switch is a plain top-right `.lang` link (EN ↔ ZH), not the site `LanguageToggle`. `hreflang` (en / zh-Hant / x-default) is hardcoded in each file's `<head>`.
+- The two locale files are **hand-kept in sync** (no shared source) — edit both when content changes. EN `Writing` links point to `/blog/<slug>`, ZH to `/zh/blog/<slug>`.
+
+Work-experience claims are anonymized (no employer named — this repo is public) and are fact-checked against local source repos before each change. Which repos, plus known fact gotchas (e.g. claims that look shippable but aren't), live in private session memory, not here.
+
 ## Design tokens
 
 Defined in `src/styles/global.css` under `@theme`:

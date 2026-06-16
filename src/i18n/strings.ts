@@ -119,19 +119,14 @@ export const content: Record<Locale, SiteContent> = {
       intro: "What's on the workbench.",
       items: [
         {
-          title: "LLM-augmented data pipelines",
+          title: "Editorial semantic search",
           body:
-            "Using Gemini for comment sentiment and post topic classification, surfaced as BigQuery marts that downstream dashboards and analysts can query directly.",
+            "Evaluating BigQuery Vector Search vs. self-hosted Elasticsearch so editors can search the historical archive by meaning.",
         },
         {
-          title: "BigQuery Vector Search",
+          title: "Migration wrap-up",
           body:
-            "Editorial content pipeline (Elasticsearch → BigQuery embeddings) so editors can do semantic search over historical archives.",
-        },
-        {
-          title: "GA4 analytics ingestion",
-          body:
-            "Bringing a news site's web analytics into the platform via the GA4 Data API. The self-serve access page is shipped; the ingestion job follows once the property's GA4 admin grants Viewer access.",
+            "The new architecture is already producing; now decommissioning the last revenue pipeline off the old Composer DAG / Apps Script.",
         },
       ],
     },
@@ -221,19 +216,14 @@ export const content: Record<Locale, SiteContent> = {
       intro: "目前手上在做的事。",
       items: [
         {
-          title: "LLM-augmented data pipelines",
+          title: "編輯台語意搜尋",
           body:
-            "用 Gemini 對留言做情緒分析、對貼文做主題分類，產出可供 dashboard 和分析師直接查詢的 BigQuery 資料表。",
+            "評估 BigQuery Vector Search 與 self-host Elasticsearch 兩條路，讓編輯對歷史文章做語意搜尋。",
         },
         {
-          title: "BigQuery Vector Search",
+          title: "遷移收尾",
           body:
-            "編輯內容的 pipeline（Elasticsearch → BigQuery embeddings），讓編輯可以對歷史文章做語意搜尋。",
-        },
-        {
-          title: "GA4 網站分析 ingestion",
-          body:
-            "把集團新聞網站的流量分析透過 GA4 Data API 接進平台。自助授權頁已上線，待對方 GA4 管理者開「檢視者」權限後就接 ingestion job。",
+            "新架構已出數，正把最後一條營收 pipeline 從舊的 Composer DAG / Apps Script 完全下線。",
         },
       ],
     },

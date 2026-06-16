@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>John Tung 童曉瑜 — Principal Data Engineer</title>
+<meta name="description" content="Principal Data Engineer based in Taiwan. Data platforms sized to the problem, observable by default. Open to fully-remote roles, long-term contracts, and freelance.">
+<link rel="alternate" hreflang="en" href="https://myps6415.github.io/cv">
+<link rel="alternate" hreflang="zh-Hant" href="https://myps6415.github.io/zh/cv">
+<link rel="alternate" hreflang="x-default" href="https://myps6415.github.io/cv">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F0F1EE;
+    --text:#2A3135;
+    --ink:#14181B;
+    --soft:#5A6268;
+    --line:#D7D9D3;
+    --accent:#1C6B57;
+    --accent-ink:#13503F;
+    --accent-tint:#E4ECE7;
+    --sans:"IBM Plex Sans TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+    --maxw:780px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.7;
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:72px 28px 96px;position:relative;}
+
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-tint);transition:border-color .15s ease;}
+  a:hover{border-bottom-color:var(--accent);}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+
+  /* language switch ------------------------------------------------- */
+  .lang{position:absolute;top:26px;right:26px;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);border-bottom:none;}
+  .lang:hover{color:var(--accent);border-bottom:none;}
+
+  /* eyebrow / labels ------------------------------------------------ */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--soft);
+    font-weight:500;
+  }
+
+  /* header ---------------------------------------------------------- */
+  header{margin-bottom:64px;}
+  header .eyebrow{display:block;margin-bottom:20px;}
+  h1{
+    font-size:clamp(2.3rem,7vw,3.5rem);
+    line-height:1.04;
+    letter-spacing:-.02em;
+    font-weight:600;
+    color:var(--ink);
+    margin:0 0 4px;
+  }
+  h1 .en{
+    display:block;
+    font-family:var(--mono);
+    font-weight:400;
+    font-size:clamp(.95rem,2.4vw,1.15rem);
+    letter-spacing:.04em;
+    color:var(--soft);
+    margin-top:10px;
+  }
+  .thesis{
+    font-size:clamp(1.2rem,2.8vw,1.55rem);
+    line-height:1.4;
+    font-weight:500;
+    color:var(--ink);
+    margin:28px 0 18px;
+    max-width:42ch;
+  }
+  .lede{color:var(--text);max-width:62ch;margin:0;}
+  .contact{
+    font-family:var(--mono);
+    font-size:.82rem;
+    letter-spacing:.02em;
+    margin-top:28px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 20px;
+  }
+  .contact a{border-bottom:none;color:var(--soft);}
+  .contact a:hover{color:var(--accent);}
+  .contact a::before{content:"→ ";color:var(--accent);}
+
+  /* section --------------------------------------------------------- */
+  section{margin-top:56px;padding-top:28px;border-top:1px solid var(--line);}
+  .sec-label{display:flex;align-items:baseline;gap:14px;margin-bottom:30px;}
+  .sec-label .zh{font-size:1.05rem;font-weight:600;color:var(--ink);letter-spacing:.01em;}
+
+  /* selected work : metric-led ledger ------------------------------- */
+  .work{display:grid;gap:30px;}
+  .item{display:grid;grid-template-columns:170px 1fr;gap:8px 28px;}
+  .metric{padding-top:2px;}
+  .metric .fig{
+    font-family:var(--mono);
+    font-size:1.32rem;
+    font-weight:500;
+    line-height:1.15;
+    color:var(--ink);
+    letter-spacing:-.01em;
+  }
+  .metric .fig .res{color:var(--accent);}
+  .metric .unit{
+    display:block;
+    font-family:var(--mono);
+    font-size:.66rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--soft);
+    margin-top:7px;
+  }
+  .item h3{
+    font-size:1.02rem;
+    font-weight:600;
+    color:var(--ink);
+    margin:0 0 6px;
+    line-height:1.4;
+  }
+  .item h3 .tag{
+    font-family:var(--mono);
+    font-size:.66rem;
+    font-weight:500;
+    letter-spacing:.08em;
+    color:var(--accent);
+    background:var(--accent-tint);
+    padding:2px 7px;
+    border-radius:3px;
+    margin-left:8px;
+    vertical-align:middle;
+    white-space:nowrap;
+  }
+  .item p{margin:0;color:var(--text);font-size:.96rem;line-height:1.65;}
+  .item p .note{color:var(--soft);}
+
+  /* simple lists ---------------------------------------------------- */
+  .rows{display:grid;gap:18px;}
+  .row{display:grid;grid-template-columns:170px 1fr;gap:6px 28px;}
+  .row .k{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);padding-top:3px;}
+  .row .v{color:var(--text);font-size:.96rem;}
+  .row .v b{color:var(--ink);font-weight:600;}
+  .row .v .sub{color:var(--soft);}
+
+  .writing{display:grid;gap:16px;}
+  .writing .w{display:block;}
+  .writing .date{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;color:var(--soft);}
+  .writing .t{color:var(--ink);font-weight:500;border-bottom:1px solid var(--accent-tint);}
+  .writing a.t:hover{border-bottom-color:var(--accent);}
+
+  /* open-to ---------------------------------------------------------- */
+  .open{display:grid;gap:14px;}
+  .open .o{display:grid;grid-template-columns:170px 1fr;gap:6px 28px;align-items:baseline;}
+  .open .o .lbl{font-family:var(--mono);font-size:.8rem;color:var(--accent-ink);font-weight:500;}
+  .open .o .desc{color:var(--text);font-size:.95rem;}
+
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.74rem;color:var(--soft);letter-spacing:.03em;}
+
+  /* load motion ----------------------------------------------------- */
+  @media (prefers-reduced-motion:no-preference){
+    header,section,footer{animation:rise .6s cubic-bezier(.2,.7,.3,1) both;}
+    section:nth-of-type(1){animation-delay:.05s;}
+    section:nth-of-type(2){animation-delay:.1s;}
+    section:nth-of-type(3){animation-delay:.15s;}
+    section:nth-of-type(4){animation-delay:.2s;}
+    section:nth-of-type(5){animation-delay:.25s;}
+    @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  }
+
+  /* responsive ------------------------------------------------------ */
+  @media (max-width:600px){
+    .wrap{padding:48px 22px 72px;}
+    .item,.row,.open .o{grid-template-columns:1fr;gap:8px;}
+    .metric{padding-bottom:2px;}
+    .metric .fig{font-size:1.2rem;}
+  }
+
+  /* print ----------------------------------------------------------- */
+  @media print{
+    :root{--paper:#fff;--text:#1a1a1a;--ink:#000;--soft:#444;--line:#ccc;--accent-tint:#eee;}
+    body{font-size:11pt;}
+    .wrap{max-width:none;padding:0;}
+    .lang{display:none;}
+    header,section,footer{animation:none;}
+    section{break-inside:avoid;}
+    .item,.row{break-inside:avoid;}
+    a{color:#000;border:none;}
+    .contact a::before{content:"";}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="lang" href="/zh/cv">中文</a>
+
+  <header>
+    <span class="eyebrow">Principal Data Engineer · Taiwan · Open to remote</span>
+    <h1>John Tung<span class="en">童曉瑜 · Hsiao-Yu Tung</span></h1>
+    <p class="thesis">Data platforms sized to the problem, observable by default.</p>
+    <p class="lede">I've shipped production on GCP, AWS, and Azure; orchestrated with Airflow and Dagster, or just a scheduler when the need was simple. The best tool is the one the constraints pick, not whatever's trending. I came up through Chinese text mining and public-opinion analysis, led a Data Team for 2.5 years, then went back to a hands-on Principal IC role.</p>
+    <nav class="contact">
+      <a href="https://myps6415.github.io/">Site</a>
+      <a href="https://github.com/myps6415">GitHub</a>
+      <a href="https://www.linkedin.com/in/hsiao-yu-tung-67547a119/">LinkedIn</a>
+      <a href="https://medium.com/@myps6415">Medium</a>
+      <a href="mailto:myps6415@gmail.com">myps6415@gmail.com</a>
+    </nav>
+  </header>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">代表作</span><span class="zh">Selected Work</span></div>
+    <div class="work">
+
+      <div class="item">
+        <div class="metric"><span class="fig">$300 <span class="res">→ &lt;$1</span></span><span class="unit">monthly cost · 1/300</span></div>
+        <div>
+          <h3>Inherited pipeline rewrite</h3>
+          <p>Took over a revenue pipeline running on Composer + Apps Script and replaced the whole thing with BigQuery External Tables + Scheduled Queries. Same outputs, same SLAs, monthly spend down to ~1/300 of the original. <span class="note">The lesson I keep applying: most "pipelines" don't need an orchestrator — they need a query that runs on a schedule.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">15<span class="res"> jobs</span></span><span class="unit">Cloud Run · scheduled</span></div>
+        <div>
+          <h3>Multi-platform social ingestion</h3>
+          <p>Facebook, Instagram, Threads, and YouTube ingested end-to-end into BigQuery — 15 Cloud Run Jobs on staggered schedules. The raw layer is append-only, keeping the full history of every fetch (not just the latest state); dbt then models it (staging dedup, marts wide tables). Powers the Looker Studio dashboards editorial and marketing open every morning.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">60d<span class="res"> · 0 manual</span></span><span class="unit">token auto-rotation</span></div>
+        <div>
+          <h3>Threads OAuth 2.0, fully automated</h3>
+          <p>Dual-account OAuth across 8 permission scopes, with a weekly Cloud Run Job that rotates the 60-day token through Secret Manager. <span class="note">Upgraded the old "alert on-call when the token's about to expire, then ask someone to re-authorize by hand" into something fully unattended.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">0<span class="res"> backend</span></span><span class="unit">frontend-only · no ops</span></div>
+        <div>
+          <h3>Self-serve OAuth for non-engineers</h3>
+          <p>A pure-frontend authorization tool on Cloudflare Pages. Social-team editors run the whole API authorization flow themselves — no ticket, no pinging an engineer. Static hosting, no backend, near-zero maintenance.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">2<span class="res"> marts</span></span><span class="unit">Gemini · shipped</span></div>
+        <div>
+          <h3>LLM-augmented data pipelines</h3>
+          <p>Using BigQuery's built-in Gemini (<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>) to classify comment sentiment and post topics, landed as two marts (<span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>, <span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span>) that dashboards and analysts query directly. <span class="note">An ai_cache in BigQuery keeps on-demand inference cost pinned to a flat, low number.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">4<span class="res"> jobs</span></span><span class="unit">GA4 Data API · shipped</span></div>
+        <div>
+          <h3>GA4 web-analytics ingestion</h3>
+          <p>Pulling the group's site and app traffic into the platform through the GA4 Data API — 4 Cloud Run Jobs plus a story-ranking mart (<span style="font-family:var(--mono);font-size:.85em">fct_ga_story</span>). <span class="note">The Viewer grant non-engineers approve also runs through a self-serve page on Cloudflare Pages — no engineer in the loop.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">+28<span class="res"> / −1</span></span><span class="unit">diff · merged</span></div>
+        <div>
+          <h3>openclaw gateway deadlock fix<span class="tag">OSS · 2026-05</span></h3>
+          <p>Tracked down a deadlock between a SIGUSR1 listener and a dynamic import — after an in-place package upgrade the gateway could never restart, failing silently for six days. Reproduced it with production logs and a live <span style="font-family:var(--mono);font-size:.85em">kill -USR1</span> on a patched build, then sent a surgical one-line fix (<a href="https://github.com/openclaw/openclaw/pull/84890">PR #84890</a>, merged).</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">正在做</span><span class="zh">In Flight</span></div>
+    <div class="rows">
+      <div class="row"><div class="k">Editorial semantic search</div><div class="v"><b>Semantic search over the archive</b> — evaluating BigQuery Vector Search vs. self-hosted Elasticsearch so editors can search historical articles by meaning.</div></div>
+      <div class="row"><div class="k">Migration wrap-up</div><div class="v"><b>Retiring the old orchestration</b> — the new architecture is already producing; now decommissioning the last revenue pipeline off the old Composer DAG / Apps Script.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">側專案</span><span class="zh">Side Projects</span></div>
+    <div class="rows">
+      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>Taiwan real-floor-area transaction database</b> — dbt-duckdb / FastAPI / FastMCP, serving cleaned per-ping unit-price data. <span class="sub">Exploring data licensing and API / MCP subscriptions as revenue.</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">技術</span><span class="zh">Stack</span></div>
+    <div class="rows">
+      <div class="row"><div class="k">Languages / query</div><div class="v">Python · SQL</div></div>
+      <div class="row"><div class="k">GCP</div><div class="v">BigQuery · Cloud Run Jobs · Cloud Scheduler · Secret Manager · Looker Studio</div></div>
+      <div class="row"><div class="k">Modeling / orchestration</div><div class="v">dbt-bigquery (raw / staging / marts) · Dagster · Airflow</div></div>
+      <div class="row"><div class="k">Also shipped in prod</div><div class="v">AWS · Azure · PySpark · Apache Iceberg · Kubernetes · Fluentd</div></div>
+      <div class="row"><div class="k">ML / NLP</div><div class="v">Chinese text mining · sentiment analysis · LLM / RAG · LightGBM</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">寫作</span><span class="zh">Writing</span></div>
+    <div class="writing">
+      <div class="w"><span class="date">2026-05-28 · Postmortem</span><br><a class="t" href="https://myps6415.github.io/blog/openclaw-issue87291-postmortem">How to write an issue so good someone else sends the PR</a></div>
+      <div class="w"><span class="date">2026-05-22 · Postmortem</span><br><a class="t" href="https://myps6415.github.io/blog/openclaw-pr84890-postmortem">Fixing a deadlock that kept OpenClaw Gateway from restarting after upgrade</a></div>
+      <div class="w"><span class="date">2026-06-10 · Cost discipline</span><br><a class="t" href="https://myps6415.github.io/blog/from-n8n-zeabur-to-openclaw-local">Replacing a $7.88/mo n8n on Zeabur with a 178-line Python script</a></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="eyebrow">開放合作</span><span class="zh">Open To</span></div>
+    <div class="open">
+      <div class="o"><div class="lbl">Full-time</div><div class="desc">Fully-remote full-time, EOR included.</div></div>
+      <div class="o"><div class="lbl">Contract / freelance</div><div class="desc">Data-platform and pipeline builds on GCP · Airflow / Dagster · dbt; LLM / RAG adoption.</div></div>
+      <div class="o"><div class="lbl">Advisory / side</div><div class="desc">Concurrent advisory and technical consulting.</div></div>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 John Tung 童曉瑜 · Taiwan (UTC+8) · <a href="mailto:myps6415@gmail.com">myps6415@gmail.com</a>
+  </footer>
+
+</main>
+</body>
+</html>
