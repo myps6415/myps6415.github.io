@@ -44,9 +44,13 @@
   a:hover{border-bottom-color:var(--accent);}
   a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
 
-  /* language switch ------------------------------------------------- */
-  .lang{position:absolute;top:26px;right:26px;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);border-bottom:none;}
+  /* top bar : language switch + save-pdf ---------------------------- */
+  .topbar{position:absolute;top:26px;right:26px;display:flex;align-items:center;gap:20px;}
+  .lang{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);border-bottom:none;}
   .lang:hover{color:var(--accent);border-bottom:none;}
+  .print-btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);background:none;border:none;padding:0;cursor:pointer;}
+  .print-btn::before{content:"↓ ";color:var(--accent);}
+  .print-btn:hover{color:var(--accent);}
 
   /* eyebrow / labels ------------------------------------------------ */
   .eyebrow{
@@ -196,7 +200,7 @@
     :root{--paper:#fff;--text:#1a1a1a;--ink:#000;--soft:#444;--line:#ccc;--accent-tint:#eee;}
     body{font-size:11pt;}
     .wrap{max-width:none;padding:0;}
-    .lang{display:none;}
+    .topbar{display:none;}
     header,section,footer{animation:none;}
     section{break-inside:avoid;}
     .item,.row{break-inside:avoid;}
@@ -207,7 +211,10 @@
 </head>
 <body>
 <main class="wrap">
-  <a class="lang" href="/zh/cv">中文</a>
+  <div class="topbar">
+    <button type="button" class="print-btn" onclick="window.print()">Save PDF</button>
+    <a class="lang" href="/zh/cv">中文</a>
+  </div>
 
   <header>
     <span class="eyebrow">Principal Data Engineer · Taiwan · Open to remote</span>
@@ -259,10 +266,10 @@
       </div>
 
       <div class="item">
-        <div class="metric"><span class="fig">2<span class="res"> marts</span></span><span class="unit">Gemini · shipped</span></div>
+        <div class="metric"><span class="fig">Gemini<span class="res"> 2.5</span></span><span class="unit">BigQuery AI.GENERATE · shipped</span></div>
         <div>
           <h3>LLM-augmented data pipelines</h3>
-          <p>Using BigQuery's built-in Gemini (<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>) to classify comment sentiment and post topics, landed as two marts (<span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>, <span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span>) that dashboards and analysts query directly. <span class="note">An ai_cache in BigQuery keeps on-demand inference cost pinned to a flat, low number.</span></p>
+          <p>Gemini 2.5 Flash invoked in-warehouse via BigQuery (<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>) — no separate inference service. First, ~33k comments and ~3.2k posts classified for sentiment and topic into two incremental marts (<span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>, <span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span>), only new rows re-run; topic labels are tuned to the newsroom's section taxonomy (not one generic "finance" bucket that swallows 70%), with pattern normalization to absorb model noise. Second, on-dashboard "AI insights" that summarize the period's sentiment, flag negative hotspots, and propose an editorial next step — grounded strictly on the real numbers under a hard no-fabrication rule. <span class="note">Both share an ai_cache keyed by prompt hash, pinning on-demand inference cost to a flat number independent of how many people click.</span></p>
         </div>
       </div>
 
@@ -271,6 +278,14 @@
         <div>
           <h3>GA4 web-analytics ingestion</h3>
           <p>Pulling the group's site and app traffic into the platform through the GA4 Data API — 4 Cloud Run Jobs plus a story-ranking mart (<span style="font-family:var(--mono);font-size:.85em">fct_ga_story</span>). <span class="note">The Viewer grant non-engineers approve also runs through a self-serve page on Cloudflare Pages — no engineer in the loop.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">25h<span class="res"> / 49h</span></span><span class="unit">freshness warn / error</span></div>
+        <div>
+          <h3>Silent failure detection</h3>
+          <p>dbt source freshness (25h warn / 49h error) plus Cloud Monitoring alerts that regex-match job-failure logs — so a broken upstream API or a crashed job can't sit unnoticed for days.</p>
         </div>
       </div>
 
@@ -296,7 +311,7 @@
   <section>
     <div class="sec-label"><span class="eyebrow">側專案</span><span class="zh">Side Projects</span></div>
     <div class="rows">
-      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>Taiwan real-floor-area transaction database</b> — dbt-duckdb / FastAPI / FastMCP, serving cleaned per-ping unit-price data. <span class="sub">Exploring data licensing and API / MCP subscriptions as revenue.</span></div></div>
+      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>Taiwan real-floor-area transaction database</b> — dbt-duckdb cleans the gov't transaction record; REST (FastAPI) and MCP (FastMCP) serve it through one shared query core, with API keys / usage quota, self-serve signup, an OAuth dashboard, and a Cloudflare edge guard; a LightGBM valuation model (OOT MdAPE ~12%) sits ready behind a demand switch. Live at <a href="https://api.realping.tw">api</a> / <a href="https://mcp.realping.tw">mcp</a>.realping.tw. <span class="sub">Exploring data licensing and API / MCP subscriptions as revenue.</span></div></div>
     </div>
   </section>
 

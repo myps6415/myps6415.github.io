@@ -44,9 +44,13 @@
   a:hover{border-bottom-color:var(--accent);}
   a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
 
-  /* language switch ------------------------------------------------- */
-  .lang{position:absolute;top:26px;right:26px;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);border-bottom:none;}
+  /* top bar : language switch + save-pdf ---------------------------- */
+  .topbar{position:absolute;top:26px;right:26px;display:flex;align-items:center;gap:20px;}
+  .lang{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);border-bottom:none;}
   .lang:hover{color:var(--accent);border-bottom:none;}
+  .print-btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);background:none;border:none;padding:0;cursor:pointer;}
+  .print-btn::before{content:"↓ ";color:var(--accent);}
+  .print-btn:hover{color:var(--accent);}
 
   /* eyebrow / labels ------------------------------------------------ */
   .eyebrow{
@@ -196,7 +200,7 @@
     :root{--paper:#fff;--text:#1a1a1a;--ink:#000;--soft:#444;--line:#ccc;--accent-tint:#eee;}
     body{font-size:11pt;}
     .wrap{max-width:none;padding:0;}
-    .lang{display:none;}
+    .topbar{display:none;}
     header,section,footer{animation:none;}
     section{break-inside:avoid;}
     .item,.row{break-inside:avoid;}
@@ -207,7 +211,10 @@
 </head>
 <body>
 <main class="wrap">
-  <a class="lang" href="/cv">EN</a>
+  <div class="topbar">
+    <button type="button" class="print-btn" onclick="window.print()">存 PDF</button>
+    <a class="lang" href="/cv">EN</a>
+  </div>
 
   <header>
     <span class="eyebrow">Principal Data Engineer · 台灣 · 開放全遠端</span>
@@ -259,10 +266,10 @@
       </div>
 
       <div class="item">
-        <div class="metric"><span class="fig">2<span class="res"> marts</span></span><span class="unit">Gemini · 已上線</span></div>
+        <div class="metric"><span class="fig">Gemini<span class="res"> 2.5</span></span><span class="unit">BigQuery AI.GENERATE · 已上線</span></div>
         <div>
           <h3>LLM-augmented data pipelines</h3>
-          <p>用 BigQuery 內建的 Gemini（<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>）對留言做情緒分類、對貼文做主題分類，落成 <span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>、<span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span> 兩個 marts，供 dashboard 與分析師直接查。<span class="note">配 BigQuery 內的 ai_cache 把按需推論的成本壓在固定低值。</span></p>
+          <p>在 BigQuery 內直接用 Gemini 2.5 Flash（<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>），不另外架推論服務。一是把約 3.3 萬則留言與 3,200 篇貼文做情緒與主題分類，落成 <span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>、<span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span> 兩個 marts、只對新資料增量跑；主題標籤對齊新聞台的版面分類（而非一個會吃掉七成資料的籠統「財經」），再用 pattern 正規化吸收模型雜訊。二是 dashboard 上的「AI 建議」——只根據當期數字生成輿情摘要、負評焦點與給編輯部的下一步，用嚴格的「不得編造」規則綁在真實統計上。<span class="note">兩者共用一個以 prompt hash 為 key 的 ai_cache，把按需推論成本壓成與使用人數無關的固定低值。</span></p>
         </div>
       </div>
 
@@ -271,6 +278,14 @@
         <div>
           <h3>GA4 網站分析 ingestion</h3>
           <p>透過 GA4 Data API 把集團官網與 App 的流量接進平台 — 4 個 Cloud Run Jobs 加上文章排行 <span style="font-family:var(--mono);font-size:.85em">fct_ga_story</span>。<span class="note">非工程師要開的「檢視者」授權，同樣走 Cloudflare Pages 上的自助頁，不用敲工程師。</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">25h<span class="res"> / 49h</span></span><span class="unit">新鮮度 warn / error</span></div>
+        <div>
+          <h3>沉默失敗偵測</h3>
+          <p>資料新鮮度監控（dbt source freshness，25 小時警示、49 小時報錯），加上 Cloud Monitoring 對 job 失敗 log 做 regex 比對發出警示，讓上游 API 壞掉或某個 job crash 不會默默壞掉好幾天才被人發現。</p>
         </div>
       </div>
 
@@ -296,7 +311,7 @@
   <section>
     <div class="sec-label"><span class="eyebrow">Side Projects</span><span class="zh">側專案</span></div>
     <div class="rows">
-      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>台灣實坪交易資料庫</b> — dbt-duckdb / FastAPI / FastMCP，提供清理後的單價資料。<span class="sub">探索資料授權、API・MCP 訂閱等變現方向。</span></div></div>
+      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>台灣實坪交易資料庫</b> — dbt-duckdb 清理實價登錄，REST（FastAPI）與 MCP（FastMCP）共用同一查詢核心對外服務，含 API key／用量額度、自助申請與 OAuth 後台、Cloudflare 邊緣保護；另有一個 LightGBM 估價模型（OOT MdAPE ~12%）待需求啟用。已上線 <a href="https://api.realping.tw">api</a>／<a href="https://mcp.realping.tw">mcp</a>.realping.tw。<span class="sub">探索資料授權與 API・MCP 訂閱變現。</span></div></div>
     </div>
   </section>
 
