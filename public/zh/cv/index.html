@@ -237,7 +237,7 @@
         <div class="metric"><span class="fig">$300 <span class="res">→ &lt;$1</span></span><span class="unit">月成本 · 1/300</span></div>
         <div>
           <h3>接手 pipeline 重寫</h3>
-          <p>接手一條跑在 Composer + Apps Script 上的營收 pipeline，整套換成 BigQuery External Tables + Scheduled Queries。產出一樣、SLA 一樣，月支出降到原本的 1/300。<span class="note">之後一直在套用的心得：多數「pipeline」其實不需要 orchestrator，需要的只是一個會照排程跑的 query。</span></p>
+          <p>接手一條跑在 Composer + Apps Script 上的營收資料管線，整套換成 BigQuery External Tables + Scheduled Queries。產出一樣、更新時效一樣，月支出降到原本的 1/300。<span class="note">之後一直在套用的心得：多數人口中的「資料管線」其實不需要一套笨重的排程系統，需要的只是一段會照排程自己跑的 SQL 查詢。</span></p>
         </div>
       </div>
 
@@ -245,7 +245,7 @@
         <div class="metric"><span class="fig">15<span class="res"> jobs</span></span><span class="unit">Cloud Run · 排程化</span></div>
         <div>
           <h3>多平台社群 ingestion</h3>
-          <p>Facebook、Instagram、Threads、YouTube 四個平台端到端存入 BigQuery — 15 個 Cloud Run Jobs 搭配錯開時間的排程觸發。raw 層 append-only 保留每次抓取的完整歷史（不只最新狀態），再用 dbt 建模（staging 去重、marts 寬表）。供編輯與行銷每天打開的 Looker Studio dashboard。</p>
+          <p>把 Facebook、Instagram、Threads、YouTube 四個平台的數據，從抓取到入庫一條龍存進 BigQuery — 15 個 Cloud Run Job、各自錯開時間排程。原始資料只新增、不覆蓋，保留每次抓取的完整歷史（不只最新狀態），再用 dbt 整理成乾淨、可直接查詢的分析表，最後接成編輯與行銷每天打開的 Looker Studio 儀表板。</p>
         </div>
       </div>
 
@@ -253,7 +253,7 @@
         <div class="metric"><span class="fig">60d<span class="res"> · 0 人工</span></span><span class="unit">Token 自動更新</span></div>
         <div>
           <h3>Threads OAuth 2.0 全自動化</h3>
-          <p>雙帳號 OAuth、涵蓋 8 種權限範圍，再用每週執行的 Cloud Run Job 透過 Secret Manager 自動更新 60 天 token。<span class="note">把「token 快過期就 alert on-call、再請對方手動重新授權」升級成完全自動、不需要有人介入。</span></p>
+          <p>雙帳號 OAuth 授權、涵蓋 8 種權限，再用每週自動執行的 Cloud Run Job，透過 Secret Manager 安全更新 60 天效期的存取金鑰（token）。<span class="note">把原本「金鑰快過期就通知值班、再請人手動重新授權」的流程，升級成完全自動、不需要任何人介入。</span></p>
         </div>
       </div>
 
@@ -261,7 +261,7 @@
         <div class="metric"><span class="fig">0<span class="res"> backend</span></span><span class="unit">純前端 · 免維運</span></div>
         <div>
           <h3>給非工程師的自助 OAuth 工具</h3>
-          <p>Cloudflare Pages 上的純前端授權工具。社群編輯可以自己跑完整個 API 授權流程，不用開 ticket、不用敲工程師。純靜態 hosting、沒有 backend、幾乎不用維護。</p>
+          <p>架在 Cloudflare Pages 上的自助授權工具。社群編輯可以自己完成整個 API 授權流程，不用開單、不用找工程師。純靜態網頁、沒有後端伺服器，幾乎不用維護。</p>
         </div>
       </div>
 
@@ -269,7 +269,7 @@
         <div class="metric"><span class="fig">Gemini<span class="res"> 2.5</span></span><span class="unit">BigQuery AI.GENERATE · 已上線</span></div>
         <div>
           <h3>LLM-augmented data pipelines</h3>
-          <p>在 BigQuery 內直接用 Gemini 2.5 Flash（<span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span>），不另外架推論服務。一是把約 3.3 萬則留言與 3,200 篇貼文做情緒與主題分類，落成 <span style="font-family:var(--mono);font-size:.85em">fct_comments_sentiment</span>、<span style="font-family:var(--mono);font-size:.85em">fct_post_topics</span> 兩個 marts、只對新資料增量跑；主題標籤對齊新聞台的版面分類（而非一個會吃掉七成資料的籠統「財經」），再用 pattern 正規化吸收模型雜訊。二是 dashboard 上的「AI 建議」——只根據當期數字生成輿情摘要、負評焦點與給編輯部的下一步，用嚴格的「不得編造」規則綁在真實統計上。<span class="note">兩者共用一個以 prompt hash 為 key 的 ai_cache，把按需推論成本壓成與使用人數無關的固定低值。</span></p>
+          <p>在 BigQuery 裡直接呼叫 Gemini 2.5 Flash（用內建的 <span style="font-family:var(--mono);font-size:.85em">AI.GENERATE</span> 函式），不必另外架一套 AI 推論服務。做兩件事：一是把約 3.3 萬則留言與 3,200 篇貼文自動分類情緒與主題，整理成兩張可直接查詢的分析表，而且只對新資料計算（不重跑舊的、省成本）；主題標籤對齊新聞台自家的版面分類，而不是全擠進籠統的「財經」（否則七成資料會落在同一類），再做一層清洗、吸收模型輸出的雜訊。二是儀表板上的「AI 建議」：只根據當期數字，自動生成輿情摘要、負評焦點、以及給編輯部的下一步，並用嚴格的「不得編造」規則把它綁在真實數據上。<span class="note">兩者共用一層快取，讓 AI 的呼叫成本固定在低點、不隨使用人數增加。</span></p>
         </div>
       </div>
 
@@ -277,7 +277,7 @@
         <div class="metric"><span class="fig">4<span class="res"> jobs</span></span><span class="unit">GA4 Data API · 已上線</span></div>
         <div>
           <h3>GA4 網站分析 ingestion</h3>
-          <p>透過 GA4 Data API 把集團官網與 App 的流量接進平台 — 4 個 Cloud Run Jobs 加上文章排行 <span style="font-family:var(--mono);font-size:.85em">fct_ga_story</span>。<span class="note">非工程師要開的「檢視者」授權，同樣走 Cloudflare Pages 上的自助頁，不用敲工程師。</span></p>
+          <p>透過 GA4 Data API 把集團官網與 App 的流量接進平台 — 4 個 Cloud Run Job，並做出一張文章流量排行表。<span class="note">非工程師要開的「檢視者」權限，一樣走 Cloudflare Pages 上的自助頁，不用找工程師。</span></p>
         </div>
       </div>
 
@@ -285,7 +285,7 @@
         <div class="metric"><span class="fig">25h<span class="res"> / 49h</span></span><span class="unit">新鮮度 warn / error</span></div>
         <div>
           <h3>沉默失敗偵測</h3>
-          <p>資料新鮮度監控（dbt source freshness，25 小時警示、49 小時報錯），加上 Cloud Monitoring 對 job 失敗 log 做 regex 比對發出警示，讓上游 API 壞掉或某個 job crash 不會默默壞掉好幾天才被人發現。</p>
+          <p>監控資料的新鮮度（dbt source freshness：超過 25 小時沒更新就警示、49 小時就報錯），再加上 Cloud Monitoring 自動掃描工作失敗的紀錄並發出通知。讓上游 API 壞掉、或某個工作中途掛掉，不會默默壞好幾天才被人發現。</p>
         </div>
       </div>
 
@@ -293,7 +293,7 @@
         <div class="metric"><span class="fig">+28<span class="res"> / −1</span></span><span class="unit">Diff · merged</span></div>
         <div>
           <h3>openclaw gateway deadlock 修復<span class="tag">OSS · 2026-05</span></h3>
-          <p>找出 SIGUSR1 listener 與 dynamic import 之間的 deadlock — 套件就地升級後 gateway 永遠無法重啟，悄悄壞掉六天。用 production log 與 patched build 上的 live <span style="font-family:var(--mono);font-size:.85em">kill -USR1</span> 重現，送出一個外科手術式的小修補（<a href="https://github.com/openclaw/openclaw/pull/84890">PR #84890</a>，已合併）。</p>
+          <p>找出一個讓 gateway 在套件升級後永遠無法重啟的死結（deadlock，發生在 SIGUSR1 listener 與 dynamic import 之間），它悄悄壞掉了六天。用 production log 加上實機重現確認，送出一個只動幾行的精準修補（<a href="https://github.com/openclaw/openclaw/pull/84890">PR #84890</a>，已合併）。</p>
         </div>
       </div>
 
@@ -303,15 +303,15 @@
   <section>
     <div class="sec-label"><span class="eyebrow">In Flight</span><span class="zh">正在做</span></div>
     <div class="rows">
-      <div class="row"><div class="k">編輯台語意搜尋</div><div class="v"><b>歷史文章語意檢索</b> — 評估 BigQuery Vector Search 與 self-host Elasticsearch 兩條路，讓編輯對歷史文章做語意搜尋。</div></div>
-      <div class="row"><div class="k">遷移收尾</div><div class="v"><b>下線舊的工作流程編排</b> — 新架構已出數，正把最後一條營收 pipeline 從舊的 Composer DAG / Apps Script 完全下線。</div></div>
+      <div class="row"><div class="k">編輯台語意搜尋</div><div class="v"><b>用「意思」搜尋歷史文章</b> — 讓編輯不必靠關鍵字、改用語意檢索歷史文章；正評估 BigQuery Vector Search 與自架 Elasticsearch 兩條路。</div></div>
+      <div class="row"><div class="k">遷移收尾</div><div class="v"><b>下線舊的排程系統</b> — 新架構已開始產出數據，正把最後一條營收資料管線從舊的 Composer / Apps Script 完全退役。</div></div>
     </div>
   </section>
 
   <section>
     <div class="sec-label"><span class="eyebrow">Side Projects</span><span class="zh">側專案</span></div>
     <div class="rows">
-      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>台灣實坪交易資料庫</b> — dbt-duckdb 清理實價登錄，REST（FastAPI）與 MCP（FastMCP）共用同一查詢核心對外服務，含 API key／用量額度、自助申請與 OAuth 後台、Cloudflare 邊緣保護；另有一個 LightGBM 估價模型（OOT MdAPE ~12%）待需求啟用。已上線 <a href="https://api.realping.tw">api</a>／<a href="https://mcp.realping.tw">mcp</a>.realping.tw。<span class="sub">探索資料授權與 API・MCP 訂閱變現。</span></div></div>
+      <div class="row"><div class="k"><a href="https://realping.tw">realping.tw</a></div><div class="v"><b>台灣實坪交易資料庫</b> — 用 dbt-duckdb 清理政府的實價登錄資料，再用同一套查詢核心同時提供 REST（FastAPI）與 MCP（FastMCP）兩種介面對外服務；含 API 金鑰與用量額度、自助申請、OAuth 會員後台、Cloudflare 邊緣防護。另外訓練了一個房價估價模型（LightGBM，誤差中位數約 12%），先做好、待有需求再開。已上線 <a href="https://api.realping.tw">api</a>／<a href="https://mcp.realping.tw">mcp</a>.realping.tw。<span class="sub">探索資料授權與 API・MCP 訂閱變現。</span></div></div>
     </div>
   </section>
 
