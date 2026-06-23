@@ -15,6 +15,38 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    slug: "null-not-zero",
+    date: "2026-06-23",
+    en: {
+      title: "The fake zero: when a missing value must be NULL, not 0",
+      description:
+        "An Instagram analytics chart flatlined to zero while the follower count kept climbing. The bug wasn't missing data — it was a fake 0 written where NULL belonged.",
+      tag: "Postmortem · Data Engineering",
+    },
+    zh: {
+      title: "假的零：當缺值該存 NULL、不該存 0",
+      description:
+        "一張 IG 分析圖在粉絲數持續上升時卻歸零躺平。問題不是沒資料——是把該存 NULL 的地方，存成了假的 0。",
+      tag: "Postmortem · 資料工程",
+    },
+  },
+  {
+    slug: "llm-in-the-warehouse",
+    date: "2026-06-18",
+    en: {
+      title: "Running an LLM in BigQuery without the bill scaling with users",
+      description:
+        "Two features in my pipeline call Gemini through BigQuery AI.GENERATE — a batch classifier and an on-demand dashboard button. One of them quietly scales with headcount. Here's how I capped both.",
+      tag: "Cost discipline · LLM",
+    },
+    zh: {
+      title: "把 LLM 跑在 BigQuery，又不讓帳單隨使用者膨脹",
+      description:
+        "我 pipeline 裡有兩個功能透過 BigQuery AI.GENERATE 呼叫 Gemini——一個批次分類器、一個 dashboard 上即點即用的按鈕。其中一個會悄悄隨人數膨脹。這是我把兩個都壓平的方法。",
+      tag: "成本紀律 · LLM",
+    },
+  },
+  {
     slug: "from-n8n-zeabur-to-openclaw-local",
     date: "2026-06-10",
     en: {

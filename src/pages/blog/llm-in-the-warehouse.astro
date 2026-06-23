@@ -1,0 +1,241 @@
+---
+import BlogPost from "../../layouts/BlogPost.astro";
+import StatRow from "../../components/blog/StatRow.astro";
+import Callout from "../../components/blog/Callout.astro";
+import Lesson from "../../components/blog/Lesson.astro";
+import CodeBlock from "../../components/blog/CodeBlock.astro";
+import { posts } from "../../data/posts";
+
+const post = posts.find((p) => p.slug === "llm-in-the-warehouse")!;
+const loc = post.en;
+---
+
+<BlogPost
+  lang="en"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[{ text: "myps6415" }]}
+>
+  <StatRow
+    stats={[
+      { value: "$72 → $1", label: "Monthly on-demand AI cost" },
+      { value: "$0", label: "Cost of re-running the batch job" },
+      { value: "1×/day", label: "Generations per button, any # of users" },
+    ]}
+  />
+
+  <h2>Background</h2>
+
+  <p>
+    I run a social-analytics pipeline for a media group, and two parts of it
+    use an LLM. The first is a batch classifier: every post and comment we pull
+    from Facebook, Instagram, Threads and YouTube gets a sentiment label and a
+    topic label, computed in dbt and queried like any other table. The second
+    is interactive — a few "AI take" buttons on the Streamlit dashboard that
+    summarize the day's negative comments, or the week's chatter, on demand.
+  </p>
+
+  <p>
+    Both call Gemini the same way: through BigQuery's <code>AI.GENERATE</code>,
+    inline in SQL. No remote model to register, no separate inference service —
+    the model is just a function you call in a query. That convenience is also
+    how I nearly walked into a bill that grows with my user count.
+  </p>
+
+  <h2>The day it cost $20</h2>
+
+  <p>
+    During the build-out, one day's Vertex AI charge came in around{" "}
+    <strong>$20</strong> when every other day was near zero. Twenty dollars is
+    not a crisis, but a number that jumps for no reason I can immediately name
+    is worth chasing. It split cleanly into the two features — and the two have
+    completely different cost shapes. One is bounded and basically free to keep
+    running. The other grows every time another person opens the dashboard.
+  </p>
+
+  <h2>Why AI.GENERATE in the first place</h2>
+
+  <p>
+    Putting the classifier in the warehouse means the labels live next to the
+    data. Analysts query <code>fct_post_topics</code> and{" "}
+    <code>fct_comments_sentiment</code> directly; no Python service to deploy or
+    babysit. The model call is just SQL:
+  </p>
+
+  <CodeBlock label="dbt model: fct_post_topics (trimmed, prompt genericized)" lang="sql">
+{`select
+  post_id,
+  trim(AI.GENERATE(
+    concat(
+      '你是財經媒體的內容分類員。把以下貼文分到一個主題，只回下列其中一個中文詞：',
+      '證券／金融／科技／產業／房市／國際／兩岸／政經／理財／生活／其他。貼文：',
+      substr(post_text, 0, 600)
+    ),
+    endpoint => '{{ ai_endpoint() }}'
+  ).result) as raw_topic
+from to_classify`}
+  </CodeBlock>
+
+  <p>
+    Two small things in there earned their keep. The labels aren't generic
+    sentiment buckets — they're the beats a financial newsroom actually runs
+    (securities, banking, tech, property, cross-strait…). I tried a generic
+    "finance / not-finance" cut first and ~70% of posts landed in one bucket
+    with no signal. And the text is capped at 600 characters: sentiment and
+    topic don't need the whole body, and the cap keeps the token cost honest.
+  </p>
+
+  <h2>The gotcha that cost an afternoon</h2>
+
+  <p>
+    The endpoint has to be the fully-qualified <code>locations/global</code>{" "}
+    path. Pass the short model name and BigQuery resolves it against the
+    dataset's own region — <code>asia-east1</code> in my case — where that
+    publisher model doesn't exist, and you get a 404 with nothing useful in it.
+    I centralized it in one macro so a model bump is a one-line change:
+  </p>
+
+  <CodeBlock label="macros/ai_endpoint.sql" lang="sql">
+{`{% macro ai_endpoint(model='gemini-2.5-flash') %}
+{{ return('https://aiplatform.googleapis.com/v1/projects/' ~ target.project
+   ~ '/locations/global/publishers/google/models/' ~ model) }}
+{% endmacro %}`}
+  </CodeBlock>
+
+  <h2>Cost shape #1: the batch classifier bounds itself</h2>
+
+  <p>
+    A post's topic doesn't change after it's published, and a comment's
+    sentiment doesn't either. So there's no reason to re-classify anything I've
+    already done. The models are <code>incremental</code>, and the only rows
+    that reach the LLM are the ones with no label yet:
+  </p>
+
+  <CodeBlock label="only classify rows that have never been classified" lang="sql">
+{`to_classify as (
+  select * from posts
+  {% if is_incremental() %}
+  where post_id not in (select post_id from {{ this }})
+  {% endif %}
+)`}
+  </CodeBlock>
+
+  <p>
+    That makes the steady-state cost tiny. A daily run only pays for that day's
+    new posts and comments; a re-run with nothing new costs nothing, because
+    zero rows reach <code>AI.GENERATE</code>. The only large bill is the
+    first-ever build, which classifies the whole backlog once — about 66k
+    comments came to roughly <strong>$0.30</strong>. After that, the job is
+    boring and cheap, which is exactly what you want a daily job to be.
+  </p>
+
+  <h2>Cost shape #2: the dashboard button does not</h2>
+
+  <p>
+    The interactive buttons are the opposite. Each click is one Gemini call. So
+    the bill scales with how many people use the dashboard times how often they
+    click — and the whole point of building it was to get the whole group
+    using it. Back-of-envelope, 100 people clicking 10 times a day is around{" "}
+    <strong>$72/month and rising</strong> as more people log in. That's the
+    shape behind the $20 day, and left alone it only gets worse.
+  </p>
+
+  <Callout variant="warn" title="The cost that scales with success">
+    A batch job's cost is bounded by your data. An interactive feature's cost
+    is bounded by your users — so the better it does, the more it costs. If a
+    feature gets cheaper to run when nobody uses it, that's the one to watch.
+  </Callout>
+
+  <h2>The fix: cache by content, not by user</h2>
+
+  <p>
+    Here's the property that makes this cheap: each button's prompt is built
+    from that day's data. Every user who clicks "summarize today's negative
+    comments" generates the <em>exact same prompt string</em>, so they should
+    all get the exact same answer. There's no reason to pay for it more than
+    once a day.
+  </p>
+
+  <p>
+    So I hash the prompt and cache the result. First click of the day for a
+    given prompt calls Gemini and writes the answer to a BigQuery table keyed
+    by <code>SHA256(prompt)</code>; everyone after that reads the cached row.
+    Two layers, because the dashboard runs on Cloud Run and can have more than
+    one instance:
+  </p>
+
+  <CodeBlock label="reporting/dashboards/ui.py — ai_generate (trimmed)" lang="python">
+{`@st.cache_data(ttl=3600)                    # L1: in-memory, per Cloud Run instance
+def ai_generate(prompt: str) -> str:
+    h = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+    cached = ai_cache_lookup(h)             # L2: BigQuery, cross-instance, persistent
+    if cached is not None:
+        return cached
+
+    result = run_gemini(prompt)             # AI.GENERATE(@p, endpoint => "…global…")
+    ai_cache_insert(h, result)              # write-back for the next reader
+    return result`}
+  </CodeBlock>
+
+  <p>
+    Now the cost is decoupled from the user count entirely. It's bounded by the
+    number of buttons times the date ranges they can be run over times the days
+    in the period — on the order of <strong>$1/month</strong>, whether two
+    people use the dashboard or two hundred. When the underlying data changes
+    the next day, the prompt changes, the hash changes, and the cache naturally
+    misses and regenerates. No invalidation logic to get wrong.
+  </p>
+
+  <h2>Three details that make it safe to leave alone</h2>
+
+  <p>
+    <strong>The cache can't break the page.</strong> Both the read and the
+    write are wrapped so any failure — table missing, permissions, a streaming
+    hiccup — falls through to a normal generation or is simply ignored. Caching
+    is a side path; a broken side path must never take down the main one.
+  </p>
+
+  <p>
+    <strong>The prompt is a query parameter, not string-concatenated.</strong>{" "}
+    Only the endpoint is a literal (<code>AI.GENERATE</code> requires that); the
+    prompt itself rides in as a bound <code>@p</code> parameter, so
+    user-influenced text can't rewrite the query.
+  </p>
+
+  <p>
+    <strong>Old rows get swept.</strong> A monthly scheduled query deletes cache
+    rows older than 90 days — they'll never be hit again (the key is a content
+    hash), so this is purely housekeeping. Deleting only old rows also sidesteps
+    BigQuery's rule that you can't DML a streaming-inserted row for ~30 minutes
+    after it lands.
+  </p>
+
+  <h2>Takeaways</h2>
+
+  <Lesson label="Know which cost shape you're shipping">
+    Running an LLM over your data has two cost shapes. Batch work is bounded by
+    how much new data you have — make it incremental and it stays cheap on its
+    own. Interactive work is bounded by users times clicks, so it grows with
+    adoption. Before you ship a feature, say out loud which one it is; they need
+    completely different defenses.
+  </Lesson>
+
+  <Lesson label="Cache by the input, not the user">
+    If the same input always produces the same output, the input is your cache
+    key. Hashing the prompt meant one generation served everyone who asked the
+    same question that day, and the bill stopped tracking my user count. It also
+    gets invalidation for free: when the data changes, the prompt changes, the
+    hash changes, the cache misses.
+  </Lesson>
+
+  <Lesson label="Side paths fail quietly">
+    Caching and logging sit beside the real work, not in front of it. A cache
+    that's down should cost you a little money, never a rendered page. Wrap the
+    side path, swallow its errors, and let the main path carry on as if the
+    cache simply wasn't there.
+  </Lesson>
+</BlogPost>

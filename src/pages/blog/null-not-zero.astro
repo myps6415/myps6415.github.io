@@ -1,0 +1,257 @@
+---
+import BlogPost from "../../layouts/BlogPost.astro";
+import StatRow from "../../components/blog/StatRow.astro";
+import Callout from "../../components/blog/Callout.astro";
+import DiffBlock from "../../components/blog/DiffBlock.astro";
+import Lesson from "../../components/blog/Lesson.astro";
+import CodeBlock from "../../components/blog/CodeBlock.astro";
+import { posts } from "../../data/posts";
+
+const post = posts.find((p) => p.slug === "null-not-zero")!;
+const loc = post.en;
+---
+
+<BlogPost
+  lang="en"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[{ text: "myps6415" }]}
+>
+  <StatRow
+    stats={[
+      { value: "0 → NULL", label: "The actual fix" },
+      { value: "~D-10", label: "Upstream finalization lag" },
+      { value: "+32 vs 0", label: "Followers grew, net-follows flat" },
+    ]}
+  />
+
+  <h2>Background</h2>
+
+  <p>
+    I run the social-analytics pipeline for a media group: Facebook,
+    Instagram, Threads and YouTube pulled into BigQuery every morning, then
+    modeled with dbt and surfaced on a Streamlit dashboard the editorial and
+    marketing teams actually open. One of the Instagram charts is{" "}
+    <strong>net daily follows</strong> — new follows minus unfollows, a green
+    bar on a net-positive day, red on a net-negative one.
+  </p>
+
+  <p>
+    One afternoon someone asked why that chart looked dead. From around{" "}
+    <code>06-12</code> onward it was just flat — every bar sitting exactly on
+    zero, as if the account had stopped gaining and losing followers entirely.
+  </p>
+
+  <h2>The tell</h2>
+
+  <p>
+    My first guess was the boring one — no recent data. A flat tail usually
+    means exactly that. It didn't hold up, though, because over the same
+    stretch the account's <strong>follower count was up 32</strong>. If the
+    total was climbing, the daily net couldn't be zero every day; the net
+    change is what moves the total in the first place.
+  </p>
+
+  <p>
+    One quiet day reading zero, fine. Two weeks of perfectly flat zeros sitting
+    next to a rising follower count is not a quiet account — it's a bug. So I
+    went looking for it.
+  </p>
+
+  <Callout variant="warn" title="Too clean to be real">
+    Real engagement data is noisy. When a metric goes dead flat and disagrees
+    with another number you trust, the flat value usually isn't a measurement
+    at all — it's some default that leaked in where the real value should be.
+  </Callout>
+
+  <h2>Root cause</h2>
+
+  <p>
+    Instagram's <code>follows_and_unfollows</code> insight doesn't return a
+    plain number. You request it with <code>breakdown=follow_type</code> and it
+    comes back split into <code>FOLLOWER</code> (new follows) and{" "}
+    <code>NON_FOLLOWER</code> (unfollows); the net value is{" "}
+    <code>FOLLOWER − NON_FOLLOWER</code>. So far, fine.
+  </p>
+
+  <p>
+    What changed — Meta rolled this out around June 2026 — is{" "}
+    <strong>when those breakdown results finalize</strong>. For roughly the
+    last <strong>ten days</strong>, the API returns a <em>shell</em>: the{" "}
+    <code>breakdowns</code> structure is present, but the <code>results</code>{" "}
+    array inside it is missing entirely. The data simply isn't computed yet.
+  </p>
+
+  <CodeBlock label="Instagram follows_and_unfollows — two response shapes" lang="json">
+{`// finalized day (older than ~D-10): results are present
+{ "name": "follows_and_unfollows",
+  "total_value": { "breakdowns": [ { "dimension_keys": ["follow_type"],
+    "results": [ { "dimension_values": ["FOLLOWER"],     "value": 5 },
+                 { "dimension_values": ["NON_FOLLOWER"], "value": 2 } ] } ] } }
+
+// recent day (within ~D-10): structure present, results ABSENT
+{ "name": "follows_and_unfollows",
+  "total_value": { "breakdowns": [ { "dimension_keys": ["follow_type"] } ] } }`}
+  </CodeBlock>
+
+  <p>
+    My normalizer handled the first shape and walked straight into the second.
+    It read <code>results</code> with a default of empty list, built an empty
+    lookup, and did the subtraction anyway:
+  </p>
+
+  <CodeBlock label="what the old code actually computed" lang="python">
+{`results = tv["breakdowns"][0].get("results", [])   # absent → []
+breakdown_map = {r["dimension_values"][0]: r["value"] for r in results}  # → {}
+value = breakdown_map.get("FOLLOWER", 0) - breakdown_map.get("NON_FOLLOWER", 0)
+#       0  -  0  =  0   ← a number we never measured`}
+  </CodeBlock>
+
+  <p>
+    So every not-yet-final day came back as <code>0</code> — not as missing
+    data, but as an actual measured value. The chart can't tell that apart from
+    a genuinely quiet day, so it drew a zero bar and moved on.
+  </p>
+
+  <h2>Why a fake 0 is worse than no data</h2>
+
+  <p>
+    Storing 0 here instead of NULL caused two separate problems. NULL would
+    have said "we don't know yet." The 0 said "we checked, and the answer was
+    zero" — a claim I couldn't actually stand behind. In an append-only
+    warehouse that small lie cost me twice.
+  </p>
+
+  <p>
+    <strong>It poisoned the chart.</strong> The dashboard can drop NULLs and
+    leave an honest gap at the tail. It can't drop a 0 — a 0 is a perfectly
+    valid measurement, so it renders, and you can't tell it apart from a real
+    no-activity day.
+  </p>
+
+  <p>
+    <strong>It froze itself in.</strong> My raw tables are append-only, and the
+    dbt staging layer keeps the latest row per day with{" "}
+    <code>QUALIFY ROW_NUMBER() OVER (… ORDER BY ingested_at DESC) = 1</code>.
+    That's meant to be self-healing: re-fetch a day, the newer row wins, the
+    real value overwrites the placeholder. But only if you re-fetch it — and
+    this metric was being pulled in the same 7-day window as the fast ones,
+    while it doesn't finalize until ~D-10. By the time the real number existed
+    upstream, the day had already dropped out of the window and nothing was
+    asking for it again. The fake 0 was there to stay.
+  </p>
+
+  <h2>The fix</h2>
+
+  <p>
+    Two parts, because the bug had two halves. First, stop manufacturing the
+    zero — an absent or empty <code>results</code> means <em>not finalized</em>,
+    which is <code>NULL</code>, not <code>0 − 0</code>:
+  </p>
+
+  <DiffBlock
+    header="ingestion/instagram/fetch_insights.py — normalize_total_value"
+    lines={[
+      { kind: "ctx", text: "  if value is None and \"breakdowns\" in tv:" },
+      { kind: "del", text: "-     results = tv[\"breakdowns\"][0].get(\"results\", []) if tv.get(\"breakdowns\") else []" },
+      { kind: "del", text: "-     breakdown_map = {r[\"dimension_values\"][0]: r[\"value\"] for r in results}" },
+      { kind: "del", text: "-     value = breakdown_map.get(\"FOLLOWER\", 0) - breakdown_map.get(\"NON_FOLLOWER\", 0)" },
+      { kind: "add", text: "+     bd = tv[\"breakdowns\"][0] if tv.get(\"breakdowns\") else {}" },
+      { kind: "add", text: "+     results = bd.get(\"results\")" },
+      { kind: "add", text: "+     if results:" },
+      { kind: "add", text: "+         breakdown_map = {r[\"dimension_values\"][0]: r[\"value\"] for r in results}" },
+      { kind: "add", text: "+         value = breakdown_map.get(\"FOLLOWER\", 0) - breakdown_map.get(\"NON_FOLLOWER\", 0)" },
+      { kind: "add", text: "+     else:" },
+      { kind: "add", text: "+         value = None  # not finalized yet — store NULL, not a fake 0" },
+    ]}
+  />
+
+  <p>
+    Second, make the self-healing actually reach this metric. The re-fetch
+    window has to <em>outlast</em> the upstream finalization lag, or the NULL
+    freezes in exactly the way the 0 used to. So this one metric gets its own,
+    longer window:
+  </p>
+
+  <CodeBlock label="the window has to outlast the lag" lang="python">
+{`# fast-finalizing metrics (views, interactions, reach…): 7 days is plenty
+for date in last_n_days(days_back):            # days_back = 7
+    rows.append(normalize_total_value(fetch_total(date), slug, date))
+
+# follows_and_unfollows finalizes ~D-10, so re-fetch further back than that
+FOLLOWS_BACKFILL_DAYS = 14                      # 14 > 10, with margin
+for date in last_n_days(FOLLOWS_BACKFILL_DAYS):
+    rows.append(normalize_total_value(fetch_follows(date), slug, date))`}
+  </CodeBlock>
+
+  <p>
+    Now each recent day is written as NULL, then re-fetched on every subsequent
+    run while it's still inside the 14-day window. The day it finalizes
+    upstream (~D-10), the next run pulls the real number, the newer{" "}
+    <code>ingested_at</code> wins the dedup, and NULL → real value with no
+    manual backfill. After the one-time correction (06-14 / 06-15 recovered
+    their true values, 06-16 onward set to NULL instead of fake 0), the pipeline
+    heals the tail on its own from here.
+  </p>
+
+  <h2>Pinning it down with tests</h2>
+
+  <p>
+    The catch is that a real <code>0</code> still has to survive: an explicit{" "}
+    <code>FOLLOWER 0 / NON_FOLLOWER 0</code> day is genuine zero activity and
+    should stay 0, not turn into NULL. So the two new tests cover only the
+    unfinalized shapes, and the original real-zero test still covers the case on
+    the other side:
+  </p>
+
+  <ul>
+    <li>
+      <code>breakdowns</code> present but no <code>results</code> key → NULL
+    </li>
+    <li>
+      <code>results</code> present but an empty list → NULL
+    </li>
+    <li>
+      explicit <code>FOLLOWER 0 / NON_FOLLOWER 0</code> → still <code>0</code>{" "}
+      <em>(unchanged — real measured zero)</em>
+    </li>
+  </ul>
+
+  <p>176 tests pass. The dashboard caption now says the quiet part out loud:</p>
+
+  <Callout variant="info" title="Honest about the gap">
+    Net follows = new follows − unfollows. Instagram finalizes this metric
+    around D-10, so the last ~10 days fill in gradually and the end of the chart
+    may legitimately be blank. I'd rather show a short gap I can explain than a
+    zero I can't.
+  </Callout>
+
+  <h2>Takeaways</h2>
+
+  <Lesson label="NULL when you don't know yet">
+    Reach for NULL when the value hasn't arrived. A default like 0 feels
+    harmless, but it turns "no answer" into an answer, and everything downstream
+    — charts, averages, alerts — treats it as real. If you can't stand behind
+    the number, store nothing.
+  </Lesson>
+
+  <Lesson label="Self-healing only heals what you re-read">
+    Dedup-on-read makes an append-only pipeline self-correcting, but only for
+    the days you actually fetch again. Your re-fetch window is a promise about
+    how long you'll keep asking. If the source finalizes its data more slowly
+    than that window, you'll freeze the provisional value and never go back for
+    the real one. Size the window against how late the source settles, not
+    against what's convenient.
+  </Lesson>
+
+  <Lesson label="Cross-check beats schema checks">
+    Nothing alerted me — what caught this was two numbers disagreeing: net
+    follows flat while the follower total climbed. Checking a suspicious metric
+    against a related one you already trust is about the cheapest data-quality
+    test there is, and it catches things no schema or not-null constraint ever
+    will.
+  </Lesson>
+</BlogPost>

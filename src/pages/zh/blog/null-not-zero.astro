@@ -1,0 +1,224 @@
+---
+import BlogPost from "../../../layouts/BlogPost.astro";
+import StatRow from "../../../components/blog/StatRow.astro";
+import Callout from "../../../components/blog/Callout.astro";
+import DiffBlock from "../../../components/blog/DiffBlock.astro";
+import Lesson from "../../../components/blog/Lesson.astro";
+import CodeBlock from "../../../components/blog/CodeBlock.astro";
+import { posts } from "../../../data/posts";
+
+const post = posts.find((p) => p.slug === "null-not-zero")!;
+const loc = post.zh;
+---
+
+<BlogPost
+  lang="zh"
+  slug={post.slug}
+  title={loc.title}
+  description={loc.description}
+  tag={loc.tag}
+  date={post.date}
+  meta={[{ text: "myps6415" }]}
+>
+  <StatRow
+    stats={[
+      { value: "0 → NULL", label: "真正的修法" },
+      { value: "~D-10", label: "上游定稿延遲" },
+      { value: "+32 vs 0", label: "粉絲在漲、淨追蹤躺平" },
+    ]}
+  />
+
+  <h2>背景</h2>
+
+  <p>
+    我替一個媒體集團維護社群分析 pipeline：Facebook、Instagram、Threads、YouTube
+    每天早上拉進 BigQuery，用 dbt 建模，再呈現在編輯與行銷團隊真的會打開的
+    Streamlit dashboard 上。其中一張 IG 圖是<strong>每日淨追蹤</strong>——
+    新增追蹤減掉取消追蹤，淨增的日子畫綠柱、淨減畫紅柱。
+  </p>
+
+  <p>
+    某天下午有人問我那張圖怎麼像死掉了。從大約 <code>06-12</code> 之後就一路躺平——
+    每根柱子都剛好坐在零上，好像這個帳號突然完全不再增減粉絲了。
+  </p>
+
+  <h2>破綻</h2>
+
+  <p>
+    我第一個念頭是最無聊的那個——最近沒資料。圖表末端躺平通常就是這個原因。但這次說不通，
+    因為同一段期間這個帳號的<strong>粉絲數漲了 32</strong>。總量在往上爬，那每天的淨變化就不
+    可能天天是零——淨變化本來就是讓總量移動的東西。
+  </p>
+
+  <p>
+    單獨一天是零，還好。連續兩週完美躺平的零、旁邊還擺著一條在漲的粉絲線，這就不是安靜的
+    帳號，是 bug。於是我去把它找出來。
+  </p>
+
+  <Callout variant="warn" title="乾淨到不像真的">
+    真實的互動數據是有雜訊的。當一個指標整條躺平、又跟另一個你信任的數字打架時，那個躺平的
+    值通常根本不是量測結果，而是某個 default 漏進了該放真實值的位置。
+  </Callout>
+
+  <h2>根本原因</h2>
+
+  <p>
+    Instagram 的 <code>follows_and_unfollows</code> insight 不會直接回一個數字。
+    你要帶 <code>breakdown=follow_type</code> 去請求，它會拆成 <code>FOLLOWER</code>
+    （新增追蹤）和 <code>NON_FOLLOWER</code>（取消追蹤），淨值是
+    <code>FOLLOWER − NON_FOLLOWER</code>。到這裡都沒問題。
+  </p>
+
+  <p>
+    變的是——Meta 大約在 2026 年 6 月開始推這個行為——<strong>這些 breakdown
+    結果什麼時候定稿</strong>。最近大約<strong>十天</strong>，API 會回一個<em>空殼</em>：
+    <code>breakdowns</code> 結構在，但裡面的 <code>results</code> 陣列整個不見。
+    資料根本還沒算出來。
+  </p>
+
+  <CodeBlock label="Instagram follows_and_unfollows——兩種回應形狀" lang="json">
+{`// 已定稿的日子（早於 ~D-10）：results 有值
+{ "name": "follows_and_unfollows",
+  "total_value": { "breakdowns": [ { "dimension_keys": ["follow_type"],
+    "results": [ { "dimension_values": ["FOLLOWER"],     "value": 5 },
+                 { "dimension_values": ["NON_FOLLOWER"], "value": 2 } ] } ] } }
+
+// 近期的日子（~D-10 內）：結構在、results 不見了
+{ "name": "follows_and_unfollows",
+  "total_value": { "breakdowns": [ { "dimension_keys": ["follow_type"] } ] } }`}
+  </CodeBlock>
+
+  <p>
+    我的 normalizer 處理得了第一種形狀，然後直接走進第二種。它用「預設空 list」去讀
+    <code>results</code>，建了一個空的對照表，然後照樣做減法：
+  </p>
+
+  <CodeBlock label="舊邏輯實際算出來的東西" lang="python">
+{`results = tv["breakdowns"][0].get("results", [])   # 不見 → []
+breakdown_map = {r["dimension_values"][0]: r["value"] for r in results}  # → {}
+value = breakdown_map.get("FOLLOWER", 0) - breakdown_map.get("NON_FOLLOWER", 0)
+#       0  -  0  =  0   ← 一個我們從來沒量到的數字`}
+  </CodeBlock>
+
+  <p>
+    於是每個「還沒定稿」的日子都回了一個 <code>0</code>——不是缺資料，是一個實際量到的值。
+    圖表分不出它跟「真的很安靜的一天」有什麼差別，就畫了一根零柱，然後翻頁。
+  </p>
+
+  <h2>為什麼假的 0 比沒資料更糟</h2>
+
+  <p>
+    這裡存 0 而不存 NULL，惹出兩個各自獨立的麻煩。NULL 會說「這個我們還不知道」；那個 0
+    說的是「我們查了，答案是零」——而我其實沒辦法替這句話背書。在 append-only 的倉儲裡，這個
+    小謊讓我付了兩次代價。
+  </p>
+
+  <p>
+    <strong>它毒害圖表。</strong>dashboard 可以把 NULL 丟掉、在末端留一個誠實的缺口；但丟不掉
+    0——0 是個完全有效的量測值，所以會被畫出來，跟真正「沒有活動」的一天分不出來。
+  </p>
+
+  <p>
+    <strong>它把自己冰封起來。</strong>我的 raw table 是 append-only，dbt staging 層用
+    <code>QUALIFY ROW_NUMBER() OVER (… ORDER BY ingested_at DESC) = 1</code>
+    取每天最新一列。這本來是會自我修復的：重抓某一天，較新的列勝出，真值蓋過佔位值。但前提是
+    你真的有重抓它——而這個指標當時跟那些定稿快的指標共用同一個 7 天窗口，它卻要到 ~D-10 才
+    定稿。等上游有真值的時候，那一天早就掉出窗口、再也沒有人去問它了。假的 0 就這樣留下來了。
+  </p>
+
+  <h2>修法</h2>
+
+  <p>
+    分兩部分，因為 bug 有兩半。第一，別再製造那個零——缺少或為空的 <code>results</code>
+    代表的是<em>還沒定稿</em>，也就是 <code>NULL</code>，不是 <code>0 − 0</code>：
+  </p>
+
+  <DiffBlock
+    header="ingestion/instagram/fetch_insights.py — normalize_total_value"
+    lines={[
+      { kind: "ctx", text: "  if value is None and \"breakdowns\" in tv:" },
+      { kind: "del", text: "-     results = tv[\"breakdowns\"][0].get(\"results\", []) if tv.get(\"breakdowns\") else []" },
+      { kind: "del", text: "-     breakdown_map = {r[\"dimension_values\"][0]: r[\"value\"] for r in results}" },
+      { kind: "del", text: "-     value = breakdown_map.get(\"FOLLOWER\", 0) - breakdown_map.get(\"NON_FOLLOWER\", 0)" },
+      { kind: "add", text: "+     bd = tv[\"breakdowns\"][0] if tv.get(\"breakdowns\") else {}" },
+      { kind: "add", text: "+     results = bd.get(\"results\")" },
+      { kind: "add", text: "+     if results:" },
+      { kind: "add", text: "+         breakdown_map = {r[\"dimension_values\"][0]: r[\"value\"] for r in results}" },
+      { kind: "add", text: "+         value = breakdown_map.get(\"FOLLOWER\", 0) - breakdown_map.get(\"NON_FOLLOWER\", 0)" },
+      { kind: "add", text: "+     else:" },
+      { kind: "add", text: "+         value = None  # 尚未定稿——存 NULL，不存假的 0" },
+    ]}
+  />
+
+  <p>
+    第二，讓自我修復真的搆得到這個指標。重抓窗口必須<em>撐得比</em>上游定稿延遲還久，
+    否則 NULL 會用跟先前那個 0 一模一樣的方式冰封。所以這一個指標拿到它自己、比較長的窗口：
+  </p>
+
+  <CodeBlock label="窗口必須撐得比延遲久" lang="python">
+{`# 定稿快的指標（views、互動、reach…）：7 天綽綽有餘
+for date in last_n_days(days_back):            # days_back = 7
+    rows.append(normalize_total_value(fetch_total(date), slug, date))
+
+# follows_and_unfollows 要 ~D-10 才定稿，所以重抓得拉到比它更前面
+FOLLOWS_BACKFILL_DAYS = 14                      # 14 > 10，留一點 margin
+for date in last_n_days(FOLLOWS_BACKFILL_DAYS):
+    rows.append(normalize_total_value(fetch_follows(date), slug, date))`}
+  </CodeBlock>
+
+  <p>
+    現在每個近期的日子先寫成 NULL，然後只要還在 14 天窗口內，每次跑都會被重抓。
+    等它在上游定稿那天（~D-10），下一次跑就拉到真實數字，較新的 <code>ingested_at</code>
+    在去重時勝出，NULL → 真值，不需要人工 backfill。一次性修正之後（06-14／06-15
+    補回它們的真值，06-16 之後改存 NULL 而非假 0），pipeline 從這裡開始會自己把末端補好。
+  </p>
+
+  <h2>用測試把它釘死</h2>
+
+  <p>
+    要小心的是：真正的 <code>0</code> 還是得活下來——一個明確
+    <code>FOLLOWER 0 / NON_FOLLOWER 0</code> 的日子是貨真價實的零活動，該維持 0、
+    不該變成 NULL。所以兩個新測試只蓋未定稿的形狀，原本那個「真實零」的測試繼續守另一邊：
+  </p>
+
+  <ul>
+    <li>
+      <code>breakdowns</code> 在、但沒有 <code>results</code> 鍵 → NULL
+    </li>
+    <li>
+      <code>results</code> 在、但是空 list → NULL
+    </li>
+    <li>
+      明確的 <code>FOLLOWER 0 / NON_FOLLOWER 0</code> → 仍是 <code>0</code>{" "}
+      <em>（不變——真實量到的零）</em>
+    </li>
+  </ul>
+
+  <p>176 個測試通過。dashboard 的 caption 現在也把潛台詞講出來：</p>
+
+  <Callout variant="info" title="對缺口誠實">
+    淨追蹤 = 新增追蹤 − 取消追蹤。Instagram 這個指標大約 D-10 才定稿，所以最近約 10 天
+    會陸續補上，圖表末端可能合理地是空的。我寧可秀一段我解釋得了的缺口，也不要秀一個我背書
+    不了的零。
+  </Callout>
+
+  <h2>這次學到什麼</h2>
+
+  <Lesson label="還不知道就存 NULL">
+    值還沒到，就用 NULL。像 0 這種 default 看起來人畜無害，但它把「沒有答案」變成了一個答案，
+    下游每一張圖、每一個平均、每一個 alert 都會當它是真的。如果你替那個數字背不了書，就什麼
+    都別存。
+  </Lesson>
+
+  <Lesson label="自我修復只修你重讀的">
+    Dedup-on-read 讓 append-only pipeline 能自我校正，但只校正你真的有再抓一次的日子。重抓
+    窗口是一個承諾：你會持續問多久。如果來源定稿的速度比你的窗口慢，你就會把暫定值冰封、再也
+    不會回頭拿真值。窗口要照來源多晚才定稿去抓，而不是照你方便。
+  </Lesson>
+
+  <Lesson label="交叉比對比 schema 檢查更管用">
+    沒有任何東西警示我——抓到這件事的是兩個數字兜不攏：淨追蹤躺平、粉絲總數卻在爬。拿一個
+    可疑指標去對一個你本來就信任的相關指標，大概是最便宜的資料品質測試，而且它抓得到任何
+    schema 或 not-null constraint 都抓不到的問題。
+  </Lesson>
+</BlogPost>
