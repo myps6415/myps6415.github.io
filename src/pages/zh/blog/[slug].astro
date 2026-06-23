@@ -1,0 +1,38 @@
+---
+// One route renders every Chinese post from the blog content collection.
+// Components are auto-injected so the .mdx author never writes imports.
+import { getCollection, render } from "astro:content";
+import BlogPost from "../../../layouts/BlogPost.astro";
+import StatRow from "../../../components/blog/StatRow.astro";
+import Callout from "../../../components/blog/Callout.astro";
+import DiffBlock from "../../../components/blog/DiffBlock.astro";
+import Flow from "../../../components/blog/Flow.astro";
+import Timeline from "../../../components/blog/Timeline.astro";
+import Lesson from "../../../components/blog/Lesson.astro";
+import CodeBlock from "../../../components/blog/CodeBlock.astro";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("blog", (e) => e.data.lang === "zh");
+  return entries.map((entry) => ({
+    params: { slug: entry.data.postSlug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const fm = entry.data;
+const components = { StatRow, Callout, DiffBlock, Flow, Timeline, Lesson, CodeBlock };
+---
+
+<BlogPost
+  lang="zh"
+  slug={fm.postSlug}
+  title={fm.title}
+  description={fm.description}
+  tag={fm.tag}
+  date={fm.date}
+  meta={fm.meta}
+>
+  <Content components={components} />
+</BlogPost>

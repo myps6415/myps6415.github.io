@@ -1,0 +1,277 @@
+---
+title: "Fixing a deadlock that kept OpenClaw Gateway from restarting after upgrade"
+description: "An ESM dynamic import, a signal handler, and a race condition — the gateway broke silently for six days."
+tag: "Postmortem · Open Source"
+date: "2026-05-22"
+postSlug: "openclaw-pr84890-postmortem"
+lang: "en"
+meta:
+  - text: myps6415
+  - text: "PR #84890 · openclaw/openclaw"
+    href: "https://github.com/openclaw/openclaw/pull/84890"
+---
+
+<StatRow
+  stats={[
+    { value: "374k", label: "GitHub Stars" },
+    { value: "+28/-1", label: "Diff size" },
+    { value: "P1", label: "Issue priority" },
+  ]}
+/>
+
+## Background
+
+OpenClaw is a 374k-star open source AI assistant framework. I use it
+day-to-day in my homelab to run a Telegram bot. Its gateway is a Node.js
+process running under macOS launchd, exposing a REST API that various
+agents call.
+
+One day I clicked the Update button in the control panel. The update
+reported `status=ok` and everything looked normal. A few hours
+later I noticed the gateway throwing errors:
+
+<CodeBlock label="production log · PID 30106">
+{`13:35:15  request handler failed: ERR_MODULE_NOT_FOUND
+          task-registry.maintenance-B-jsfe-3.js
+13:36:55  ERR_MODULE_NOT_FOUND  status.link-channel-BK3OG460.js
+14:16:52  ERR_MODULE_NOT_FOUND  task-registry.maintenance-B-jsfe-3.js
+14:16:54  [restart] request coalesced (already in-flight) reason=update.run
+14:31:31  ERR_MODULE_NOT_FOUND  hooks-DBKknpfW.js`}
+</CodeBlock>
+
+The stranger part: the last entry in `gateway-restart.log` was
+six days old. The gateway was running, but would never restart. The only
+workaround was to manually run `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`.
+
+## Root cause
+
+Reading the source, I traced it to a chicken-and-egg deadlock caused by
+three independent design choices stacking together.
+
+### Problem 1: the SIGUSR1 listener uses dynamic import
+
+<CodeBlock label="src/cli/gateway-cli/run-loop.ts (before)" lang="typescript">
+{`const onSigusr1 = () => {
+  gatewayLog.info("signal SIGUSR1 received");
+  void (async () => {
+    const {
+      markGatewaySigusr1RestartHandled,
+      ...
+    } = await loadGatewayLifecycleRuntimeModule();  // ← dynamic import
+    request("restart", "SIGUSR1", restartReason);
+    markGatewaySigusr1RestartHandled();              // ← never called
+  })();
+  // Note: no .catch() here
+};`}
+</CodeBlock>
+
+### Problem 2: chunk hashes rotate after an upgrade
+
+After `npm install -g openclaw@newer` swaps the package, the
+chunk filenames in `dist/` (each suffixed with a content hash)
+are all replaced. The old process is still running, but the paths it
+tries to import no longer exist. Result:
+
+<CodeBlock>
+{`loadGatewayLifecycleRuntimeModule()
+  → import("./lifecycle.runtime-OLDHASH.js")
+  → ERR_MODULE_NOT_FOUND  ← silent reject, no .catch()`}
+</CodeBlock>
+
+### Problem 3: the restart token gets stuck
+
+OpenClaw's restart system uses a pair of counters to prevent duplicate
+triggers:
+
+<CodeBlock label="src/infra/restart.ts" lang="typescript">
+{`function hasUnconsumedRestartSignal(): boolean {
+  return emittedRestartToken > consumedRestartToken;
+}
+
+export function scheduleGatewaySigusr1Restart(opts?) {
+  if (hasUnconsumedRestartSignal()) {
+    restartLog.warn(\`restart request coalesced (already in-flight)\`);
+    return { coalesced: true };  // ← bail out, do nothing
+  }
+  // ...
+}`}
+</CodeBlock>
+
+Because the SIGUSR1 handler rejects at `await loadGatewayLifecycleRuntimeModule()`, `markGatewaySigusr1RestartHandled()` — i.e. `consumedRestartToken++` — is never called. `emittedRestartToken` stays permanently above `consumedRestartToken`, and every subsequent restart request
+gets coalesced away.
+
+<Callout variant="err" title="Deadlock structure">
+  The SIGUSR1 listener needs to import the lifecycle module to handle a
+  restart → but the lifecycle module's chunk has been swapped out → import
+  fails → the token is never consumed → every subsequent restart request is
+  coalesced → the gateway never restarts.
+</Callout>
+
+## Timeline
+
+<Timeline
+  items={[
+    {
+      time: "2026-05-15",
+      text: "Last successful restart",
+      sub: "Final valid entry in gateway-restart.log",
+      status: "ok",
+    },
+    {
+      time: "2026-05-18 → 05-19",
+      text: "Version upgrade triggers the bug",
+      sub: "npm install -g openclaw@newer completes; chunk hashes rotate",
+      status: "bad",
+    },
+    {
+      time: "14:16:54",
+      text: "Gateway enters coalesce loop",
+      sub: "[restart] request coalesced (already in-flight) reason=update.run",
+      status: "bad",
+    },
+    {
+      time: "Six days running",
+      text: "ERR_MODULE_NOT_FOUND keeps firing",
+      sub: "PID 30106 uptime > 36h, process never replaced",
+      status: "bad",
+    },
+    {
+      time: "2026-05-21",
+      text: "Filed PR #84890",
+      sub: "Attached production log + live terminal proof",
+      status: "ok",
+    },
+    {
+      time: "2026-05-22",
+      text: "PR merged by vincentkoc",
+      sub: "+28/-1, single-file change",
+      status: "ok",
+    },
+  ]}
+/>
+
+## The fix
+
+The core idea is simple: **load the lifecycle module into the ESM cache before installing the
+signal listener**. After that, every `await loadGatewayLifecycleRuntimeModule()` hits the cache instead of disk, so chunk rotation can't affect it.
+
+<Flow
+  steps={[
+    {
+      marker: "1",
+      status: "ok",
+      title: "Eager-load: import before installing the signal listener",
+      desc: "First line of runGatewayLoop, before acquireGatewayLock",
+    },
+    {
+      marker: "2",
+      status: "ok",
+      title: "Defence in depth: add .catch() to the SIGUSR1 IIFE",
+      desc: "Use the cached reference; guarantee the token is consumed",
+    },
+    {
+      marker: "!",
+      status: "warn",
+      title: "Fail-fast contract",
+      desc: "If the lifecycle module isn't found at startup → fail loudly, let the supervisor handle it, no half-dead process",
+    },
+  ]}
+/>
+
+<DiffBlock
+  header="src/cli/gateway-cli/run-loop.ts"
+  lines={[
+    { kind: "hunk", text: "@@ -120,6 +120,9 @@ export async function runGatewayLoop(opts) {" },
+    { kind: "add", text: "+  const eagerLifecycleRuntime = await loadGatewayLifecycleRuntimeModule();" },
+    { kind: "ctx", text: "   await acquireGatewayLock();" },
+    { kind: "ctx", text: "   // ... rest of init ..." },
+    { kind: "hunk", text: "@@ -600,8 +603,15 @@ const onSigusr1 = () => {" },
+    { kind: "ctx", text: "   void (async () => {" },
+    { kind: "ctx", text: "     const { ... } = await loadGatewayLifecycleRuntimeModule();" },
+    { kind: "ctx", text: "     request(\"restart\", \"SIGUSR1\", restartReason);" },
+    { kind: "del", text: "-    markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+    eagerLifecycleRuntime.markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+  }).catch((err) => {" },
+    { kind: "add", text: "+    gatewayLog.error(\"SIGUSR1 handler failed\", err);" },
+    { kind: "add", text: "+    eagerLifecycleRuntime.markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+  });" },
+  ]}
+/>
+
+## Alternatives considered
+
+I considered three alternatives in the PR before settling on this:
+
+<Lesson label="Option A">
+  Replace SIGUSR1 with `process.exit(0)` on package swap — too
+  aggressive, loses in-process drain, and is an orthogonal concern. It can
+  stack on top of this fix but doesn't replace it.
+</Lesson>
+<Lesson label="Option B">
+  Make `update.run` always go through launchd kickstart — treats
+  only the symptom. Config watcher, manual SIGUSR1, and other paths still
+  hit the same bug.
+</Lesson>
+<Lesson label="Option C">
+  Wrap the dynamic import in `try/catch` inside the listener —
+  only fixes one callsite. `run-loop.ts` has ~10 lifecycle
+  dynamic-import callsites; one eager-load fixes them all.
+</Lesson>
+
+## Verification
+
+After a local build I triggered the previously-deadlocked path with `kill -USR1 <pid>`:
+
+<CodeBlock label="terminal output after the patch">
+{`$ kill -USR1 47154
+$ tail -n 8 /tmp/pr-gw-test.log
+2026-05-21T19:52:27.296+08:00 [gateway] signal SIGUSR1 received
+2026-05-21T19:52:27.310+08:00 [gateway] received SIGUSR1; restarting
+2026-05-21T19:52:27.335+08:00 [shutdown] started: gateway restarting
+2026-05-21T19:52:28.274+08:00 [gmail-watcher] gmail watcher stopped
+2026-05-21T19:52:28.279+08:00 [shutdown] completed cleanly in 943ms
+2026-05-21T19:52:28.285+08:00 [gateway] restart mode: in-process restart`}
+</CodeBlock>
+
+Before: `signal SIGUSR1 received` appears once, then total
+silence — every restart returns `coalesced: true`. After: the
+full shutdown sequence runs and exits cleanly in 943ms.
+
+I also ran the five related vitest suites:
+
+<CodeBlock>
+{`$ pnpm exec vitest run src/cli/gateway-cli/run-loop.test.ts \\
+    src/infra/restart.test.ts src/infra/restart-coordinator.test.ts \\
+    src/gateway/server-methods/update.test.ts \\
+    src/cli/gateway-cli/run.supervised-lock.test.ts
+
+ Test Files  5 passed (5)
+      Tests  56 passed (56)`}
+</CodeBlock>
+
+## Takeaways
+
+<Lesson label="On ESM lazy loading">
+  Dynamic import inside a signal handler is dangerous. Signal handlers fire
+  at unpredictable times, and anything that touches disk can fail if the
+  environment has changed underneath it. The recovery path shouldn't depend
+  on the thing it's recovering.
+</Lesson>
+
+<Lesson label="On async IIFE">
+  `void (async () => {...})()` without a `.catch()` is a quiet time bomb. Particularly dangerous in a signal handler, where
+  failure is silent and leaves no observable trace.
+</Lesson>
+
+<Lesson label="On open source contribution">
+  The most convincing PR is "this happened to me in production." A slice of
+  production logs plus a live terminal proof beat any unit test. ClawSweeper
+  bot's final grade was platinum hermit — the jump from the initial silver
+  shellfish came from that terminal screenshot.
+</Lesson>
+
+<Callout variant="ok" title="AI collaboration">
+  This PR was done in collaboration with Claude Code (`Co-Authored-By: Claude Opus 4.7`). I owned root cause analysis and production verification; Claude Code
+  handled implementation details. Diagnosis and verification have to be
+  yours — no one knows your production environment better than you.
+</Callout>

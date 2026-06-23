@@ -1,0 +1,173 @@
+---
+title: "How to write an issue so good someone else sends the PR"
+description: "A silent 500-character truncation in OpenClaw's reply-context handler. I filed the issue; someone else opened the PR."
+tag: "Postmortem · Open Source"
+date: "2026-05-28"
+postSlug: "openclaw-issue87291-postmortem"
+lang: "en"
+meta:
+  - text: myps6415
+  - text: "Issue #87291 · openclaw/openclaw"
+    href: "https://github.com/openclaw/openclaw/issues/87291"
+---
+
+<StatRow
+  stats={[
+    { value: "375k", label: "GitHub Stars" },
+    { value: "🦞", label: "Diamond lobster" },
+    { value: "P2", label: "Issue priority" },
+  ]}
+/>
+
+## Background
+
+OpenClaw is a 375k-star open source AI assistant framework. I run it in my homelab as a Telegram bot — it handles multi-turn conversations, does analysis, and occasionally asks me *"Option A, B, or C — which one?"*
+
+That last part is where things broke.
+
+One morning I sent the bot a short reply: `"A"`. It responded as if it had never heard of options A, B, or C. It asked me to re-paste my question. It even introduced itself with a slightly different persona than before.
+
+From the user side, the bot just "got confused." Easy to blame the model. But I'd seen this pattern before: it always happened after the session had sat idle for a while.
+
+## Root cause
+
+OpenClaw has an idle session reset — after `session.reset.idleMinutes=15` (default), the session is cleared. When a user then replies to a previous bot message, the prior message is injected into the new session as `[reply target]` context. This is the only surviving signal from the old conversation.
+
+The problem is in `src/auto-reply/reply/inbound-meta.ts`:
+
+<CodeBlock label="src/auto-reply/reply/inbound-meta.ts" lang="typescript">
+{`const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;
+
+function sanitizeTranscriptField(value) {
+  // used for ALL fields: sender, message_id, media_type, media_ref... and body
+}
+
+// in formatChatWindowMessage:
+const body = sanitizeTranscriptField(value["body"]);  // ← capped at 500 chars`}
+</CodeBlock>
+
+The same function and the same 500-character constant handle both short metadata fields (`sender`, `message_id`) and long-form body content. 500 is fine for a sender name. It is not fine for a multi-paragraph analysis that ends with actionable options.
+
+Real-world numbers from my own deployment on 2026-05-27:
+
+- Original bot message: **~1,800 characters** — analysis with options A/B/C at the end
+- Injected `[reply target]` body in the new session: **truncated at ~486 chars**
+- Options A/B/C: **never reached**
+- Bot in new session: claimed a different role, asked user to re-paste context
+
+<Callout variant="err" title="Silent failure mode">
+  No error. No warning. The bot just loses its memory and the user assumes the model is broken. The most dangerous bugs look like model failures.
+</Callout>
+
+## The issue
+
+I filed [Issue #87291](https://github.com/openclaw/openclaw/issues/87291) with five sections:
+
+- **Summary** — what breaks and why it matters
+- **Repro** — exact five-step reproduction, including the idle-reset trigger
+- **Real-world evidence** — my own deployment numbers, redacted
+- **Root cause** — the exact file, constant, and function responsible
+- **Proposed fix** — a concrete diff
+
+The proposed fix was simple: split the body cap from the generic field cap.
+
+<DiffBlock
+  header="src/auto-reply/reply/inbound-meta.ts"
+  lines={[
+    { kind: "ctx", text: "  const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;" },
+    { kind: "add", text: "+ const MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS = 8000;" },
+    { kind: "ctx", text: "" },
+    { kind: "ctx", text: "  function sanitizeTranscriptField(value) { /* unchanged */ }" },
+    { kind: "add", text: "+ function sanitizeTranscriptBody(value) {" },
+    { kind: "add", text: "+   const body = sanitizePromptBody(value);" },
+    { kind: "add", text: "+   if (!body) return;" },
+    { kind: "add", text: "+   const truncated = body.length <= MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS" },
+    { kind: "add", text: "+     ? body" },
+    { kind: "add", text: "+     : `${truncateUtf16Safe(body, MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS - 14).trimEnd()}…[truncated]`;" },
+    { kind: "add", text: "+   return neutralizeMarkdownFences(truncated).replace(/\\s+/g, \" \").trim();" },
+    { kind: "add", text: "+ }" },
+    { kind: "ctx", text: "" },
+    { kind: "ctx", text: "  // in formatChatWindowMessage:" },
+    { kind: "del", text: "- const body = sanitizeTranscriptField(value[\"body\"]);" },
+    { kind: "add", text: "+ const body = sanitizeTranscriptBody(value[\"body\"]);" },
+  ]}
+/>
+
+8,000 was chosen deliberately: generous enough for multi-paragraph reasoning plus a mid-sized table, still a hard cap against untrusted-content prompt-budget abuse.
+
+I ended with: *"Happy to send a PR if direction is acceptable."*
+
+## What happened next
+
+ClawSweeper reviewed the issue within hours. Its verdict:
+
+<Callout variant="ok" title="ClawSweeper triage">
+  **Keep open.** Source path, likely files, and regression-test boundary are clear. No product or security decision required first. Queue a focused fix PR.
+</Callout>
+
+Labels added: `clawsweeper:source-repro`, `clawsweeper:fix-shape-clear`, `clawsweeper:queueable-fix`, `issue-rating: 🦞 diamond lobster`.
+
+Then [PR #87311](https://github.com/openclaw/openclaw/pull/87311) was opened, adopting the proposed diff.
+
+<Flow
+  steps={[
+    {
+      marker: "1",
+      status: "ok",
+      title: "Issue filed with root cause + proposed diff",
+      desc: "Five sections; 'Happy to send a PR if direction is acceptable.'",
+    },
+    {
+      marker: "2",
+      status: "ok",
+      title: "ClawSweeper triage — keep open, queueable fix",
+      desc: "Diamond lobster rating; labels signal the fix shape is clear",
+    },
+    {
+      marker: "3",
+      status: "ok",
+      title: "PR #87311 opened, adopting the proposed diff",
+      desc: "Patch quality: 🐚 platinum hermit",
+    },
+    {
+      marker: "!",
+      status: "warn",
+      title: "In review pending live reproduction proof",
+      desc: "ClawSweeper wants a real user reply to a >500-char bot message, showing tail options survive — overall rating sits at 🦪 silver shellfish until then",
+    },
+  ]}
+/>
+
+## On issue authorship
+
+In open source, *"Happy to send a PR if direction is acceptable"* is an expression of intent, not a claim. Anyone can move faster — and that used to bother me. It doesn't anymore.
+
+A well-written issue is a standalone contribution: a source-level reproduction, a concrete diff, and real deployment numbers that make the impact undeniable. The diamond lobster rating is ClawSweeper's signal that the issue itself was high quality — not just a complaint, but a complete diagnosis.
+
+That's the part worth owning. The commit can be anyone's.
+
+## Takeaways
+
+<Lesson label="On issue quality">
+  A good issue is not a bug report. It's a transfer of understanding. Root cause + proposed fix + real evidence means the PR author's job is mostly mechanical. If someone can take your issue and open a PR in the same day, you wrote a good issue.
+</Lesson>
+
+<Lesson label="On letting go">
+  The goal is a working codebase, not credit. If the fix ships without your commit, the users who hit the same bug in their Telegram bot still benefit. That's the point.
+</Lesson>
+
+<Lesson label="On silent failures">
+  The most dangerous bugs are the ones that look like model failures. No error, no stack trace — just a confused bot and a frustrated user who blames the AI. If you see a behavior that's too consistent to be random, it's probably a hard-coded constant somewhere.
+</Lesson>
+
+## Update (June 2026)
+
+The story didn't end at "PR #87311 opened, adopting the proposed diff." A month later, the real fix landed via a different path:
+
+- **PR #87311 was closed unmerged.** Maintainers wanted more than a raised cap. Lifting 500 → 8000 still leaves prefix-only truncation, so the same failure mode reappears at 8000 the moment a body grows past it — same shape of bug, different number.
+- **I opened [PR #87909](https://github.com/openclaw/openclaw/pull/87909)** with a head+tail truncation variant at a 6,000-char cap. Got an independent review, tightened it twice — but by the time I caught up with main, maintainers had already landed their own version.
+- **The actual fix is commit [`3753c5e2c8`](https://github.com/openclaw/openclaw/commit/3753c5e2c8)** (closes #91042) — head+tail truncation at a 2,000-char cap, plus coverage for ReplyChain JSON bodies and Telegram inline ReplyToBody fallback that my own PR didn't touch.
+
+The split-cap direction from the original issue was adopted. The specific 8,000-char prefix-only mechanism was not — and shouldn't have been. Maintainers landed a better variant.
+
+This is exactly what "the commit can be anyone's" means in practice. The issue did its job: transferred enough understanding that someone with deeper context on the surrounding paths could land a more complete fix than I would have written.

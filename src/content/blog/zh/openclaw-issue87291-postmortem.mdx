@@ -1,0 +1,173 @@
+---
+title: "把 issue 寫到好到讓別人替你送 PR"
+description: "OpenClaw 回覆上下文處理裡一個無聲的 500 字元截斷 bug — 我寫了 issue，別人送了 PR。"
+tag: "Postmortem · 開源貢獻"
+date: "2026-05-28"
+postSlug: "openclaw-issue87291-postmortem"
+lang: "zh"
+meta:
+  - text: myps6415
+  - text: "Issue #87291 · openclaw/openclaw"
+    href: "https://github.com/openclaw/openclaw/issues/87291"
+---
+
+<StatRow
+  stats={[
+    { value: "375k", label: "GitHub Stars" },
+    { value: "🦞", label: "Diamond lobster" },
+    { value: "P2", label: "Issue 優先級" },
+  ]}
+/>
+
+## 背景
+
+OpenClaw 是一個 375k stars 的開源 AI assistant 框架，我在 homelab 裡用它跑 Telegram bot——處理多輪對話、做分析，偶爾會問我：*「選項 A、B、C，你要哪一個？」*
+
+就是這個地方壞了。
+
+某個早上我回了 bot 一個短回覆：`「A」`。它回我的訊息看起來像從來沒聽過 A、B、C 這幾個選項，要我把問題重新貼一次，甚至自我介紹的口吻都跟之前不太一樣。
+
+從使用者角度看就是 bot「搞混了」，很容易直接怪到 model 頭上。但我之前見過這個模式：這件事總是在 session 閒置一段時間之後才發生。
+
+## 根本原因
+
+OpenClaw 有 idle session reset 機制——預設 `session.reset.idleMinutes=15` 之後 session 會被清空。當使用者接著回覆某則先前的 bot 訊息時，舊訊息會被當作 `[reply target]` context 注入到新 session 裡。這是舊對話唯一存活下來的訊號。
+
+問題在 `src/auto-reply/reply/inbound-meta.ts`：
+
+<CodeBlock label="src/auto-reply/reply/inbound-meta.ts" lang="typescript">
+{`const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;
+
+function sanitizeTranscriptField(value) {
+  // 所有欄位共用：sender、message_id、media_type、media_ref... 還有 body
+}
+
+// 在 formatChatWindowMessage 裡：
+const body = sanitizeTranscriptField(value["body"]);  // ← 一律截到 500 字`}
+</CodeBlock>
+
+同一個 function、同一個 500 字常數，要處理短的 metadata 欄位（`sender`、`message_id`），也要處理長篇的 body。500 字對 sender 名稱沒問題，但對結尾才出現可行動選項的多段落分析來說，遠遠不夠。
+
+2026-05-27 我自己 deployment 的實際數字：
+
+- 原始 bot 訊息：**約 1,800 字**——結尾帶 A/B/C 選項的分析
+- 注入到新 session 的 `[reply target]` body：**大約在第 486 字被截斷**
+- A/B/C 選項：**完全沒進去**
+- 新 session 裡的 bot：宣稱自己是不同的角色，要使用者把 context 重貼一次
+
+<Callout variant="err" title="無聲故障">
+  沒有 error、沒有 warning，bot 就是失憶，然後使用者直接認定 AI 壞了。最危險的 bug 通常長得像 model failure。
+</Callout>
+
+## 這個 issue
+
+我提交了 [Issue #87291](https://github.com/openclaw/openclaw/issues/87291)，內容分五段：
+
+- **Summary**——哪裡壞了、為什麼重要
+- **Repro**——精確的五步驟重現方式，包含 idle-reset 觸發條件
+- **Real-world evidence**——我自己 deployment 的數據（已脫敏）
+- **Root cause**——確切的檔案、常數、function
+- **Proposed fix**——一份具體 diff
+
+修法很簡單：把 body 的字數上限從通用欄位上限拆開。
+
+<DiffBlock
+  header="src/auto-reply/reply/inbound-meta.ts"
+  lines={[
+    { kind: "ctx", text: "  const MAX_UNTRUSTED_TRANSCRIPT_FIELD_CHARS = 500;" },
+    { kind: "add", text: "+ const MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS = 8000;" },
+    { kind: "ctx", text: "" },
+    { kind: "ctx", text: "  function sanitizeTranscriptField(value) { /* 不變 */ }" },
+    { kind: "add", text: "+ function sanitizeTranscriptBody(value) {" },
+    { kind: "add", text: "+   const body = sanitizePromptBody(value);" },
+    { kind: "add", text: "+   if (!body) return;" },
+    { kind: "add", text: "+   const truncated = body.length <= MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS" },
+    { kind: "add", text: "+     ? body" },
+    { kind: "add", text: "+     : `${truncateUtf16Safe(body, MAX_UNTRUSTED_TRANSCRIPT_BODY_CHARS - 14).trimEnd()}…[truncated]`;" },
+    { kind: "add", text: "+   return neutralizeMarkdownFences(truncated).replace(/\\s+/g, \" \").trim();" },
+    { kind: "add", text: "+ }" },
+    { kind: "ctx", text: "" },
+    { kind: "ctx", text: "  // 在 formatChatWindowMessage 裡：" },
+    { kind: "del", text: "- const body = sanitizeTranscriptField(value[\"body\"]);" },
+    { kind: "add", text: "+ const body = sanitizeTranscriptBody(value[\"body\"]);" },
+  ]}
+/>
+
+8,000 是刻意挑的：足以容納多段落推理加上中型表格，同時對 untrusted-content 的 prompt-budget 濫用仍是硬上限。
+
+我在 issue 最後寫：*「Happy to send a PR if direction is acceptable.」*
+
+## 之後發生的事
+
+ClawSweeper 在幾小時內 review 了這個 issue，判定如下：
+
+<Callout variant="ok" title="ClawSweeper triage">
+  **Keep open.** 程式碼路徑、相關檔案、regression-test 範圍都很明確；不需要先做產品或安全決策。排入 focused fix PR 隊列。
+</Callout>
+
+加上的標籤：`clawsweeper:source-repro`、`clawsweeper:fix-shape-clear`、`clawsweeper:queueable-fix`、`issue-rating: 🦞 diamond lobster`。
+
+接著 [PR #87311](https://github.com/openclaw/openclaw/pull/87311) 被開出來，採用了 issue 裡提案的 diff。
+
+<Flow
+  steps={[
+    {
+      marker: "1",
+      status: "ok",
+      title: "Issue 提交，附 root cause + 提案 diff",
+      desc: "五段內容；結尾「Happy to send a PR if direction is acceptable.」",
+    },
+    {
+      marker: "2",
+      status: "ok",
+      title: "ClawSweeper triage：keep open、queueable fix",
+      desc: "Diamond lobster 評等；標籤顯示 fix shape 已清楚",
+    },
+    {
+      marker: "3",
+      status: "ok",
+      title: "PR #87311 開出，採用提案 diff",
+      desc: "Patch quality：🐚 platinum hermit",
+    },
+    {
+      marker: "!",
+      status: "warn",
+      title: "Review 中，等待 live 重現證明",
+      desc: "ClawSweeper 要的是真實使用者回覆 >500 字的 bot 訊息、顯示尾段選項有保留下來——在那之前整體評等維持在 🦪 silver shellfish",
+    },
+  ]}
+/>
+
+## 關於 issue 作者身份
+
+在開源裡，*「Happy to send a PR if direction is acceptable」* 是意願表達，不是主張。任何人都可以走得更快——這件事以前會讓我介意，現在不會了。
+
+一份寫得好的 issue 本身就是一份貢獻：原始碼層級的 root cause 重現、一份具體 diff、讓影響無可否認的真實 deployment 數據。Diamond lobster 評等是 ClawSweeper 用來標示「issue 本身寫得好」的訊號——不只是抱怨，而是一份完整的診斷。
+
+這個部分值得擁有；commit 是誰的都行。
+
+## 這次學到什麼
+
+<Lesson label="關於 issue 品質">
+  一份好的 issue 不是 bug report，而是理解的移轉。Root cause + 提案 diff + 實際證據意味著 PR 作者要做的事大部分是機械性的。如果有人能拿你的 issue 在同一天開出 PR，那就是一份好 issue。
+</Lesson>
+
+<Lesson label="關於放手">
+  目標是讓 codebase 變好，不是搶名字。如果這個 fix 在你沒掛名的情況下 ship 出去，那些在自己 Telegram bot 上撞到同樣 bug 的人還是受益了——這才是重點。
+</Lesson>
+
+<Lesson label="關於無聲故障">
+  最危險的 bug 是看起來像 model failure 的那種。沒有 error、沒有 stack trace——只有一個搞混的 bot 跟一個怪 AI 的挫折使用者。如果你看到一種「太一致以致不像隨機」的行為，多半是某處藏著一個寫死的常數。
+</Lesson>
+
+## 後續更新（2026 年 6 月）
+
+故事並沒有停在「PR #87311 開出、採用提案 diff」這一步。一個月後，真正的 fix 走了另一條路落地：
+
+- **PR #87311 被關掉，未 merge。** Maintainer 想要的不只是把上限拉高。500 → 8000 之後仍然是 prefix-only 截斷，只要 body 長度超過 8000 就會在新的數字上撞到同樣的失敗模式 —— bug 的形狀沒變，只是數字換了。
+- **我自己開了 [PR #87909](https://github.com/openclaw/openclaw/pull/87909)**，用 head+tail 截斷搭配 6,000 字上限。拿到一位獨立 reviewer 的審閱、來回收緊兩輪——但等我追上 main 時，maintainer 已經先一步落地了他們自己的版本。
+- **真正落地的 fix 是 commit [`3753c5e2c8`](https://github.com/openclaw/openclaw/commit/3753c5e2c8)**（closes #91042）—— head+tail 截斷搭配 2,000 字上限，並額外覆蓋 ReplyChain JSON body 與 Telegram inline ReplyToBody fallback 兩條我自己 PR 沒碰到的路徑。
+
+原始 issue 提出的「拆分 cap」方向被採納了；「8,000 字 prefix-only」這個具體機制沒有——而且不應該被採納。Maintainer 落地的是一個更好的變體。
+
+這就是「commit 是誰的都行」在實務上長什麼樣子。Issue 完成了它的任務：把足夠的理解傳遞出去，讓對周邊路徑更熟悉的人，寫出比我自己能寫得更完整的 fix。

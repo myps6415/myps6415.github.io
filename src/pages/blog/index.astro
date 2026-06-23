@@ -1,8 +1,9 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { content } from "../../i18n/strings";
-import { posts, postPath } from "../../data/posts";
+import { getSortedPosts, postPath } from "../../data/posts";
 
+const posts = await getSortedPosts("en");
 const c = content.en;
 const w = c.writing;
 
@@ -37,7 +38,7 @@ const alternateUrls = { en: "/blog/", zh: "/zh/blog/" };
       <ul class="divide-y divide-ink-200 border-t border-b border-ink-200">
         {
           posts.map((p) => {
-            const loc = p.en;
+            const loc = p;
             const href = postPath(p.slug, "en");
             return (
               <li>

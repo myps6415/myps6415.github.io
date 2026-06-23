@@ -1,0 +1,143 @@
+---
+title: "The build that dropped a random post: moving my blog to MDX"
+description: "Migrating five bilingual posts from per-page Astro to MDX content collections. Two bugs only showed up after the move — a reserved field name, and a Markdown rule that won't bold Chinese."
+tag: "Migration · Astro"
+date: "2026-06-23"
+postSlug: "migrating-to-mdx"
+lang: "en"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "5 × 2", label: "Posts × locales migrated" },
+    { value: "2", label: "Silent bugs found" },
+    { value: "0", label: "Content changes (diff-verified)" },
+  ]}
+/>
+
+## Background
+
+This blog started as plain Astro pages — one `.astro` file per post per language,
+with the metadata in a shared `posts.ts`. That was a deliberate choice when there
+were two posts: simpler than wiring up content collections. The cost was that the
+prose lived inside JSX, so editing a post meant editing code, and adding one meant
+hand-writing two near-identical `.astro` files.
+
+At five posts in two languages, that tradeoff had flipped. I wanted to write in
+plain Markdown — and to leave the door open for a browser CMS later, which needs a
+real content collection underneath. So: move every post to MDX.
+
+## The shape of the migration
+
+Each post became two MDX files — `src/content/blog/en/<slug>.mdx` and a `zh/` twin
+— with the prose as Markdown and the custom components (`Callout`, `StatRow`,
+`DiffBlock`, …) kept as MDX tags. One `[slug].astro` route per locale renders the
+collection and auto-injects those components, so the post files never import
+anything. The homepage and the blog index pull from `getCollection()` instead of
+the old hand-maintained array. Ten per-page `.astro` files deleted; two routes in
+their place.
+
+The migration itself was mechanical. The interesting part was the two bugs that
+only appeared once it was done.
+
+## Bug 1: the build that dropped a different post every time
+
+First build after the migration: 9 pages instead of 14. Some posts just weren't
+there. I rebuilt — a different set was missing. Rebuilt again — different again. A
+nondeterministic build is an unsettling thing: the same input producing different
+output means something is being deduplicated on a key that's less unique than I
+thought.
+
+It was. Every post had `slug` in its frontmatter — `slug: "null-not-zero"` — with
+the same value in the `en` and `zh` files, because they share a URL slug. But
+**`slug` is a reserved field in Astro's content collections**: it's used as the
+entry's identity. Two entries with the same `slug` collapse into one, and which one
+survives isn't guaranteed. My ten entries were quietly becoming five, split at
+random between the two locale routes.
+
+The fix was a one-word rename — in the frontmatter, the schema, and the two routes:
+
+<DiffBlock
+  header="src/content/blog/**/*.mdx — frontmatter"
+  lines={[
+    { kind: "del", text: "- slug: \"null-not-zero\"" },
+    { kind: "add", text: "+ postSlug: \"null-not-zero\"" },
+  ]}
+/>
+
+Ten pages again, every build.
+
+<Callout variant="warn" title="A silent dedup is worse than a crash">
+  If a reserved name had thrown an error, I'd have fixed it in a minute. Instead it
+  merged entries and varied the result per build — the kind of bug that reads as
+  flakiness until you notice the pattern. When a build is nondeterministic, stop and
+  find the shared key; it's never actually random.
+</Callout>
+
+## Bug 2: the bold that wouldn't bold
+
+With all ten pages building, the English posts looked perfect. The Chinese ones had
+literal `**` sitting in the text where bold should be:
+`**快取壞掉不能弄垮頁面。**讀和寫…`.
+
+This one is a Markdown rule, not an Astro bug. CommonMark decides whether `**` opens
+or closes emphasis using "flanking" rules built around ASCII whitespace and
+punctuation. Next to a Chinese full-stop and a Chinese character — `。**讀` — the
+closing `**` isn't "right-flanking" under those rules, so it never closes and the
+asterisks render as text. English rarely hits this because there's usually a space
+or ASCII punctuation beside the delimiter.
+
+I didn't want to hand-write `<strong>` tags every time I bold a Chinese phrase —
+that would defeat the point of authoring in clean Markdown. The fix is a remark
+plugin that makes the flanking rules CJK-aware:
+
+<CodeBlock label="astro.config.mjs" lang="javascript">
+{`import remarkCjkFriendly from 'remark-cjk-friendly';
+
+export default defineConfig({
+  markdown: { remarkPlugins: [remarkCjkFriendly] },
+  integrations: [mdx()],
+  // …
+});`}
+</CodeBlock>
+
+Now `**粗體**` renders next to Chinese the way it always should have.
+
+## Proving the move changed nothing
+
+A content migration isn't done until you can show it didn't quietly rewrite
+anything. So before deleting the old pages I built them once and snapshotted the
+rendered `dist/`. After the migration I rebuilt and diffed the normalized text of
+every page — all ten posts, both index pages, both homepages — against that
+snapshot.
+
+The only differences were two improvements: straight quotes had become curly
+(Astro's smartypants), and the spurious spaces the old JSX had injected between
+Chinese characters were gone. Once I normalized those away, every page was
+character-for-character identical. That diff is the cheapest confidence you can buy
+on a refactor — it doesn't care how the HTML is generated, only that the words came
+out the same.
+
+## Takeaways
+
+<Lesson label="Reserved names should fail loud">
+  The worst part wasn't the collision, it was that it was silent and
+  nondeterministic. A framework that reserves a field name should reject your use of
+  it, not quietly merge your data. A build that changes output without changing input
+  is telling you something is keyed on the wrong thing.
+</Lesson>
+
+<Lesson label="Markdown assumes ASCII">
+  CommonMark's emphasis rules are built around spaces and ASCII punctuation; CJK text
+  breaks those assumptions in ways that look like your mistake. If you write Markdown
+  in Chinese, Japanese, or Korean, know which remark plugins put it back.
+</Lesson>
+
+<Lesson label="Diff the output, not the input">
+  The way to trust a migration is to compare what the reader actually sees, before
+  and after. A normalized render-text diff across every page caught the real changes
+  and let me wave off the cosmetic ones — turning "I think it's the same" into "every
+  page is identical except these two improvements."
+</Lesson>

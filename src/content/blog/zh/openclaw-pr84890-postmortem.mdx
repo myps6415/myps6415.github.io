@@ -1,0 +1,264 @@
+---
+title: "修掉一個讓 OpenClaw Gateway 升級後永遠不重啟的 deadlock"
+description: "一個 ESM dynamic import、一個 signal handler、一個 race condition，讓 gateway 悄悄壞掉六天。"
+tag: "Postmortem · 開源貢獻"
+date: "2026-05-22"
+postSlug: "openclaw-pr84890-postmortem"
+lang: "zh"
+meta:
+  - text: myps6415
+  - text: "PR #84890 · openclaw/openclaw"
+    href: "https://github.com/openclaw/openclaw/pull/84890"
+---
+
+<StatRow
+  stats={[
+    { value: "374k", label: "GitHub Stars" },
+    { value: "+28/-1", label: "Diff 大小" },
+    { value: "P1", label: "Issue 優先級" },
+  ]}
+/>
+
+## 背景
+
+OpenClaw 是一個 374k stars 的開源 AI assistant 框架，我日常在 homelab
+裡用它跑 Telegram bot。它的 gateway 是一個跑在 macOS launchd 底下的
+Node.js process，提供 REST API 給各種 agent 呼叫。
+
+某天我點了控制介面的 Update 按鈕，更新回報 `status=ok`，一切看起來正常。但幾個小時後我發現 gateway 開始噴錯：
+
+<CodeBlock label="production log · PID 30106">
+{`13:35:15  request handler failed: ERR_MODULE_NOT_FOUND
+          task-registry.maintenance-B-jsfe-3.js
+13:36:55  ERR_MODULE_NOT_FOUND  status.link-channel-BK3OG460.js
+14:16:52  ERR_MODULE_NOT_FOUND  task-registry.maintenance-B-jsfe-3.js
+14:16:54  [restart] request coalesced (already in-flight) reason=update.run
+14:31:31  ERR_MODULE_NOT_FOUND  hooks-DBKknpfW.js`}
+</CodeBlock>
+
+更奇怪的是：`gateway-restart.log` 的最後一筆是六天前。Gateway
+正在跑，但永遠不會重啟。唯一的解法是手動 `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`。
+
+## 根本原因分析
+
+翻了 source code 之後，發現這是一個 chicken-and-egg deadlock，由三個獨立的設計決策組合出來的。
+
+### 問題一：SIGUSR1 listener 裡用了 dynamic import
+
+<CodeBlock label="src/cli/gateway-cli/run-loop.ts（修改前）" lang="typescript">
+{`const onSigusr1 = () => {
+  gatewayLog.info("signal SIGUSR1 received");
+  void (async () => {
+    const {
+      markGatewaySigusr1RestartHandled,
+      ...
+    } = await loadGatewayLifecycleRuntimeModule();  // ← dynamic import
+    request("restart", "SIGUSR1", restartReason);
+    markGatewaySigusr1RestartHandled();              // ← 這行永遠沒被呼叫
+  })();
+  // 注意：這裡沒有 .catch()
+};`}
+</CodeBlock>
+
+### 問題二：升級後 chunk hash 已經換了
+
+`npm install -g openclaw@newer` 換包之後，`dist/` 裡的
+chunk 檔名（帶 hash）全部換掉了。舊 process 還在跑，它試圖去 import 的是舊路徑，但那些檔案已經不存在了。結果：
+
+<CodeBlock>
+{`loadGatewayLifecycleRuntimeModule()
+  → import("./lifecycle.runtime-OLDHASH.js")
+  → ERR_MODULE_NOT_FOUND  ← 靜默 reject，沒有 .catch()`}
+</CodeBlock>
+
+### 問題三：restart token 卡死
+
+OpenClaw 的 restart 系統用一對 counter 防止重複觸發：
+
+<CodeBlock label="src/infra/restart.ts" lang="typescript">
+{`function hasUnconsumedRestartSignal(): boolean {
+  return emittedRestartToken > consumedRestartToken;
+}
+
+export function scheduleGatewaySigusr1Restart(opts?) {
+  if (hasUnconsumedRestartSignal()) {
+    restartLog.warn(\`restart request coalesced (already in-flight)\`);
+    return { coalesced: true };  // ← 直接 return，什麼都不做
+  }
+  // ...
+}`}
+</CodeBlock>
+
+因為 SIGUSR1 handler 在 `await loadGatewayLifecycleRuntimeModule()` 的地方 reject 掉了，`markGatewaySigusr1RestartHandled()`（也就是
+`consumedRestartToken++`）從來沒有被呼叫，導致
+`emittedRestartToken` 永遠大於 `consumedRestartToken`，之後所有的 restart request 全部被 coalesce 掉。
+
+<Callout variant="err" title="死鎖結構">
+  SIGUSR1 listener 需要 import lifecycle module 才能處理重啟 → 但 lifecycle module
+  的 chunk 已經換掉了 → import 失敗 → token 沒被消費 → 之後所有重啟請求都被 coalesce
+  → Gateway 永遠不重啟
+</Callout>
+
+## 事件時間線
+
+<Timeline
+  items={[
+    {
+      time: "2026-05-15",
+      text: "最後一次成功重啟",
+      sub: "gateway-restart.log 最後有效記錄",
+      status: "ok",
+    },
+    {
+      time: "2026-05-18 → 05-19",
+      text: "版本升級觸發 bug",
+      sub: "npm install -g openclaw@newer 完成，chunk hash 輪換",
+      status: "bad",
+    },
+    {
+      time: "14:16:54",
+      text: "Gateway 陷入 coalesce 迴圈",
+      sub: "[restart] request coalesced (already in-flight) reason=update.run",
+      status: "bad",
+    },
+    {
+      time: "持續六天",
+      text: "ERR_MODULE_NOT_FOUND 持續噴出",
+      sub: "PID 30106 uptime > 36h，process 從未被替換",
+      status: "bad",
+    },
+    {
+      time: "2026-05-21",
+      text: "提交 PR #84890",
+      sub: "附上 production log + live terminal proof",
+      status: "ok",
+    },
+    {
+      time: "2026-05-22",
+      text: "PR Merged by vincentkoc",
+      sub: "+28/-1，單一檔案修改",
+      status: "ok",
+    },
+  ]}
+/>
+
+## 修法
+
+修法的核心概念很簡單：**在 signal listener 安裝之前，就把 lifecycle module
+載入進 ESM cache**。之後所有的 `await loadGatewayLifecycleRuntimeModule()` 都命中 cache，不再碰磁碟，自然不受 chunk 輪換影響。
+
+<Flow
+  steps={[
+    {
+      marker: "1",
+      status: "ok",
+      title: "Eager-load：在 signal listener 安裝前先 import",
+      desc: "runGatewayLoop 的第一行，acquireGatewayLock 之前",
+    },
+    {
+      marker: "2",
+      status: "ok",
+      title: "Defence in depth：SIGUSR1 IIFE 加上 .catch()",
+      desc: "使用已快取的 reference，確保 token 一定被消費",
+    },
+    {
+      marker: "!",
+      status: "warn",
+      title: "Fail-fast 合約",
+      desc: "若 lifecycle module 在啟動時就找不到 → 大聲報錯，讓 supervisor 處理，不留半殘 process",
+    },
+  ]}
+/>
+
+<DiffBlock
+  header="src/cli/gateway-cli/run-loop.ts"
+  lines={[
+    { kind: "hunk", text: "@@ -120,6 +120,9 @@ export async function runGatewayLoop(opts) {" },
+    { kind: "add", text: "+  const eagerLifecycleRuntime = await loadGatewayLifecycleRuntimeModule();" },
+    { kind: "ctx", text: "   await acquireGatewayLock();" },
+    { kind: "ctx", text: "   // ... 其他初始化 ..." },
+    { kind: "hunk", text: "@@ -600,8 +603,15 @@ const onSigusr1 = () => {" },
+    { kind: "ctx", text: "   void (async () => {" },
+    { kind: "ctx", text: "     const { ... } = await loadGatewayLifecycleRuntimeModule();" },
+    { kind: "ctx", text: "     request(\"restart\", \"SIGUSR1\", restartReason);" },
+    { kind: "del", text: "-    markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+    eagerLifecycleRuntime.markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+  }).catch((err) => {" },
+    { kind: "add", text: "+    gatewayLog.error(\"SIGUSR1 handler failed\", err);" },
+    { kind: "add", text: "+    eagerLifecycleRuntime.markGatewaySigusr1RestartHandled();" },
+    { kind: "add", text: "+  });" },
+  ]}
+/>
+
+## 為什麼不用其他方案？
+
+PR 裡我考慮過三個替代方案，最後都放棄了：
+
+<Lesson label="方案 A">
+  換包時直接 `process.exit(0)` 取代 SIGUSR1 — 更激進，會丟失 in-process
+  drain，且是 orthogonal 問題，可以在這個 fix 上面疊，但不能取代它。
+</Lesson>
+<Lesson label="方案 B">
+  `update.run` 無條件走 launchd kickstart — 治標不治本。Config
+  watcher、手動 SIGUSR1 等其他路徑還是會中招。
+</Lesson>
+<Lesson label="方案 C">
+  在 listener 裡面 `try/catch` dynamic import — 只解決這一個 callsite，`run-loop.ts`
+  裡還有 ~10 個 lifecycle dynamic-import callsite，不如一次 eager-load 全解決。
+</Lesson>
+
+## 驗證方式
+
+Local build 之後用 `kill -USR1 <pid>` 直接觸發原本會 deadlock
+的路徑：
+
+<CodeBlock label="patch 後的 terminal 輸出">
+{`$ kill -USR1 47154
+$ tail -n 8 /tmp/pr-gw-test.log
+2026-05-21T19:52:27.296+08:00 [gateway] signal SIGUSR1 received
+2026-05-21T19:52:27.310+08:00 [gateway] received SIGUSR1; restarting
+2026-05-21T19:52:27.335+08:00 [shutdown] started: gateway restarting
+2026-05-21T19:52:28.274+08:00 [gmail-watcher] gmail watcher stopped
+2026-05-21T19:52:28.279+08:00 [shutdown] completed cleanly in 943ms
+2026-05-21T19:52:28.285+08:00 [gateway] restart mode: in-process restart`}
+</CodeBlock>
+
+修改前：`signal SIGUSR1 received` 出現一次，之後完全靜默，每次 restart
+都回 `coalesced: true`。修改後：完整走完 shutdown sequence，943ms 乾淨結束。
+
+同時跑了五個相關的 vitest suite：
+
+<CodeBlock>
+{`$ pnpm exec vitest run src/cli/gateway-cli/run-loop.test.ts \\
+    src/infra/restart.test.ts src/infra/restart-coordinator.test.ts \\
+    src/gateway/server-methods/update.test.ts \\
+    src/cli/gateway-cli/run.supervised-lock.test.ts
+
+ Test Files  5 passed (5)
+      Tests  56 passed (56)`}
+</CodeBlock>
+
+## 這次學到什麼
+
+<Lesson label="關於 ESM lazy loading">
+  Dynamic import 在 signal handler 裡是危險的。Signal handler 執行的時機無法控制，任何依賴磁碟的操作都可能因為環境改變而失敗。Recovery
+  path 不應該依賴它要 recover 的那個東西。
+</Lesson>
+
+<Lesson label="關於 async IIFE">
+  沒有 `.catch()` 的 `void (async () => {...})()`
+  是一個潛藏的定時炸彈。在 signal handler 裡面特別危險，因為失敗是靜默的，沒有任何
+  observable 跡象。
+</Lesson>
+
+<Lesson label="關於 open source contribution">
+  最有說服力的 PR 是「我自己在 production 遇到的」。Production log slice + live
+  terminal proof 比任何 unit test 都更直接。ClawSweeper bot 最後給的評分是 platinum
+  hermit，從最初的 silver shellfish 升上去的關鍵就是那份 terminal 截圖。
+</Lesson>
+
+<Callout variant="ok" title="AI 協作">
+  這個 PR 是跟 Claude Code（`Co-Authored-By: Claude Opus 4.7`）協作完成的。我負責
+  root cause 分析和 production 驗證，Claude Code 負責實作細節。診斷和驗證必須是自己來的，沒有人比你更了解你的
+  production environment。
+</Callout>

@@ -1,0 +1,117 @@
+---
+title: "那次每跑一遍就掉一篇文章的 build：把 blog 搬到 MDX"
+description: "把五篇雙語文章從每頁一個 Astro 檔搬到 MDX content collection。兩個 bug 都是搬完才冒出來——一個保留欄位名，一個不肯讓中文變粗體的 Markdown 規則。"
+tag: "遷移 · Astro"
+date: "2026-06-23"
+postSlug: "migrating-to-mdx"
+lang: "zh"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "5 × 2", label: "文章 × 語系，已遷移" },
+    { value: "2", label: "找到的無聲 bug" },
+    { value: "0", label: "內容變動（diff 驗證）" },
+  ]}
+/>
+
+## 背景
+
+這個 blog 一開始是純 Astro 頁面——每篇文章每個語言一個 `.astro` 檔，metadata 放在共用的
+`posts.ts`。當初只有兩篇文章時，這是刻意的選擇：比接 content collection 簡單。代價是內文住在
+JSX 裡，所以改一篇文章等於改程式，加一篇等於手寫兩個幾乎一樣的 `.astro` 檔。
+
+到了五篇、兩個語言，這個取捨翻盤了。我想用純 Markdown 寫——也想替之後的瀏覽器 CMS 留條路，
+而那需要底下有一個真正的 content collection。所以：把每篇都搬成 MDX。
+
+## 遷移長什麼樣
+
+每篇變成兩個 MDX 檔——`src/content/blog/en/<slug>.mdx` 和一個 `zh/` 孿生——內文是 Markdown，
+自訂元件（`Callout`、`StatRow`、`DiffBlock`…）保留成 MDX 標籤。每個語系一條 `[slug].astro`
+路由去渲染 collection 並自動注入那些元件，所以文章檔本身不用 import 任何東西。首頁和 blog 索引
+改吃 `getCollection()`，取代原本手動維護的陣列。刪掉十個各頁 `.astro`，換成兩條路由。
+
+遷移本身是機械性的。有意思的是搬完才冒出來的兩個 bug。
+
+## Bug 1：每跑一遍就掉一篇文章的 build
+
+遷移後第一次 build：產出 9 頁，不是 14 頁。有些文章就是不見了。我重跑——不見的換了一批。再重跑
+——又換一批。一個非決定性的 build 很令人不安：同樣的輸入產生不同的輸出，代表有東西正用一個沒我
+想的那麼唯一的 key 在去重。
+
+確實如此。每篇的 frontmatter 都有 `slug`——`slug: "null-not-zero"`——而且 `en` 和 `zh` 檔的值
+一樣，因為它們共用一個 URL slug。但 **`slug` 是 Astro content collection 的保留欄位**：它被當成
+entry 的身分。兩個 entry 有相同 `slug` 就會被併成一個，而誰留下來並不保證。我的十個 entry 悄悄變成
+五個，隨機分散到兩條語系路由上。
+
+修法是一個字的改名——frontmatter、schema、兩條路由都改：
+
+<DiffBlock
+  header="src/content/blog/**/*.mdx — frontmatter"
+  lines={[
+    { kind: "del", text: "- slug: \"null-not-zero\"" },
+    { kind: "add", text: "+ postSlug: \"null-not-zero\"" },
+  ]}
+/>
+
+又變回十頁，而且每次 build 都一樣。
+
+<Callout variant="warn" title="無聲的去重比直接 crash 更糟">
+  如果保留欄位名會丟一個 error，我一分鐘就修好了。結果它是把 entry 併掉、還讓結果每次 build 都
+  不一樣——這種 bug 在你看出規律之前都像是隨機抽風。當 build 變成非決定性，停下來找那個共用的
+  key；它從來不是真的隨機。
+</Callout>
+
+## Bug 2：不肯變粗體的粗體
+
+十頁都 build 出來後，英文文章看起來很完美。中文的卻在該是粗體的地方留著字面上的 `**`：
+`**快取壞掉不能弄垮頁面。**讀和寫…`。
+
+這個是 Markdown 的規則，不是 Astro 的 bug。CommonMark 用一套圍繞 ASCII 空白與標點的「flanking」
+規則來判斷 `**` 是開還是關。緊接著一個中文句號和一個中文字時——`。**讀`——那個收尾的 `**` 在這套
+規則下不算「right-flanking」，所以它永遠關不起來，星號就被當成文字印出來。英文很少撞到，因為
+delimiter 旁邊通常有空白或 ASCII 標點。
+
+我不想每次要把中文片語變粗體都手寫 `<strong>` 標籤——那就違背了用乾淨 Markdown 寫作的初衷。修法
+是一個讓 flanking 規則認得 CJK 的 remark 外掛：
+
+<CodeBlock label="astro.config.mjs" lang="javascript">
+{`import remarkCjkFriendly from 'remark-cjk-friendly';
+
+export default defineConfig({
+  markdown: { remarkPlugins: [remarkCjkFriendly] },
+  integrations: [mdx()],
+  // …
+});`}
+</CodeBlock>
+
+現在 `**粗體**` 緊接中文時，就照它本來該有的樣子變粗體了。
+
+## 證明這趟搬家什麼都沒改
+
+一個內容遷移，要到你能證明它沒偷偷改掉任何東西，才算做完。所以刪掉舊頁面之前，我先 build 一次、
+把渲染出來的 `dist/` 拍了個快照。遷移後我重新 build，把每一頁的正規化文字——十篇文章、兩個索引頁、
+兩個首頁——拿去跟那個快照 diff。
+
+唯一的差異是兩個改進：直引號變成了彎引號（Astro 的 smartypants），還有舊 JSX 在中文字之間塞進去
+的多餘空白不見了。把這些正規化掉之後，每一頁都逐字相同。這個 diff 是重構時最便宜的信心來源——它
+不在乎 HTML 是怎麼生出來的，只在乎吐出來的字一不一樣。
+
+## 這次學到什麼
+
+<Lesson label="保留欄位名該大聲報錯">
+  最糟的不是那個碰撞，是它無聲、又非決定性。一個框架若保留了某個欄位名，就該拒絕你用它，而不是
+  默默把你的資料併掉。一個輸入沒變、輸出卻變的 build，是在告訴你有東西 key 錯了。
+</Lesson>
+
+<Lesson label="Markdown 預設是 ASCII">
+  CommonMark 的強調語法規則是繞著空白與 ASCII 標點建的；CJK 文字會以一種看起來像你犯錯的方式戳破
+  那些假設。如果你用中文、日文、韓文寫 Markdown，要知道哪些 remark 外掛能把它補回來。
+</Lesson>
+
+<Lesson label="Diff 輸出，不是輸入">
+  信任一個遷移的方法，是比對讀者實際看到的東西，搬家前跟搬家後。一個跨每一頁的正規化文字 diff 抓到了
+  真正的變動、也讓我能把那些表面差異揮手帶過——把「我覺得一樣」變成「除了這兩個改進，每頁都一模一樣」。
+</Lesson>

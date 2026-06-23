@@ -10,7 +10,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.0.0"
+    "@astrojs/mdx": "^4.3.14",
+    "astro": "^5.0.0",
+    "remark-cjk-friendly": "^2.3.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.0",

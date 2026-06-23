@@ -1,7 +1,7 @@
 ---
 import Section from "./Section.astro";
 import type { Locale, SiteContent } from "../i18n/strings";
-import { posts, postPath, blogIndexPath } from "../data/posts";
+import { getSortedPosts, postPath, blogIndexPath } from "../data/posts";
 
 interface Props {
   data: SiteContent["writing"];
@@ -11,7 +11,8 @@ interface Props {
 
 const { data, lang, limit = 3 } = Astro.props;
 
-const visible = posts.slice(0, limit);
+const all = await getSortedPosts(lang);
+const visible = all.slice(0, limit);
 const indexHref = blogIndexPath(lang);
 ---
 
@@ -25,7 +26,6 @@ const indexHref = blogIndexPath(lang);
   <ul class="divide-y divide-ink-200 border-t border-b border-ink-200">
     {
       visible.map((p) => {
-        const loc = p[lang];
         const href = postPath(p.slug, lang);
         return (
           <li>
@@ -35,15 +35,15 @@ const indexHref = blogIndexPath(lang);
             >
               <div class="flex items-baseline justify-between gap-4 mb-2 flex-wrap">
                 <span class="font-mono text-[11px] uppercase tracking-widest text-ink-500">
-                  {loc.tag}
+                  {p.tag}
                 </span>
                 <span class="font-mono text-[11px] text-ink-500">{p.date}</span>
               </div>
               <h3 class="text-lg md:text-xl font-semibold text-ink-900 tracking-tight leading-snug mb-2 group-hover:underline underline-offset-4 decoration-ink-300">
-                {loc.title}
+                {p.title}
               </h3>
               <p class="text-ink-700 leading-relaxed text-[0.95rem]">
-                {loc.description}
+                {p.description}
               </p>
             </a>
           </li>
@@ -53,7 +53,7 @@ const indexHref = blogIndexPath(lang);
   </ul>
 
   {
-    posts.length > visible.length && (
+    all.length > visible.length && (
       <div class="mt-6">
         <a
           href={indexHref}
