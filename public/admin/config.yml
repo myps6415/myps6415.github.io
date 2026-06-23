@@ -5,10 +5,10 @@ backend:
   name: github
   repo: myps6415/myps6415.github.io
   branch: main
-  # URL of the self-hosted OAuth Worker (see docs/cms-setup.md). REPLACE this
-  # placeholder with your deployed Worker URL, e.g.
-  #   https://sveltia-cms-auth.<your-subdomain>.workers.dev
-  base_url: https://REPLACE-WITH-YOUR-WORKER.workers.dev
+  # URL of the self-hosted OAuth Worker (sveltia-cms-auth on Cloudflare).
+  # base_url is the worker origin only — NOT the /callback path (that goes in
+  # the GitHub OAuth App's Authorization callback URL).
+  base_url: https://sveltia-cms-auth.myps6415.workers.dev
 
 # Lets you test the CMS UI locally without GitHub auth:
 #   1) terminal A: npx decap-server      (proxy on :8081)
