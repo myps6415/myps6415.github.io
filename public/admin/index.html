@@ -11,6 +11,9 @@
          Auth is GitHub OAuth via a self-hosted Cloudflare Worker (set base_url
          in config.yml). For local UI testing without GitHub: set
          local_backend: true in config.yml and run `npx decap-server`. -->
-    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+    <!-- Pinned to an immutable npm version (not floating @latest) so a future
+         malicious release can't auto-load on this token-handling page. Bump the
+         version deliberately after reading the changelog. -->
+    <script src="https://unpkg.com/@sveltia/cms@0.167.3/dist/sveltia-cms.js"></script>
   </body>
 </html>
