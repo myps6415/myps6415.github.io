@@ -15,7 +15,8 @@ const blog = defineCollection({
     // NB: not "slug" — that's a reserved content-collection field and would
     // collapse the en/ and zh/ entries that share a URL slug into one.
     postSlug: z.string(),
-    lang: z.enum(["en", "zh"]).default("en"),
+    // Locale is derived from the folder (en/ or zh/) via the entry id, so the
+    // CMS never has to manage a per-locale `lang` field. See data/posts.ts.
     meta: z
       .array(z.object({ text: z.string(), href: z.string().optional() }))
       .default([]),

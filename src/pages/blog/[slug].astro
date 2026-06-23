@@ -12,7 +12,7 @@ import Lesson from "../../components/blog/Lesson.astro";
 import CodeBlock from "../../components/blog/CodeBlock.astro";
 
 export async function getStaticPaths() {
-  const entries = await getCollection("blog", (e) => e.data.lang === "en");
+  const entries = await getCollection("blog", (e) => e.id.startsWith("en/"));
   return entries.map((entry) => ({
     params: { slug: entry.data.postSlug },
     props: { entry },

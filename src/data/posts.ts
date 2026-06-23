@@ -15,7 +15,8 @@ export interface PostMeta {
 // first — the single source of truth for the homepage Writing section and the
 // blog index pages.
 export async function getSortedPosts(lang: Locale): Promise<PostMeta[]> {
-  const entries = await getCollection("blog", (e) => e.data.lang === lang);
+  // locale is the entry's top folder: "en/<slug>" or "zh/<slug>"
+  const entries = await getCollection("blog", (e) => e.id.startsWith(`${lang}/`));
   return entries
     .map((e) => ({
       slug: e.data.postSlug,

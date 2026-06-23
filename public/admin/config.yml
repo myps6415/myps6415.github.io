@@ -1,0 +1,71 @@
+# Sveltia CMS configuration.
+# Docs: https://github.com/sveltia/sveltia-cms (Decap-compatible config).
+
+backend:
+  name: github
+  repo: myps6415/myps6415.github.io
+  branch: main
+  # URL of the self-hosted OAuth Worker (see docs/cms-setup.md). REPLACE this
+  # placeholder with your deployed Worker URL, e.g.
+  #   https://sveltia-cms-auth.<your-subdomain>.workers.dev
+  base_url: https://REPLACE-WITH-YOUR-WORKER.workers.dev
+
+# Lets you test the CMS UI locally without GitHub auth:
+#   1) terminal A: npx decap-server      (proxy on :8081)
+#   2) terminal B: npm run dev           (site on :4321)
+#   3) open http://localhost:4321/admin/
+local_backend: true
+
+site_url: https://myps6415.github.io
+display_url: https://myps6415.github.io
+
+# Images (none used yet, but ready if a post needs one).
+media_folder: public/uploads
+public_folder: /uploads
+
+# Locale comes from the folder: src/content/blog/{en,zh}/<postSlug>.mdx.
+# This maps 1:1 onto our content collection.
+i18n:
+  structure: multiple_folders
+  locales: [en, zh]
+  default_locale: en
+
+collections:
+  - name: blog
+    label: Blog posts
+    label_singular: Blog post
+    folder: src/content/blog
+    create: true
+    extension: mdx
+    format: frontmatter
+    identifier_field: postSlug
+    slug: "{{fields.postSlug}}"
+    summary: "{{title}}"
+    sortable_fields: [date, title]
+    i18n: true
+    fields:
+      - {
+          name: postSlug,
+          label: URL slug,
+          widget: string,
+          i18n: duplicate,
+          hint: "lowercase-with-dashes; becomes the filename in BOTH languages",
+        }
+      - { name: date, label: Date, widget: string, i18n: duplicate, hint: "YYYY-MM-DD" }
+      - { name: tag, label: Tag, widget: string, i18n: true }
+      - { name: title, label: Title, widget: string, i18n: true }
+      - { name: description, label: Description, widget: text, i18n: true }
+      - name: meta
+        label: Meta links
+        widget: list
+        i18n: duplicate
+        required: false
+        summary: "{{fields.text}}"
+        fields:
+          - { name: text, label: Text, widget: string }
+          - { name: href, label: Href (optional), widget: string, required: false }
+      # The body is MDX: prose as Markdown, plus component tags like
+      # <StatRow .../> / <CodeBlock>…</CodeBlock>. Edit prose freely; leave the
+      # component blocks intact. If Sveltia's rich-text mode ever reflows them,
+      # switch this widget to `text` (a plain textarea) — lossless for MDX.
+      - { name: body, label: Body (MDX), widget: markdown, i18n: true }
