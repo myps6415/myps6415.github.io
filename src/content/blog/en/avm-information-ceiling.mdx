@@ -1,0 +1,190 @@
+---
+title: "The information ceiling: why an AVM built on public sales data tops out at 12% MdAPE"
+description: "I built a house-price model on Taiwan's public transaction records and hit ~12% MdAPE on 107k live records. Then I proved it can't get more accurate — the residual is something this data simply doesn't contain. Knowing when to stop beats squeezing one more point."
+tag: "Machine Learning · Real Estate"
+date: "2026-06-25"
+postSlug: "avm-information-ceiling"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "~12%", label: "MdAPE — the LVR-only ceiling" },
+    { value: "~42%", label: "PE10 (mature comps-based AVMs hit ~60–70%)" },
+    { value: "107k", label: "live out-of-time records tested" },
+  ]}
+/>
+
+## Background
+
+I run a side project called RealPing: it takes Taiwan's public real-estate
+transaction batches (the LVR dataset) and cleans them into a "usable floor area"
+per-ping price — parking stripped out, **common areas stripped out**. Taiwan's
+official unit price divides by a denominator that includes common areas and
+parking, so the headline number runs roughly 45% below the real cost of usable
+space. That "common-area-stripped" layer is itself something nobody else
+publishes.
+
+Once the cleaning layer was solid, the obvious next move was an **AVM** — an
+automated valuation model that takes a property's features and returns an
+estimated unit price. Zillow's Zestimate, Taiwan's House+, all the same idea. I
+built one, measured it, and landed on a conclusion far more interesting than "I
+hit X% accuracy 🎉" — **this data can't estimate accurately, and I can prove
+why.**
+
+This is that negative result.
+
+## How it was built
+
+The target is `log(usable unit price)`. The model is a gradient-boosted tree
+(sklearn's `HistGradientBoostingRegressor` by default, auto-switching to
+`lightgbm` when it's importable). Every feature comes from columns already in
+the data — no external sources:
+
+- **Categorical**: city, building type, primary use, elevator (y/n), total floors
+- **Numeric**: building age, bedrooms / living rooms / bathrooms, common-area
+  ratio, usable ping, transaction year-month
+
+The one subtlety is the district. There are ~370 of them nationwide — well past
+sklearn's native-category limit — and the district is the single strongest
+signal in house prices. So I **target-encode** it: replace each district with
+the median `log` price of that district *in the training set*. This is where
+time leakage loves to creep in, so the encoding table is computed **on the
+training set only**, serialized into the artifact, and unseen districts fall
+back to city median, then national median.
+
+Validation is always an **out-of-time split**: hold out the most recent quarter
+as the test set, simulating "use past sales to estimate future sales" — never a
+random split. A random split lets the model peek at the future and inflates the
+score.
+
+<Callout variant="info" title="Don't measure an AVM with RMSE">
+  House prices are right-skewed; RMSE gets dominated by the absolute error on
+  mansions and tells you nothing about the typical property. The industry looks
+  at <strong>PE10 / PE20</strong> (share of estimates within ±10% / ±20% of the
+  actual sale — higher is better) and <strong>MdAPE</strong> (the median of
+  absolute percentage error — robust to outliers). I use that ruler throughout.
+</Callout>
+
+## Results
+
+107k live records, out-of-time (train 105,579 → test 2026 Q1, 1,885 rows). I
+added features in stages to watch each one's marginal lift:
+
+<CodeBlock label="metrics as features are added (more features lower down)" lang="text">
+{`model                       MdAPE    PE10     PE20     MAPE     bias
+─────────────────────────   ─────    ─────    ─────    ─────    ─────
+district baseline           13.2%    41.8%    66.4%    29.8%    +0.8%
++ street-level location     12.4%    42.1%    67.5%    27.9%    +1.0%
++ floor                     12.7%    42.3%    68.5%    27.5%    +1.0%`}
+</CodeBlock>
+
+Across Taiwan's six metros, MdAPE lands at 10–13%, no single city collapses,
+bias is near zero. Sounds fine — until you put it next to the industry
+benchmark: **mature comps-based AVMs run PE10 around 60–70%, MdAPE 5–8%.** My
+PE10 is 42% — meaning out of every ten estimates, only four land within ±10% of
+the real sale.
+
+That gap isn't a bug. It's the whole point of this post.
+
+## Two negative results
+
+Most of my effort went into pushing that number down. Two intuitive routes, two
+walls.
+
+**One: refining location barely helped.** Going from "district" to
+"street-level" (parsing the road name from the address, with hierarchical
+smoothed encoding) moved MdAPE only from 13.2% to 12.4%. More telling: it was
+**completely insensitive to the smoothing strength** — I swept the smoothing
+coefficient from 3 to 40 and MdAPE just wandered between 12.4–12.7%. If signal
+were being smoothed away, that knob should respond. It didn't, which means
+**within-district location variation was never the main residual** in the first
+place.
+
+**Two: adding floor was a no-op.** I parsed unit floor, total floors, and
+relative floor from the address and fed them in. PE10 / MdAPE all moved inside
+the noise band (MdAPE even ticked up slightly). Floor isn't the main residual
+either.
+
+<Callout variant="warn" title="The residual is something this data doesn't contain">
+  With location and floor ruled out, the dominant remaining error is
+  <strong>unit-level heterogeneity</strong> — renovation, view, aspect, developer
+  brand, how motivated the seller was, how hard this particular deal was
+  negotiated. The transaction records <strong>simply don't capture any of
+  that</strong>. Piling on more off-the-shelf features is sub-1pp diminishing
+  returns; the model is already up against the information ceiling of the data.
+</Callout>
+
+## "What about external data?" — that won't save it either
+
+Every time I get here, someone says: just geocode it, join POI data, pull in
+external sources. I checked, adversarially (deliberately hunting for
+counter-evidence), and the conclusion is: **for this problem, no external-data
+route pays off.**
+
+- **Geocoding is fully feasible and useless here**: I measured ~100% of
+  addresses carry a complete street number on the input side, and the official
+  address basemap resolves ~100% to building level on the output side (even rural
+  and outer-island place-name addresses). But since within-district location
+  variation isn't the main residual, pinning coordinates to lat/long adds &lt;1pp.
+  **Demoted to backlog.**
+- **POI / amenity features add ≈0 once the model already has location**: this
+  is supported in the literature — once a model knows neighboring sale prices,
+  adding convenience-store density or transit distance barely lifts anything. My
+  location signal is already saturated.
+- **What would actually help is interior photos / condition** — but the only
+  source rich enough is 591, and scraping its public listings to build a database
+  is a legal no-go zone in Taiwan (Fair Trade Act Article 25, with an FTC
+  enforcement precedent). **The legally safe sources are useless; the useful
+  source is illegal.**
+- **Even repeat-sales is out**: addresses with a floor suffix are unit-unique,
+  but there are only 1.04 sales per address on average, and just 2.9% of
+  addresses have ≥2 sales. Same-unit repeat transactions are too sparse to carry
+  the method.
+
+## So I stopped
+
+The model is built, tested, documented. Another version of me would now bolt on
+MLflow, wire up a model registry, ship it to serving, schedule automated
+retraining — an entire MLOps machine around this model.
+
+I didn't. Because that machine's core assumption is "the model keeps getting
+better, so it needs monitoring, retraining, iteration" — and I'd **just proven
+it doesn't get better.** Retraining can't fix a problem whose bottleneck is
+*missing columns*, not a stale model. Building infrastructure for a problem you
+don't have is engineering busywork.
+
+<Callout variant="ok" title="This model isn't a failure — it's an honest ballpark">
+  MdAPE ~12%, near-zero bias, stable across cities — it's a usable
+  <strong>"regional ballpark / sanity-check layer"</strong>: it tells you how far
+  an asking price sits from the area's going rate. It is <strong>not</strong> a
+  hard per-unit quote, and I say so rather than pretending otherwise. The moat
+  was never valuation accuracy — it's the common-area-stripped clean layer nobody
+  else has.
+</Callout>
+
+## Takeaways
+
+<Lesson label="A negative result is a result — often a more valuable one">
+  "I built a model and hit X% accuracy" is the most common and cheapest
+  narrative. "I built a model, rigorously proved it can't get more accurate, and
+  stopped" is far rarer. Establishing where a dataset's ceiling is — and knowing
+  when to stop — demonstrates more engineering judgment than grinding out one
+  more point of score.
+</Lesson>
+
+<Lesson label="A feature that isn't in the data can't be conjured by any model">
+  My residual is renovation, negotiation, condition — none of which LVR records.
+  No architecture, no hyperparameter, no ensemble can invent signal from a column
+  that doesn't exist. Before burning money tuning, ask: is the signal I haven't
+  used yet actually in this data at all? If it isn't, the fanciest model still
+  tops out.
+</Lesson>
+
+<Lesson label="Use the industry metric, not the convenient one">
+  Had I reported only RMSE or R², this model would have looked "fine" and I might
+  have shipped it. It was PE10 at 42% — against 60–70% for comps-based AVMs —
+  that forced me to face it. Pick a ruler the people in the field actually use;
+  it tells you where you really are, not where you'd like to be.
+</Lesson>
