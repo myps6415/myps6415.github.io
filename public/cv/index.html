@@ -219,7 +219,7 @@
   <header>
     <span class="eyebrow">Principal Data Engineer · Taiwan · Open to remote</span>
     <h1>John Tung<span class="en">童曉瑜 · Hsiao-Yu Tung</span></h1>
-    <p class="lede">I've run production on GCP, AWS, and Azure, and shipped real workloads on Airflow — but most of what I do lately is taking something built too heavy and turning it back into a query that runs on a schedule. I pick tools to fit the problem. My background is Chinese text mining and public-opinion analysis; I led a Data Team for 2.5 years, then chose to go back to writing code as a Principal.</p>
+    <p class="lede">I've run production on GCP, AWS, and Azure, and shipped real workloads on Airflow — but most of what I do lately is taking something built too heavy and turning it back into a query that runs on a schedule. I pick tools to fit the problem. My background is Chinese text mining and public-opinion analysis; I led a Data Team for 2.5 years — coding throughout — then chose to step back from management to a Principal IC role.</p>
     <nav class="contact">
       <a href="https://myps6415.github.io/">Site</a>
       <a href="https://github.com/myps6415">GitHub</a>
@@ -245,7 +245,15 @@
         <div class="metric"><span class="fig">15<span class="res"> jobs</span></span><span class="unit">Cloud Run · scheduled</span></div>
         <div>
           <h3>Multi-platform social ingestion</h3>
-          <p>Facebook, Instagram, Threads, and YouTube ingested into BigQuery — 15 Cloud Run Jobs on staggered schedules. Raw data is append-only, so every fetch's full history is kept (not just the latest state); dbt then shapes it into clean, query-ready tables. Powers the Looker Studio dashboards editorial and marketing open every morning.</p>
+          <p>Facebook, Instagram, Threads, and YouTube ingested into BigQuery — 15+ Cloud Run Jobs on staggered schedules, with GA4 site/app traffic added on top. Raw data is append-only, so every fetch's full history is kept (not just the latest state); dbt then shapes it into clean, query-ready tables. Powers the dashboards editorial and marketing open every morning.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">2<span class="res"> apps</span></span><span class="unit">Streamlit · OIDC + ACL</span></div>
+        <div>
+          <h3>Two production operating dashboards</h3>
+          <p>Built two Streamlit dashboards on Cloud Run with Google login — one for group-wide digital revenue, one for social-media performance. <span class="note">A self-serve permission system — 3-tier roles plus a change audit log — lets managers add and remove members themselves, no redeploy and no engineer in the loop; event tracking feeds product- and feature-adoption analysis.</span></p>
         </div>
       </div>
 
@@ -274,10 +282,34 @@
       </div>
 
       <div class="item">
+        <div class="metric"><span class="fig">768d<span class="res"> + eval</span></span><span class="unit">embeddings · LLM-as-judge</span></div>
+        <div>
+          <h3>Semantic clustering + RAG retrieval foundation</h3>
+          <p>Vertex embeddings (768-dim multilingual) plus KMEANS group the negative comments, and an LLM names each theme — turning "20% negative" into "here's what they're actually angry about." On top of that, a comment retrieval layer with a weekly LLM-as-judge eval: two-tier quality thresholds, and the job fails if retrieval quality drops, so a code change or a model/data drift can't quietly degrade it. <span class="note">The embedding + retrieval half of RAG, shipped and guarded — the editorial semantic-search archive is the next layer.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
         <div class="metric"><span class="fig">4<span class="res"> jobs</span></span><span class="unit">GA4 Data API · shipped</span></div>
         <div>
           <h3>GA4 web-analytics ingestion</h3>
           <p>Pulling the group's site and app traffic into the platform through the GA4 Data API — 4 Cloud Run Jobs plus a story-traffic ranking table. <span class="note">The Viewer grant non-engineers approve also runs through a self-serve page on Cloudflare Pages — no engineer in the loop.</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">SoV<span class="res"> + stats</span></span><span class="unit">benchmark · cross-BU</span></div>
+        <div>
+          <h3>Competitor benchmarking + cross-BU analysis</h3>
+          <p>Competitor data pulled via official public APIs (YouTube + Instagram) for topic share-of-voice. External factors — the stock-market index and the national business-cycle signal — are joined to revenue and run through Mann-Kendall trend tests, Sen's slope, seasonal decomposition, and lead-lag correlation. <span class="note">So a number isn't just "up" — it's "up with the tailwind," "up against the trend" (the part that's actually us), or "dragged by the macro."</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">3 xls<span class="res"> → PDF</span></span><span class="unit">ReportLab · auto-typeset</span></div>
+        <div>
+          <h3>Newspaper-layout PDF generator</h3>
+          <p>A Streamlit + ReportLab tool that parses stock-market data files and auto-typesets them into a print-ready monthly-revenue newspaper page (the actual layout), replacing what used to be done by hand.</p>
         </div>
       </div>
 
@@ -303,7 +335,7 @@
   <section>
     <div class="sec-label"><span class="eyebrow">正在做</span><span class="zh">In Flight</span></div>
     <div class="rows">
-      <div class="row"><div class="k">Editorial semantic search</div><div class="v"><b>Semantic search over the archive</b> — evaluating BigQuery Vector Search vs. self-hosted Elasticsearch so editors can search historical articles by meaning.</div></div>
+      <div class="row"><div class="k">Editorial semantic search</div><div class="v"><b>Semantic search over the archive</b> — the embedding + retrieval foundation is already live (comment clustering + RAG retrieval); extending it to historical articles, evaluating BigQuery Vector Search vs. self-hosted Elasticsearch so editors can search by meaning.</div></div>
       <div class="row"><div class="k">Migration wrap-up</div><div class="v"><b>Retiring the old orchestration</b> — the new architecture is already producing; now decommissioning the last revenue pipeline off the old Composer DAG / Apps Script.</div></div>
     </div>
   </section>
@@ -318,11 +350,12 @@
   <section>
     <div class="sec-label"><span class="eyebrow">技術</span><span class="zh">Stack</span></div>
     <div class="rows">
-      <div class="row"><div class="k">Languages / query</div><div class="v">Python · SQL</div></div>
-      <div class="row"><div class="k">GCP</div><div class="v">BigQuery · Cloud Run Jobs · Cloud Scheduler · Secret Manager · Looker Studio</div></div>
-      <div class="row"><div class="k">Modeling / orchestration</div><div class="v">dbt-bigquery (raw / staging / marts) · Airflow</div></div>
-      <div class="row"><div class="k">Also shipped in prod</div><div class="v">AWS · Azure · PySpark · Apache Iceberg · Kubernetes · Fluentd</div></div>
-      <div class="row"><div class="k">ML / NLP</div><div class="v">Chinese text mining · sentiment analysis · LLM / RAG · LightGBM</div></div>
+      <div class="row"><div class="k">Data engineering</div><div class="v">BigQuery · dbt (raw / staging / marts) · Cloud Run Jobs + Cloud Scheduler · Airflow · PySpark / Spark · Apache Iceberg · Fluentd · crawler ETL (Scrapy / Selenium)</div></div>
+      <div class="row"><div class="k">Cloud</div><div class="v">GCP (Cloud Run · Scheduler · Secret Manager · Monitoring · GKE · Compute Engine · Cloud Storage) · AWS (Data Pipeline · S3 · cross-cloud ETL) · Azure</div></div>
+      <div class="row"><div class="k">AI / GenAI / LLMOps</div><div class="v">Gemini via BigQuery AI.GENERATE · grounded generation · Vertex embeddings + KMEANS · RAG retrieval + LLM-as-judge eval · classical ML (XGBoost / RandomForest / SVM / LightGBM) · Chinese text mining / NLP</div></div>
+      <div class="row"><div class="k">Analysis / viz</div><div class="v">Streamlit (Cloud Run + OIDC + ACL) · Looker Studio / Data Studio · Superset · Mann-Kendall / Sen's slope / lead-lag · SEO (Sitemap / json-ld)</div></div>
+      <div class="row"><div class="k">DevOps / CI-CD</div><div class="v">Docker · Cloud Build · GitHub Actions · Ansible · Kubernetes · Poetry / pytest / ruff · Scrum · Jira · GitLab</div></div>
+      <div class="row"><div class="k">Languages / database</div><div class="v">Python · SQL · BigQuery / MySQL / SQLite / MariaDB · MongoDB · Redis · Elasticsearch</div></div>
     </div>
   </section>
 

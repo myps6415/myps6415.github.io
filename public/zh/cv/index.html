@@ -219,7 +219,7 @@
   <header>
     <span class="eyebrow">Principal Data Engineer · 台灣 · 開放全遠端</span>
     <h1>童曉瑜<span class="en">John Tung · Hsiao-Yu Tung</span></h1>
-    <p class="lede">GCP、AWS、Azure 上都跑過 production，工作流程編排用過 Airflow；但這幾年最常做的，其實是把別人搭得太重的東西，改回一個會照排程跑的 query。工具看需求挑。本科是中文文字探勘與輿情分析，帶過 2.5 年 Data Team，後來選擇回到自己寫 code 的 Principal。</p>
+    <p class="lede">GCP、AWS、Azure 上都跑過 production，工作流程編排用過 Airflow；但這幾年最常做的，其實是把別人搭得太重的東西，改回一個會照排程跑的 query。工具看需求挑。本科是中文文字探勘與輿情分析，帶過 2.5 年 Data Team（期間也一直親自寫 code），後來選擇從管理回到 Principal IC 角色。</p>
     <nav class="contact">
       <a href="https://myps6415.github.io/zh/">個人站</a>
       <a href="https://github.com/myps6415">GitHub</a>
@@ -245,7 +245,15 @@
         <div class="metric"><span class="fig">15<span class="res"> jobs</span></span><span class="unit">Cloud Run · 排程化</span></div>
         <div>
           <h3>多平台社群 ingestion</h3>
-          <p>把 Facebook、Instagram、Threads、YouTube 四個平台的數據，從抓取到入庫一條龍存進 BigQuery — 15 個 Cloud Run Job、各自錯開時間排程。原始資料只新增、不覆蓋，保留每次抓取的完整歷史（不只最新狀態），再用 dbt 整理成乾淨、可直接查詢的分析表，最後接成編輯與行銷每天打開的 Looker Studio 儀表板。</p>
+          <p>把 Facebook、Instagram、Threads、YouTube 四個平台的數據，從抓取到入庫一條龍存進 BigQuery — 15+ 個 Cloud Run Job、各自錯開時間排程，並擴充 GA4 官網/App 流量。原始資料只新增、不覆蓋，保留每次抓取的完整歷史（不只最新狀態），再用 dbt 整理成乾淨、可直接查詢的分析表，最後接成編輯與行銷每天打開的儀表板。</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">2<span class="res"> apps</span></span><span class="unit">Streamlit · OIDC + ACL</span></div>
+        <div>
+          <h3>兩座正式營運儀表板</h3>
+          <p>以 Streamlit on Cloud Run 打造兩座營運儀表板——一座看集團數位營收、一座看社群媒體成效，搭配 Google 登入。<span class="note">自助式的權限管理（三層角色 + 操作稽核紀錄）讓主管自己增刪成員，不必重新部署、也不必找工程師；並埋點做產品與功能採用分析。</span></p>
         </div>
       </div>
 
@@ -274,10 +282,34 @@
       </div>
 
       <div class="item">
+        <div class="metric"><span class="fig">768d<span class="res"> + eval</span></span><span class="unit">嵌入 · LLM-as-judge</span></div>
+        <div>
+          <h3>語意分群 + RAG 檢索地基</h3>
+          <p>用 Vertex 嵌入模型（768 維、中文 multilingual）+ KMEANS 把負評分群，再讓 LLM 為每群命名主題 — 把「兩成是負面」變成「他們到底在氣什麼」。在這之上做了一層留言檢索，並用每週的 LLM-as-judge 自動評測把關：雙層品質門檻，檢索品質跌破就讓 job 失敗，避免改了程式或模型/資料漂移後悄悄變差。<span class="note">這是 RAG 的「嵌入 + 檢索」那半，已上線並有守門 — 編輯台語意搜尋的歷史檔則是下一層。</span></p>
+        </div>
+      </div>
+
+      <div class="item">
         <div class="metric"><span class="fig">4<span class="res"> jobs</span></span><span class="unit">GA4 Data API · 已上線</span></div>
         <div>
           <h3>GA4 網站分析 ingestion</h3>
           <p>透過 GA4 Data API 把集團官網與 App 的流量接進平台 — 4 個 Cloud Run Job，並做出一張文章流量排行表。<span class="note">非工程師要開的「檢視者」權限，一樣走 Cloudflare Pages 上的自助頁，不用找工程師。</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">SoV<span class="res"> + 統計</span></span><span class="unit">競品對標 · 跨 BU</span></div>
+        <div>
+          <h3>競品對標 + 跨事業單位分析</h3>
+          <p>以官方公開 API 抓競品數據（YouTube + Instagram）做題材聲量（share of voice）比較。再把外部因子 — 台股加權指數與景氣燈號 — 接上營收，跑 Mann-Kendall 趨勢檢定、Sen's slope、季節分解與 lead-lag 相關。<span class="note">於是一個數字不再只是「漲了」，而能分辨是「順風成長」、「逆勢成長（這部分才是我們的本事）」、還是「被大環境拖累」。</span></p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="metric"><span class="fig">3 xls<span class="res"> → PDF</span></span><span class="unit">ReportLab · 自動排版</span></div>
+        <div>
+          <h3>報紙版面 PDF 產製工具</h3>
+          <p>用 Streamlit + ReportLab 解析股市行情資料檔，自動排版成可直接印的月營收一覽表報紙版面（實際印出的版型），取代原本人工排版。</p>
         </div>
       </div>
 
@@ -303,7 +335,7 @@
   <section>
     <div class="sec-label"><span class="eyebrow">In Flight</span><span class="zh">正在做</span></div>
     <div class="rows">
-      <div class="row"><div class="k">編輯台語意搜尋</div><div class="v"><b>用「意思」搜尋歷史文章</b> — 讓編輯不必靠關鍵字、改用語意檢索歷史文章；正評估 BigQuery Vector Search 與自架 Elasticsearch 兩條路。</div></div>
+      <div class="row"><div class="k">編輯台語意搜尋</div><div class="v"><b>用「意思」搜尋歷史文章</b> — 嵌入與檢索地基已上線（負評分群 + 留言 RAG 檢索），正延伸到歷史文章；評估 BigQuery Vector Search 與自架 Elasticsearch 兩條路，讓編輯不必靠關鍵字、改用語意檢索。</div></div>
       <div class="row"><div class="k">遷移收尾</div><div class="v"><b>下線舊的排程系統</b> — 新架構已開始產出數據，正把最後一條營收資料管線從舊的 Composer / Apps Script 完全退役。</div></div>
     </div>
   </section>
@@ -318,11 +350,12 @@
   <section>
     <div class="sec-label"><span class="eyebrow">Stack</span><span class="zh">技術</span></div>
     <div class="rows">
-      <div class="row"><div class="k">語言 / 查詢</div><div class="v">Python · SQL</div></div>
-      <div class="row"><div class="k">GCP</div><div class="v">BigQuery · Cloud Run Jobs · Cloud Scheduler · Secret Manager · Looker Studio</div></div>
-      <div class="row"><div class="k">建模 / 編排</div><div class="v">dbt-bigquery（raw / staging / marts）· Airflow</div></div>
-      <div class="row"><div class="k">也做過 production</div><div class="v">AWS · Azure · PySpark · Apache Iceberg · Kubernetes · Fluentd</div></div>
-      <div class="row"><div class="k">ML / NLP</div><div class="v">中文文字探勘 · 情緒分析 · LLM / RAG · LightGBM</div></div>
+      <div class="row"><div class="k">資料工程</div><div class="v">BigQuery · dbt（raw / staging / marts）· Cloud Run Jobs + Cloud Scheduler · Airflow · PySpark / Spark · Apache Iceberg · Fluentd · 爬蟲 ETL（Scrapy / Selenium）</div></div>
+      <div class="row"><div class="k">雲端</div><div class="v">GCP（Cloud Run · Scheduler · Secret Manager · Monitoring · GKE · Compute Engine · Cloud Storage）· AWS（Data Pipeline · S3 · 跨雲 ETL）· Azure</div></div>
+      <div class="row"><div class="k">AI / GenAI / LLMOps</div><div class="v">BigQuery AI.GENERATE 呼叫 Gemini · 接地生成 · Vertex 嵌入 + KMEANS · RAG 檢索 + LLM-as-judge 評測 · 古典 ML（XGBoost / RandomForest / SVM / LightGBM）· 中文文字探勘 / NLP</div></div>
+      <div class="row"><div class="k">分析 / 視覺化</div><div class="v">Streamlit（Cloud Run + OIDC + ACL）· Looker Studio / Data Studio · Superset · Mann-Kendall / Sen's slope / lead-lag · SEO（Sitemap / json-ld）</div></div>
+      <div class="row"><div class="k">DevOps / CI-CD</div><div class="v">Docker · Cloud Build · GitHub Actions · Ansible · Kubernetes · Poetry / pytest / ruff · Scrum · Jira · GitLab</div></div>
+      <div class="row"><div class="k">程式語言 / 資料庫</div><div class="v">Python · SQL · BigQuery / MySQL / SQLite / MariaDB · MongoDB · Redis · Elasticsearch</div></div>
     </div>
   </section>
 
