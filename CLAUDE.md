@@ -29,6 +29,8 @@ src/
   content/blog/
     en/<postSlug>.mdx      # EN posts: frontmatter + Markdown + component tags
     zh/<postSlug>.mdx      # ZH twin (same postSlug = shared URL slug; locale = folder)
+  content/distill/
+    <postSlug>.mdx         # Distill daily picks (zh-only, machine-written — see "Distill section")
   i18n/strings.ts          # homepage copy, both locales (single source of truth)
   data/posts.ts            # getSortedPosts(lang) + postPath/blogIndexPath helpers
   pages/
@@ -41,6 +43,9 @@ src/
       blog/
         index.astro
         [slug].astro       # renders every ZH post
+      distill/
+        index.astro        # Distill picks index (zh-only)
+        [slug].astro       # renders every distill pick via Base (not BlogPost)
   styles/global.css        # @theme tokens + .blog-prose styles
 public/
   admin/                   # Sveltia CMS (browser editor) — see "Browser CMS"
@@ -59,7 +64,23 @@ Two files — one per locale — in the content collection. No `posts.ts` edit, 
 
 Or create/edit posts in the browser at `/admin` (see Browser CMS) — same files, either path.
 
-## Browser CMS (`/admin`)
+## Distill section (`/zh/distill/`) — machine-written, do not hand-edit routinely
+
+Daily curated data-engineering picks (350–380字 zh rewrites), auto-committed to `main`
+by the Distill pipeline (`~/.openclaw/scripts/publish_to_pages.py`, runs 07:30 daily
+after the Threads publish; project docs in `~/Documents/work/distill/`).
+
+- **Separate `distill` collection** (see `content.config.ts`) — deliberately NOT in
+  `blog`, so daily posts never flood the homepage Writing section or `/blog/` indexes.
+- zh-only: no EN twin. The routes pass explicit `alternateUrls` with `en: "/"` so
+  hreflang falls back to the home pair; `[slug].astro` here renders via `Base`
+  directly, NOT `BlogPost` (that layout derives an EN twin URL that wouldn't exist).
+- Frontmatter: `title`, `description`, `date`, `postSlug`, `sourceUrl`, and optional
+  `sourceName` / `threadUrl`. Body is plain paragraphs with `{`/`<` HTML-escaped by
+  the generator.
+- The pipeline commits straight to `main` — `git pull` before local work, same as
+  the CMS caveat. If a generated post breaks the build, delete its `.mdx` and the
+  pipeline will not regenerate it (slug-exists guard); fix the generator instead.
 
 Sveltia CMS (Decap-compatible) at `/admin`, for editing posts in a browser without touching git. It reads/writes the **same** MDX files — an *additional* authoring path, not a replacement. Editing in-repo (Claude / VS Code / Obsidian) still works exactly the same; both operate on `src/content/blog/`.
 
