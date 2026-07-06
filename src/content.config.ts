@@ -23,4 +23,20 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { blog };
+// Distill — zh-only daily curated picks (data-engineering channel), authored by
+// the automated pipeline in ~/Documents/work/distill. Deliberately a separate
+// collection so the hand-crafted Writing section is never flooded by daily posts.
+const distill = defineCollection({
+  loader: glob({ pattern: "**/*.mdx", base: "./src/content/distill" }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.string(),
+    postSlug: z.string(),
+    sourceUrl: z.string(),
+    sourceName: z.string().default(""),
+    threadUrl: z.string().default(""),
+  }),
+});
+
+export const collections = { blog, distill };
