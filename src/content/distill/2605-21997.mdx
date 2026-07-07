@@ -1,0 +1,19 @@
+---
+title: "「The Log is the Agent」最近在 HN 被討論得很熱，"
+description: "「The Log is the Agent」最近在 HN 被討論得很熱，論點有點反直覺：與其幫 Agent 設計一堆結構化工具介面，不如讓 Log 變成主體，所有決策跟狀態都流過同…"
+date: "2026-07-08"
+postSlug: "2605-21997"
+sourceUrl: "https://arxiv.org/abs/2605.21997"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DagplnTDxnf"
+---
+
+「The Log is the Agent」最近在 HN 被討論得很熱，論點有點反直覺：與其幫 Agent 設計一堆結構化工具介面，不如讓 Log 變成主體，所有決策跟狀態都流過同一條事件流。
+
+多數人會覺得 Agent 該有明確工具清單跟權限邊界才安全。但這篇觀察是，除錯跟稽核本就靠 log，乾脆讓 log 變成單一事實來源，Agent 變成讀寫者。
+
+我看完覺得對資料團隊特別有感。出事時最痛不是寫 pipeline，是從幾十個 service 的 log 撈線索。如果 Agent 每步決策都流過同一條 log，根因分析會從大海撈針變順藤摸瓜。
+
+不過實務上我會猶豫：log 變成最高權限資產，等於把雞蛋放同一個籃子。pipeline 一掉，Agent 跟著瞎，沒備援。
+
+推薦這篇給做 agent infra 的工程師，也許該從 log 重新想一次。
