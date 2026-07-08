@@ -1,0 +1,91 @@
+---
+title: "A family AI assistant that lives in a LINE group"
+description: "Why I built a self-hosted LINE bot for my family instead of pointing everyone at a chatbot app — architecture, the four design decisions, and where the boundaries are."
+tag: "Self-hosting · LLM"
+date: "2026-07-08"
+postSlug: "line-bot-family-assistant"
+meta:
+  - text: "line-bot series · 1"
+---
+
+<StatRow
+  stats={[
+    { value: "14", label: "Function-calling tools" },
+    { value: "2", label: "Containers (api + tunnel)" },
+    { value: "$0", label: "Marginal cost per message" },
+  ]}
+/>
+
+## Background
+
+In Taiwan, family coordination happens in LINE groups. Not Telegram, not Discord, not a chat app you can choose — LINE is where the people already are, and no amount of "just install this" changes that.
+
+By mid-2026 my personal automation was already consolidated on a self-hosted agent runtime pushing to my own Telegram: content pipelines, market research, credential refresh, the [family-schedule alert I migrated off n8n](/blog/from-n8n-zeabur-to-openclaw-local). That stack works, but it's **single-player**. My family can't use it, shouldn't need to learn it, and some of what runs there (portfolio analysis, work automation) has no business being visible to anyone but me.
+
+So the gap wasn't "I need an LLM" — it was an **entry point**: something the whole family can talk to, in the group they already use, that answers with real data. A LINE bot, self-hosted on the same machine as everything else.
+
+## The dividing line, decided up front
+
+Before writing any code I drew one boundary, and it shaped every feature decision since:
+
+<Callout variant="info" title="Private goes to the personal OS. Shared goes to the family bot.">
+  Anything single-person and sensitive — portfolio value, account balances, work automation — stays on the personal agent stack, delivered over my private Telegram. Anything genuinely shared — weather, reminders, a stock price a family member wants to watch — belongs in the family bot, visible to the group. The test is the <em>data</em>, not the topic: "my whole portfolio" is private; "did 2330 drop below 50" is a public number anyone can Google, and a family member asking for it is exactly the shared case.
+</Callout>
+
+This sounds obvious written down. In practice the pull is constant: the personal stack already *has* the portfolio data, the bot already *has* an LLM — bridging them is one tool away. Refusing that bridge is a feature. A family group is a broadcast medium; anything the bot can say, everyone reads.
+
+## Architecture
+
+Two containers on a home MacBook server, deployed like every other stack on the box (compose files in a version-controlled repo, secrets in an ignored `.env`):
+
+<Flow
+  steps={[
+    { marker: "1", title: "LINE Platform", desc: "Someone talks in the group; LINE POSTs the event to the webhook URL." },
+    { marker: "2", title: "Cloudflare Tunnel", desc: "Public HTTPS without opening a port — the home network is otherwise a private Tailscale island. The tunnel container dials out; nothing dials in." },
+    { marker: "3", title: "FastAPI webhook", desc: "Verify the X-Line-Signature, return 200 immediately, hand the event to a background task. LINE retries slow webhooks, and a retried LLM call is a duplicated reply." },
+    { marker: "4", title: "SQLite + LLM", desc: "Every message is stored for context; only a mention triggers the LLM. Function calling (14 tools) fetches real data, the reply goes back through the free reply API." },
+  ]}
+/>
+
+The LLM is an OpenAI-compatible endpoint, so the provider is three `.env` variables — the bot has run on Gemini's free tier (too small: 20 requests/day dies by dinner) and now runs on a flat-rate provider, which is what makes the marginal cost of a chatty group **actually zero** rather than "cheap until it isn't".
+
+## Four design decisions that carry the whole thing
+
+**1. Store everything, answer only when called.** Every group message goes into SQLite; the LLM only fires when the bot is mentioned. This is the difference between an assistant and a nuisance — it has full conversational context when asked ("what did mom decide about Saturday?") without inserting itself into every exchange.
+
+**2. Keyword triggers, because the @ menu lies.** LINE's mention picker for official accounts frequently doesn't appear on desktop (works fine on mobile — not a paid-tier thing, just a platform quirk). If "being mentionable" were the only trigger, the bot would be unreachable from half the devices in the house. So message-starts-with-keyword works too, and the prefix is stripped before the LLM sees it.
+
+**3. Quoted replies are a first-class target.** LINE sends a `quotedMessageId` when someone uses reply-to. The bot stores every message with its LINE message id, so "reply to a wall of text + @bot summarize this" fetches the *quoted* message from SQLite and makes it the primary object. Without this, "summarize this" means "summarize whatever happened to be recent".
+
+**4. Accept that history starts at join.** LINE has no API to fetch messages from before the bot joined a group — context accrues from day one, not day minus-thirty. Designing around this (rather than pretending) is why everything downstream (recaps, quoted replies) states its own limits instead of failing mysteriously.
+
+## What it does now
+
+The tool registry is where the bot stopped being a chatbot and became a family utility. Each tool is a small module — a JSON schema plus an async `run()` — and the LLM decides when to call one:
+
+- **Lookups** — weather (with an umbrella verdict), FX conversion, stock/crypto/index quotes, URL summarization, web search with cited sources
+- **Time-shifted** — reminders (one-shot and recurring, delivered as real @-mentions), price alerts ("tell me if 2328 drops below 50" — polled during market hours only, with a freshness gate so a weekend's stale quote can't false-trigger)
+- **Context** — chat recap ("what did everyone talk about this week?"), long-term memory ("remember I live in Hualien" — injected into every subsequent reply), vision on images and short videos, sticker sentiment
+- **Presentation** — structured results ship as LINE Flex cards (price with red/green delta, weather with rain probability, a cancel button on every reminder) plus one-tap follow-up chips, all over the free reply API
+
+Each of these earned its own set of scars — the reasoning-model output that had to be scrubbed three different ways before it was fit for a plain-text channel, the price-alert gates that avoid maintaining a holiday calendar, the memory model that's deliberately the *opposite* of the reminder model. Those are their own posts (this is a series; links will land here as they publish).
+
+## Watching a bot that can't watch itself
+
+A webhook bot's worst failure mode is **silence**: Docker restarts, the tunnel drops, the LLM provider has a bad day — and the bot just quietly stops, until a family member mentions it and gets nothing. LINE compounds this by suspending webhooks that fail repeatedly, so "broken" self-extends.
+
+The bot is therefore wrapped in six independent watchdog loops — liveness probes from *outside* Docker, a daily health digest, a delivery audit that catches reminders that were promised but never sent, weekly verified backups, and a daily regression probe that checks the *quality* of answers, not just their existence. That system took as much design as the bot itself, and it's the subject of the next posts in this series.
+
+## Takeaways
+
+<Lesson label="On entry points">
+  The model is fungible; the entry point isn't. A family assistant that lives where the family already talks gets used by people who would never install an AI app — my family asks it for weather and reminders daily, and nobody had to learn anything new.
+</Lesson>
+
+<Lesson label="On boundaries before features">
+  Deciding "private stays on the private stack" before building meant every later feature request had a one-line answer. The alternative — deciding per-feature under "but it would be convenient" pressure — ratchets in one direction only.
+</Lesson>
+
+<Lesson label="On flat-rate LLMs for chat surfaces">
+  A group chat is a usage pattern you don't control — you can't rate-limit your own family. Free tiers died in an evening; metered pricing makes every message a cost decision. Flat-rate pricing is what makes "just let everyone use it" a sane default.
+</Lesson>
