@@ -1,0 +1,109 @@
+---
+title: "LINE Messaging API 不會警告你的五個坑"
+description: "mention 偏移量是 UTF-16 code unit、電腦版 @ 選單會憑空消失、零歷史 API、一次性 replyToken——以及每個坑如何在 bot 的架構上留下痕跡。"
+tag: "Self-hosting · Platform quirks"
+date: "2026-07-11"
+postSlug: "line-messaging-api-gotchas"
+meta:
+  - text: "line-bot 系列 · 2"
+---
+
+<StatRow
+  stats={[
+    { value: "UTF-16", label: "mention 偏移量的單位" },
+    { value: "0", label: "個撈歷史的 API" },
+    { value: "1", label: "個 token 只能回一次" },
+  ]}
+/>
+
+## 背景
+
+這是 [LINE 家庭助手系列](/zh/blog/line-bot-family-assistant)的第二篇。第一篇講為什麼做、做了什麼；這篇講平台稅——LINE Messaging API 五個不在 quickstart 裡的行為，每一個都在 bot 的設計上留下了看得見的痕跡。它們沒有一個是 bug，但每一個都是承重牆。
+
+## 一、mention 偏移量是 UTF-16 code unit，不是字元
+
+有人在群組 @ bot 時，webhook 事件用 `index` 和 `length` 描述 mention 在訊息文字裡的位置——這樣你才能把 `@bot名字` 前綴去掉、再把剩下的問題丟給 LLM。文件給了你這兩個欄位，但沒強調**單位**：這些偏移量數的是 UTF-16 code unit，不是 Unicode 字元。
+
+Python 字串按字元索引。純 ASCII 和大部分中日韓文字兩者剛好一致，所以天真的 `text[index:index+length]` 切法會通過你想得到的每一個測試。然後某天，一位顯示名稱裡有 emoji 的家人 @ 了 bot——那個 emoji 占**兩個** UTF-16 code unit、但只占**一個** Python 字元，它後面所有偏移量都錯一位，bot 開始吃掉問題的第一個字。
+
+修法是在平台所講的編碼層做切割：
+
+<CodeBlock
+  label="line_client.py — 在 UTF-16 位元組層裁掉 mention"
+  lang="python"
+>
+{`def strip_self_mentions(message: dict) -> str:
+    text: str = message.get("text", "")
+    mentionees = message.get("mention", {}).get("mentionees", [])
+
+    spans = [
+        (m["index"], m["index"] + m["length"])
+        for m in mentionees
+        if m.get("isSelf") and "index" in m and "length" in m
+    ]
+    if not spans:
+        return text.strip()
+
+    units = text.encode("utf-16-le")  # 每個 code unit = 2 bytes
+    for start, end in sorted(spans, reverse=True):
+        units = units[: start * 2] + units[end * 2 :]
+    return units.decode("utf-16-le").strip()`}
+</CodeBlock>
+
+編成 `utf-16-le`、每個 code unit 當兩個 byte、由後往前切（前面的偏移量才不會失效）、再解碼回來。**送出方向**同一條規則：bot 發出會 @ 人的訊息時，它宣告的 `index`/`length` 也得用 UTF-16 單位算（`len(s.encode("utf-16-le")) // 2`），不然被 highlight 的範圍會以一模一樣的方式漂移。
+
+<Callout variant="warn" title="這類 bug 為什麼陰險">
+  它通過開發者寫的每一個測試——因為開發者都拿自己的名字測。它在正式環境、在那位名字裡有 🐰 的家人身上才發作——而且發作得<em>很安靜</em>：沒有例外、沒有錯誤，只是回答開始無視問題的前一兩個字。
+</Callout>
+
+## 二、電腦版的 @ 選單就是……不出現
+
+群組 bot 的整個觸發模型都建立在「使用者能 @ 到它」上。手機版 LINE 沒問題：打 `@`、選單跳出來、bot 在名單裡。電腦版 LINE 對官方帳號，選單裡經常根本沒有 bot。不是錯誤、不是付費限制——就是不在，而且沒有任何提示告訴使用者為什麼。
+
+如果「真 mention」是唯一的觸發方式，家裡一半的人坐在電腦前就叫不動 bot。所以關鍵字觸發是一等機制、不是備援：訊息**開頭**是設定的觸發詞（bot 的名字、暱稱）就算叫喚，不需要任何 mention 資料。前綴在丟給 LLM 前一樣被去掉——跟真 mention 走同一條路，下游管線分不出差別。
+
+通用的教訓：**觸發路徑要為你支援的最爛客戶端設計，不是最好的那個。** webhook payload 在所有裝置上都一樣；會變的是輸入介面，而輸入介面不歸你管。
+
+## 三、沒有歷史 API——也沒有用 message id 反查的 API
+
+兩個「不存在」加起來，劃定了 bot 知道與不知道的邊界：
+
+- **沒有「撈我入群之前的訊息」。** 脈絡從 bot 進群那一刻開始累積。沒有回填，句號。
+- **也沒有「用 message id 查文字」。** 使用者用「回覆」引用一則舊訊息時，webhook 給你一個 `quotedMessageId`——但沒有任何 API 能把這個 id 換回文字。那則訊息流過的當下你沒存下來，這個引用就指向虛空。
+
+所以「每則訊息都存」不是產品決策，是唯一可行的實作。每則訊息進 SQLite 時**連 LINE message id 一起存成欄位**——這正是引用回覆功能（「對長文按回覆 + @bot 幫我整理」）能成立的原因：webhook 給的 id 變成一次本地主鍵查詢，而不是一個不存在的 API 呼叫。
+
+媒體是唯一的半個例外：二進位內容（圖片、影片）**可以**事後用 id 抓——但要打 `api-data.line.me`，跟一般 API 不同的 host，第一次會讓你困惑半小時——而且只保留一段時間。引用太舊的圖片，抓取會回 4xx；bot 回一句友善的「這張太舊了抓不到」，而不是一段 stack trace。
+
+## 四、replyToken 一次性、而且會過期
+
+每個 webhook 事件帶一個 `replyToken`。用它回覆是**免費的**——計費的是主動 push——所以話多的家庭 bot 基本上永遠想走 `reply`。折扣附帶兩個約束：
+
+- **一個 token 只能用一次。** 用掉就沒了；一個事件一次 reply 機會，一次最多五個訊息物件。
+- **有時效窗口。** token 握太久——比如卡在一個慢吞吞的 reasoning 模型跑三輪工具呼叫後面——回覆就被拒收。
+
+五則上限加一次性語意，直接塑造了回覆管線的形狀：文字答案、Flex 卡片、一鍵追問 chip 全部得**先組好**、一次打包送出（而且 LINE 只渲染這批訊息裡**最後一則**掛的 `quickReply`——又一條埋在文件深處的規則）。過期風險則定義了逃生門：模型太慢的話，解法是把那條路從 `reply` 換成 `push`——拿錢換時間。目前 bot 跑在 `reply` 上；哪天它穩定跑輸 token 窗口，帳單上就會出現那一行。
+
+## 五、一個群組只能有一個官方帳號
+
+一個 LINE 群組最多容納一個官方帳號。你不能加第二隻 bot 進去做比較、漸進遷移、或責任分工——想進一個重要的群，就意味著**重用已經在裡面的那個 OA**。
+
+實務上，這把一個基礎設施決策變成了組織決策：家庭群裡已經有一個 OA（就是推[每日行程提醒](/zh/blog/from-n8n-zeabur-to-openclaw-local)的那個），所以新 bot 必須是**同一個 channel**——同一把 access token 被兩套系統共用，於是 token 重發從「改一個設定」變成「跨所有走這個 OA 推播的系統的協調變更」。一個 channel、一個 webhook URL、一把 token：平台的 1:1:1 模型不管你想在上面掛幾個服務。
+
+## 安慰獎：貼圖會自我描述
+
+有一個平台行為是真正的禮物。貼圖訊息的 webhook 自帶語意 `keywords`——「love」「cry」「angry」——LINE 自己標的。bot 把它存成 `[貼圖:love]` 進對話脈絡，在 DM 裡就能回應貼圖的**情緒**，不用下載圖片、不用花一個 vision model 的 token。舊的或冷門貼圖偶爾沒有 keywords，但以預設值來說：那個把 @ 選單藏起來的平台，同時免費送你情緒標籤。收下。
+
+## 收穫
+
+<Lesson label="關於偏移量與編碼">
+  平台給你文字索引時，第一個問題是「什麼單位？」——而安全的實作是在那個單位裡做切割，不是在你的語言字串型別剛好使用的單位裡。emoji 是兩者最先分岔的地方。
+</Lesson>
+
+<Lesson label="關於「不存在的 API」就是架構">
+  對這隻 bot 設計影響最大的，是不存在的 API。沒有歷史 API → 自己全存。沒有 id 反查 → 留著 id 欄位。@ 選單不可靠 → 關鍵字觸發。先列出平台不會替你做的事，再設計你要自己做的事。
+</Lesson>
+
+<Lesson label="關於帶刺的免費">
+  reply API 免費，是家庭 bot 邊際成本為零的原因——但「免費」捆著一次性語意、時效窗口、五則上限、跟 quickReply 只認最後一則的規則。價目表告訴你什麼是免費的；只有約束條件告訴你它的代價。
+</Lesson>

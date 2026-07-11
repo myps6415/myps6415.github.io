@@ -59,6 +59,8 @@ The LLM is an OpenAI-compatible endpoint, so the provider is three `.env` variab
 
 **4. Accept that history starts at join.** LINE has no API to fetch messages from before the bot joined a group — context accrues from day one, not day minus-thirty. Designing around this (rather than pretending) is why everything downstream (recaps, quoted replies) states its own limits instead of failing mysteriously.
 
+The platform quirks behind decisions 2–4 — plus UTF-16 mention offsets and one-shot reply tokens — get the full treatment in [part 2: five LINE Messaging API gotchas](/blog/line-messaging-api-gotchas).
+
 ## What it does now
 
 The tool registry is where the bot stopped being a chatbot and became a family utility. Each tool is a small module — a JSON schema plus an async `run()` — and the LLM decides when to call one:

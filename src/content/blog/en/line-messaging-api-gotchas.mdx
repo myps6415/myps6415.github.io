@@ -1,0 +1,109 @@
+---
+title: "Five LINE Messaging API gotchas the docs won't warn you about"
+description: "Mention offsets in UTF-16 code units, an @ menu that vanishes on desktop, zero history APIs, one-shot reply tokens — and how each one bent the bot's architecture."
+tag: "Self-hosting · Platform quirks"
+date: "2026-07-11"
+postSlug: "line-messaging-api-gotchas"
+meta:
+  - text: "line-bot series · 2"
+---
+
+<StatRow
+  stats={[
+    { value: "UTF-16", label: "Unit of mention offsets" },
+    { value: "0", label: "APIs to fetch history" },
+    { value: "1", label: "Reply per token, ever" },
+  ]}
+/>
+
+## Background
+
+This is part 2 of the [LINE family assistant series](/blog/line-bot-family-assistant). Part 1 covered why and what; this one is the platform tax — five behaviors of the LINE Messaging API that aren't in the quickstart, each of which left a visible mark on the bot's design. None of them is a bug. All of them are load-bearing.
+
+## 1. Mention offsets are UTF-16 code units, not characters
+
+When someone @-mentions the bot, the webhook event describes the mention as an `index` and `length` into the message text — so you can strip the `@botname` prefix before handing the rest to the LLM. The docs give you the fields. What they don't emphasize is the **unit**: those offsets count UTF-16 code units, not Unicode characters.
+
+Python strings index by character. For plain ASCII and most CJK text the two happen to agree, so the naive `text[index:index+length]` slice works in every test you'll think to write. Then someone with an emoji in their display name mentions the bot, the emoji occupies **two** UTF-16 code units but **one** Python character, every offset after it shifts by one, and the bot starts eating the first character of the actual question.
+
+The fix is to do the slicing in the encoding the platform is speaking:
+
+<CodeBlock
+  label="line_client.py — strip mentions at the UTF-16 byte layer"
+  lang="python"
+>
+{`def strip_self_mentions(message: dict) -> str:
+    text: str = message.get("text", "")
+    mentionees = message.get("mention", {}).get("mentionees", [])
+
+    spans = [
+        (m["index"], m["index"] + m["length"])
+        for m in mentionees
+        if m.get("isSelf") and "index" in m and "length" in m
+    ]
+    if not spans:
+        return text.strip()
+
+    units = text.encode("utf-16-le")  # every code unit = 2 bytes
+    for start, end in sorted(spans, reverse=True):
+        units = units[: start * 2] + units[end * 2 :]
+    return units.decode("utf-16-le").strip()`}
+</CodeBlock>
+
+Encode to `utf-16-le`, treat every code unit as two bytes, cut the spans back-to-front so earlier offsets stay valid, decode. The same rule applies in the *outgoing* direction: when the bot sends a message that @-mentions someone, the `index`/`length` it declares must also be counted in UTF-16 units (`len(s.encode("utf-16-le")) // 2`), or the highlighted range drifts in exactly the same way.
+
+<Callout variant="warn" title="Why this class of bug is nasty">
+  It passes every test written by the developer, because developers test with their own names. It fails in production on the one family member whose display name has a 🐰 in it — and it fails <em>subtly</em>: no exception, just answers that ignore the first character or two of the question.
+</Callout>
+
+## 2. The @ menu just… doesn't appear on desktop
+
+The entire trigger model of a group bot rests on "users can mention it". On LINE mobile they can: type `@`, the member picker appears, the bot is in the list. On LINE desktop, for official accounts, the picker frequently doesn't include the bot at all. Not an error, not a paid-tier limitation — it's simply absent, and nothing tells the user why.
+
+If real mentions were the only trigger, the bot would be unreachable from the desks where half the household actually sits. So keyword triggers are a first-class mechanism, not a fallback: a message that *starts with* a configured trigger word (the bot's name, an alias) counts as a call, no mention data required. The prefix is stripped before the LLM sees the text — same as a real mention — so the downstream pipeline can't tell the difference.
+
+The general lesson: **design the trigger path for the worst client you support, not the best one.** The webhook payload is identical across devices; it's the composing UI that varies, and you don't control it.
+
+## 3. There is no history API — and no lookup by message id
+
+Two absences that together define what the bot can and can't know:
+
+- **No "fetch messages before I joined."** Context starts accruing the moment the bot enters the group. There is no backfill, period.
+- **No "fetch message text by id" either.** When a user replies-to-quote an older message, the webhook hands you a `quotedMessageId` — and no API will resolve that id back into text. If you didn't store the original message when it flowed past, the quote points at nothing.
+
+So "store every message" isn't a product decision, it's the only implementation. Every message goes into SQLite *with its LINE message id* as a column, which is precisely what makes the quoted-reply feature ("reply to that wall of text + @bot summarize") resolvable at all — the id from the webhook becomes a local primary-key lookup instead of an impossible API call.
+
+Media is the one partial exception: binary content (images, video) *can* be fetched by id after the fact — from `api-data.line.me`, a different host than the regular API, which costs a confused half hour the first time — but only for a retention window. Point a quoted-reply at an old image and the fetch 4xxes; the bot answers with a friendly "that one's too old" instead of a stack trace.
+
+## 4. Reply tokens are one-shot and they expire
+
+Every webhook event carries a `replyToken`. Replying with it is **free** — push messages are the metered thing — so a chatty family bot wants to answer via `reply` basically always. Two constraints come with the discount:
+
+- **One use, ever.** A token spent is a token gone; you get one reply call per event, holding up to five message objects.
+- **A validity window.** Sit on the token too long — say, behind a slow reasoning model doing three rounds of tool calls — and the reply is rejected.
+
+The five-message cap plus the one-shot semantics shape the response pipeline: text answer, Flex cards, and quick-reply chips all have to be assembled *first* and shipped in a single call (and LINE only renders the `quickReply` attached to the **last** message of the batch — one more line the docs bury). The expiry risk defines the escape hatch: if the model is slow, the fix is switching that path from `reply` to `push` — trading money for time. The bot runs on `reply`; the day it consistently outruns the token window is the day that line item appears.
+
+## 5. One official account per group
+
+A LINE group will host at most one official account. You cannot add a second bot to compare, migrate gradually, or split responsibilities — joining a group that matters means **reusing the OA that's already there**.
+
+In practice that turned an infrastructure decision into an organizational one: the family group already had an OA (the one pushing the [daily schedule alert](/blog/from-n8n-zeabur-to-openclaw-local)), so the new bot had to be the *same channel* — same access token shared by two systems, which means token reissue is now a coordinated change across everything that pushes through that OA. One channel, one webhook URL, one token: the platform's 1:1:1 model doesn't care how many services you'd like to hang off it.
+
+## The consolation prize: stickers describe themselves
+
+One platform behavior is a genuine gift. Sticker messages arrive with semantic `keywords` in the webhook — "love", "cry", "angry" — attached by LINE itself. The bot stores them as `[sticker: love]` in the conversation context and can react to the *mood* of a sticker in DMs without downloading the image or spending a single vision-model token. Old or niche stickers sometimes come keyword-less, but as defaults go: the platform that hides its @ menu also hands you free sentiment labels. Take the win.
+
+## Takeaways
+
+<Lesson label="On offsets and encodings">
+  When a platform gives you indices into text, the first question is "in what unit?" — and the safe implementation does its slicing in that unit, not in whatever your language's string type happens to index by. Emoji are where the two diverge first.
+</Lesson>
+
+<Lesson label="On platform absences as architecture">
+  The biggest influences on this bot's design are APIs that don't exist. No history API → store everything. No id-to-text lookup → keep the id column. Quirky @ menu → keyword triggers. Enumerate what the platform won't do for you before designing what you'll do yourself.
+</Lesson>
+
+<Lesson label="On free tiers with sharp edges">
+  The reply API being free is what makes a family bot's marginal cost zero — but "free" came bundled with one-shot semantics, an expiry window, a five-message cap, and a last-message-only quickReply rule. Pricing pages tell you what's free; only the constraints tell you what it costs.
+</Lesson>
