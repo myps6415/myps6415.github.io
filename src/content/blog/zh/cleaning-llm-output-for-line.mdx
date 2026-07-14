@@ -1,0 +1,135 @@
+---
+title: "在 reasoning 模型與家庭群組之間的三層清洗"
+description: "reasoning 模型會漏 <think> 區塊、MiniMax 偶爾把工具呼叫原封吐進回覆、LINE 渲染的 Markdown 語法剛好是零。一條管線接住全部三種。"
+tag: "LLM · Production hygiene"
+date: "2026-07-14"
+postSlug: "cleaning-llm-output-for-line"
+meta:
+  - text: "line-bot 系列 · 3"
+---
+
+<StatRow
+  stats={[
+    { value: "3", label: "層清洗，順序固定" },
+    { value: "1", label: "個使用者文字的出口" },
+    { value: "0", label: "種 LINE 會渲染的 Markdown" },
+  ]}
+/>
+
+## 背景
+
+[LINE 家庭助手系列](/zh/blog/line-bot-family-assistant)第三篇。這隻 bot 的回覆送進家庭群組——我部署過最嚴苛的正式環境：使用者不是工程師、沒有「重新整理」這回事，而且任何漏出去的東西——推理獨白、工具標記、滿天星號——都會掛著我的名字出現在家人面前，永久留在聊天紀錄裡。
+
+在模型的原始 `content` 和 LINE reply API 之間，隔著三層清洗。每一層的存在，都是因為某個具體的東西曾經漏過去。這篇照順序講這條管線，以及催生它的事故。
+
+## 第一層：reasoning 模型會把思考講出來
+
+reasoning 模型（bot 跑 MiniMax M 系列）會把思考過程放在 `<think>…</think>` 裡、接在回應前面。API 不會幫你分開——它就是 `content` 的一部分：好幾段用英文琢磨「該怎麼回答這個中文問題」的內心戲，後面才是真正的答案。
+
+清掉成對的區塊只要一條 regex。微妙的是**截斷**：思考也算進 `max_tokens`，預算設太低時回應會被切在 think 區塊**裡面**——只有開頭的 `<think>`、沒有閉合、後面也沒有答案。清洗必須把「有開沒關」視為*整段都是推理，全部丟掉*：
+
+<CodeBlock
+  label="llm.py — 第一層，含截斷情境"
+  lang="python"
+>
+{`def _strip_think(content: str | None) -> str:
+    text = _THINK_RE.sub("", content or "")
+    # 被 max_tokens 截斷：<think> 有開沒關——
+    # 從那裡開始全是推理，整段丟掉
+    if "<think>" in text:
+        text = text.split("<think>", 1)[0]
+    return text.strip()`}
+</CodeBlock>
+
+維運上的推論：reasoning 模型的 `max_tokens` 要同時預算「思考」加「回答」。按一般 chat completion 的習慣去設，失敗模式不是答案變短——是答案變**空**，因為整個預算都被思考吃掉，然後第一層正確地把它全丟了。
+
+## 第二層：工具呼叫洩漏的那一天
+
+OpenAI 相容端點是一層翻譯，而翻譯有狀況不好的日子。正常情況下 MiniMax 的原生工具標記會在伺服器端被解析成標準的 `tool_calls` 陣列。偶爾——間歇性、跟查詢內容無關——它沒被解析，原始標記直接以文字形式出現在 `content` 裡：
+
+<CodeBlock label="家庭群組實際看到的東西" lang="text">
+{`]<]minimax[>[<invoke name="web_search">
+<query>台積電 最新財報</query>
+</invoke>`}
+</CodeBlock>
+
+舊的程式路徑看到 `tool_calls` 是空的，判定「模型不需要工具」，把 `content` 原樣送進群組。家人問財報，收到一坨機器標記。
+
+修法是兩道職責不同的防線。第一道是**搶救解析器**：`tool_calls` 空、但 `content` 裡有 `<invoke>` 標記時，把標記解析回標準工具呼叫、照常執行——因為失敗的不是模型，是翻譯層，而使用者的問題仍然值得一個答案：
+
+<CodeBlock
+  label="llm.py — 把洩漏的標記搶救成可執行的工具呼叫"
+  lang="python"
+>
+{`def _parse_leaked_tool_calls(content: str | None) -> list[dict]:
+    if not content or "<invoke" not in content:
+        return []
+    text = _MINIMAX_TAG.sub("", _LEAK_NOISE.sub("", content))
+    calls = []
+    for i, m in enumerate(_INVOKE_RE.finditer(text)):
+        name = m.group(1).strip()
+        args = {k: v.strip() for k, v in _PARAM_RE.findall(m.group(2))}
+        calls.append({
+            "id": f"salvaged_{i}",
+            "type": "function",
+            "function": {
+                "name": name,
+                "arguments": json.dumps(args, ensure_ascii=False),
+            },
+        })
+    return calls`}
+</CodeBlock>
+
+第二道是清除：任何倖存的標記——落單的標籤、`]<]minimax[>[` 雜訊 token、搶救不了的碎片——在出口處無條件移除。
+
+<Callout variant="info" title="先搶救、再清除——順序就是設計">
+  只清除的話，等於把失敗藏起來：群組裡沒有標記，但也沒有答案，只剩一句莫名空泛的回覆。只搶救的話，搶救不完整時垃圾照樣外流。先還原<em>意圖</em>，再無條件保證<em>衛生</em>。兩層各自獨立失效——這正是重點。
+</Callout>
+
+對行為端正的供應商，兩道都是 no-op——文字裡沒有 `<invoke>` 就什麼都不做——所以之後換模型不需要記得拆掉它們。
+
+## 第三層：LINE 渲染的 Markdown 剛好是零
+
+LLM 反射性地輸出 Markdown：`**粗體**` 強調、`#` 標題、`` `程式碼` ``、`[文字](網址)` 連結。LINE 的文字訊息一種都不渲染，每個語法字元都以字面出現——模型精心排版的回覆，到手機上是滿天星號。
+
+System prompt 有叫模型別用 Markdown。那是許願，不是保證——而且是一個會無聲蒸發的願望：誰用 `.env` 覆蓋了 prompt，它就沒了。後處理器才是保證：圍籬整行刪、標題和分隔線移除、項目符號統一成 `-`、粗體／斜體／刪除線／行內程式碼拆殼、連結降級成「文字 網址」——裸網址留著，因為 LINE 會自動把它變可點。
+
+值得攤開看的 regex 是斜體，因為天真的 `\*(.+?)\*` 會毀掉正常文字。行首的星號是項目符號；夾在空白中間的星號是乘號（`3 * 4`）；只有兩側都緊貼非空白的星號才是強調：
+
+<CodeBlock
+  label="llm.py — 不誤傷項目符號和算式的斜體規則"
+  lang="python"
+>
+{`_MD_ITALIC = re.compile(
+    r"(?<![\\w*])\\*(?!\\s)(.+?)(?<!\\s)\\*(?![\\w*])"
+    r"|(?<![\\w_])_(?!\\s)(.+?)(?<!\\s)_(?![\\w_])",
+    re.DOTALL,
+)`}
+</CodeBlock>
+
+整層內部的順序同樣要緊：粗體（`**`）必須先於斜體（`*`）拆殼，否則斜體那趟會吃掉每個粗體標記的一半、留下落單的星號——恰好就是這層要防的產物。
+
+## 一個出口，照順序走
+
+三層合成一個函式，而**所有**會到使用者眼前的字串都經過它——tool loop 的回覆、不用工具的直接回答、vision 模型的看圖描述：
+
+<CodeBlock label="llm.py — 唯一的門" lang="python">
+{`def _clean_reply(content: str | None) -> str:
+    return _strip_markdown(_strip_tool_markup(_strip_think(content)))`}
+</CodeBlock>
+
+順序是承重的：先去 think（推理裡什麼都可能有，包括假的標記）、再清工具標記（它是結構性的，在動排版之前移除）、最後降級 Markdown（它處理的是真正留給使用者的部分）。哪天出現第四類洩漏——一定會出現——它會得到一個函式和這條鏈上的一個位置，而不是散在某個先發現它的呼叫點的臨時補丁。
+
+## 收穫
+
+<Lesson label="關於 prompt vs 後處理">
+  System prompt 裡的「請不要用 Markdown」能降低頻率，後處理器把頻率降到零。prompt 層的指示是善意的願望；任何「絕不能到使用者眼前」的東西，都需要輸出路徑上的機械保證。
+</Lesson>
+
+<Lesson label="關於先搶救再消毒">
+  供應商的某一層把結構化意圖攪成文字時，便宜的修法（把垃圾刪掉）會無聲地劣化產品。把垃圾解析回意圖、執行它，<em>然後</em>再消毒剩下的部分。使用者評價的是答案，不是你的災難復原。
+</Lesson>
+
+<Lesson label="關於單一出口">
+  三層清洗容易推理，因為它們只在一個地方跑。清洗邏輯一旦撒在各個呼叫點，每條新的回覆路徑都是漏掉某一層的機會——而這類 bug，永遠是被你最不希望發現它的人發現的。
+</Lesson>

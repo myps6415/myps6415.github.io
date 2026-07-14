@@ -1,0 +1,135 @@
+---
+title: "Three layers of scrubbing between a reasoning model and a family group chat"
+description: "Reasoning models leak <think> blocks, MiniMax occasionally spits raw tool-call markup into the reply, and LINE renders exactly zero Markdown. One pipeline catches all three."
+tag: "LLM · Production hygiene"
+date: "2026-07-14"
+postSlug: "cleaning-llm-output-for-line"
+meta:
+  - text: "line-bot series · 3"
+---
+
+<StatRow
+  stats={[
+    { value: "3", label: "Scrub layers, ordered" },
+    { value: "1", label: "Exit point for user-facing text" },
+    { value: "0", label: "Markdown syntaxes LINE renders" },
+  ]}
+/>
+
+## Background
+
+Part 3 of the [LINE family assistant series](/blog/line-bot-family-assistant). The bot's replies go to a family group chat, which is the harshest production environment I ship to: the users are not technical, there is no "refresh the page", and anything that leaks — reasoning monologue, tool markup, a wall of asterisks — lands in front of my family with my name on it, permanently, in the scrollback.
+
+Between the model's raw `content` and LINE's reply API sit three scrubbing layers. Each one exists because something specific got through. This post is the pipeline, in order, with the incidents that created it.
+
+## Layer 1: reasoning models think out loud
+
+Reasoning models (the bot runs MiniMax's M-series) prepend their chain of thought to the response inside `<think>…</think>`. The API doesn't separate it out — it arrives as part of `content`, several paragraphs of deliberation in English about how best to answer a question that was asked in Chinese, followed by the actual answer.
+
+Stripping the paired block is one regex. The subtle case is **truncation**: the thinking counts against `max_tokens`, so a too-low budget means the response gets cut *inside* the think block — an opening `<think>` with no close, no answer after it. The strip has to treat "opening tag, never closed" as *all reasoning, discard everything*:
+
+<CodeBlock
+  label="llm.py — strip layer 1, including the truncation case"
+  lang="python"
+>
+{`def _strip_think(content: str | None) -> str:
+    text = _THINK_RE.sub("", content or "")
+    # truncated by max_tokens: an opening <think> with no close —
+    # everything from there on is reasoning, drop it
+    if "<think>" in text:
+        text = text.split("<think>", 1)[0]
+    return text.strip()`}
+</CodeBlock>
+
+The operational corollary: `max_tokens` for a reasoning model must budget for thinking *plus* answering. Set it like a chat-completion limit and the failure mode isn't a short answer — it's an empty one, because the whole budget went to thinking and layer 1 correctly discarded all of it.
+
+## Layer 2: the day the tool calls leaked
+
+An OpenAI-compatible endpoint is a translation layer, and translations have bad days. Normally MiniMax's native tool-call markup is parsed server-side into the standard `tool_calls` array. Occasionally — intermittently, with no correlation to the query — it isn't, and the raw markup arrives inside `content` as text:
+
+<CodeBlock label="what the family group saw" lang="text">
+{`]<]minimax[>[<invoke name="web_search">
+<query>台積電 最新財報</query>
+</invoke>`}
+</CodeBlock>
+
+The old code path saw `tool_calls` empty, concluded "no tools requested", and sent `content` straight to the group. A family member asked about earnings and got machine markup.
+
+The fix is two defenses with different jobs. The first is a **salvage parser**: if `tool_calls` is empty but `content` contains `<invoke>` markup, parse the markup back into standard tool calls and run them — because the model didn't fail, the translation did, and the user's question still deserves an answer:
+
+<CodeBlock
+  label="llm.py — salvage leaked markup into executable tool calls"
+  lang="python"
+>
+{`def _parse_leaked_tool_calls(content: str | None) -> list[dict]:
+    if not content or "<invoke" not in content:
+        return []
+    text = _MINIMAX_TAG.sub("", _LEAK_NOISE.sub("", content))
+    calls = []
+    for i, m in enumerate(_INVOKE_RE.finditer(text)):
+        name = m.group(1).strip()
+        args = {k: v.strip() for k, v in _PARAM_RE.findall(m.group(2))}
+        calls.append({
+            "id": f"salvaged_{i}",
+            "type": "function",
+            "function": {
+                "name": name,
+                "arguments": json.dumps(args, ensure_ascii=False),
+            },
+        })
+    return calls`}
+</CodeBlock>
+
+The second defense is the strip: whatever markup survives — stray tags, the `]<]minimax[>[` noise tokens, unsalvageable fragments — gets removed at the exit, unconditionally.
+
+<Callout variant="info" title="Salvage first, strip second — the order is the design">
+  Stripping alone would hide the failure: no markup in the chat, but also no answer, just a mysteriously vague reply. Salvaging alone would leave junk when salvage partially fails. Recover the <em>intent</em> first, then guarantee <em>hygiene</em> regardless. The two layers fail independently, which is the point.
+</Callout>
+
+Both are no-ops on well-behaved providers — no `<invoke>` in the text, nothing to do — so switching models later doesn't mean remembering to remove them.
+
+## Layer 3: LINE renders exactly zero Markdown
+
+LLMs emit Markdown by reflex: `**bold**` for emphasis, `#` headings, `` `code` ``, `[label](url)` links. LINE text messages render none of it. Every syntax character arrives literally — the model's carefully emphasized reply shows up as a sky full of asterisks.
+
+The system prompt tells the model not to use Markdown. That's a wish, not a guarantee — and it's a wish that silently evaporates if someone overrides the prompt via `.env`. The post-processor is the guarantee: fences dropped, headings and rules removed, bullets normalized to `-`, bold/italic/strikethrough/inline-code unwrapped, and links degraded to `label url` — the bare URL survives because LINE auto-links those.
+
+The regex worth showing is italic, because naive `\*(.+?)\*` destroys legitimate text. An asterisk that *starts* a line is a bullet; an asterisk between spaces is multiplication (`3 * 4`); only an asterisk hugging non-space on both sides is emphasis:
+
+<CodeBlock
+  label="llm.py — italic that leaves bullets and arithmetic alone"
+  lang="python"
+>
+{`_MD_ITALIC = re.compile(
+    r"(?<![\\w*])\\*(?!\\s)(.+?)(?<!\\s)\\*(?![\\w*])"
+    r"|(?<![\\w_])_(?!\\s)(.+?)(?<!\\s)_(?![\\w_])",
+    re.DOTALL,
+)`}
+</CodeBlock>
+
+Order matters across the whole layer too: bold (`**`) must unwrap before italic (`*`), or the italic pass eats half of every bold marker and leaves stray asterisks behind — the exact artifact the layer exists to prevent.
+
+## One exit, in order
+
+The three layers compose into a single function, and *every* string that reaches a user passes through it — the tool-loop replies, the no-tools direct answers, the vision-model descriptions:
+
+<CodeBlock label="llm.py — the only door out" lang="python">
+{`def _clean_reply(content: str | None) -> str:
+    return _strip_markdown(_strip_tool_markup(_strip_think(content)))`}
+</CodeBlock>
+
+The order is load-bearing: think-stripping first (reasoning can contain anything, including fake markup), tool-markup second (it's structural, remove before touching formatting), Markdown last (it operates on what's actually left for the user). When a fourth leak class shows up — and one will — it gets a function and a position in this chain, not an ad-hoc patch at whichever call site noticed it.
+
+## Takeaways
+
+<Lesson label="On prompts vs post-processing">
+  "Please don't use Markdown" in the system prompt reduces the frequency. The post-processor reduces it to zero. Prompt-level instructions are wishes with good intentions; anything that must <em>never</em> reach a user needs a mechanical guarantee on the output path.
+</Lesson>
+
+<Lesson label="On salvaging before sanitizing">
+  When a provider layer garbles a structured intent into text, the cheap fix (delete the garbage) silently degrades the product. Parse the garbage back into the intent, execute it, and <em>then</em> sanitize the remainder. Users judge the answer, not the recovery.
+</Lesson>
+
+<Lesson label="On single exit points">
+  Three scrub layers are easy to reason about because there is exactly one place they run. The moment cleaning logic is sprinkled across call sites, every new reply path is a chance to forget one layer — and this class of bug is only ever discovered by the people you least want discovering it.
+</Lesson>
