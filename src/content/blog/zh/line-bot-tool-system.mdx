@@ -1,0 +1,121 @@
+---
+title: "一個工具一個檔案：把聊天機器人變成家庭公用設施的註冊表"
+description: "14 個工具背後的 function calling 契約——錯誤即資料、脈絡穿透、兩條 opt-in 呈現協定，以及一個「按鈕叫不醒 bot」的尖銳陷阱。"
+tag: "LLM · API design"
+date: "2026-07-17"
+postSlug: "line-bot-tool-system"
+meta:
+  - text: "line-bot 系列 · 4"
+---
+
+<StatRow
+  stats={[
+    { value: "14", label: "個工具，一檔一個" },
+    { value: "2", label: "條 opt-in 呈現協定" },
+    { value: "0", label: "個例外會逸入 LLM loop" },
+  ]}
+/>
+
+## 背景
+
+[LINE 家庭助手系列](/zh/blog/line-bot-family-assistant)第四篇。這隻 bot 的實用性都在工具上——天氣、報價、匯率、提醒、到價警報、聊天回顧、記憶。十四個，而且還在長。所以有趣的設計問題不是任何單一工具，而是**契約**：加第十五個要花多少成本？
+
+程式庫收斂到的答案：一個新檔案、註冊表清單裡一行。其他的一切——schema 曝露給 LLM、分派、錯誤處理、卡片、追問 chip——都是已經存在的機械。這篇講的就是這套機械。
+
+## 契約：一份 schema、一個 run 函式
+
+工具模組輸出兩樣東西：`SCHEMA`（LLM 看到的 OpenAI function calling 定義）和 `async run(args, ctx)`。註冊表就是一個 list，其他一切從它衍生：
+
+<CodeBlock label="tools/__init__.py — 整個註冊表" lang="python">
+{`_MODULES = [
+    weather, summarize_url, fx, get_quote,
+    reminder, list_reminders, cancel_reminder,
+    price_alert, list_price_alerts, cancel_price_alert,
+    web_search, recap, remember, forget,
+]
+
+_REGISTRY = {m.SCHEMA["function"]["name"]: m for m in _MODULES}
+SCHEMAS = [m.SCHEMA for m in _MODULES]`}
+</CodeBlock>
+
+schema 的 `description` 欄位值得比一般更用心——它是 LLM 唯一會讀的介面文件，路由的精準度就住在這裡。匯率工具的 description 明講它**不**處理加密貨幣，因為「0.1 BTC 換台幣多少」否則會路由到錯的工具；加密貨幣報價歸報價工具管，兩邊的 description 互相圈地。工具描述就是包著 schema 的 prompt engineering。
+
+## 錯誤是資料，不是例外
+
+`dispatch` 是工具唯一的執行點，它的簽名承諾是：**永遠回傳 dict**。
+
+<CodeBlock label="tools/__init__.py — dispatch 絕不拋出" lang="python">
+{`async def dispatch(name: str, args: dict, ctx: dict) -> dict:
+    mod = _REGISTRY.get(name)
+    if mod is None:
+        return {"error": f"unknown tool: {name}"}
+    try:
+        result = await mod.run(args, ctx)
+        log.info("tool %s(%s) -> ok", name, args)
+        return result
+    except Exception as e:
+        log.exception("tool %s failed", name)
+        return {"error": f"{type(e).__name__}: {e}"}`}
+</CodeBlock>
+
+工具炸了——Yahoo 逾時、幣別代碼不存在、網路閃斷——變成 `{"error": "..."}`，跟任何正常結果一樣餵回 tool loop。接著 LLM 做它真正擅長的事：讀錯誤、用自然語言告訴使用者發生什麼。「Yahoo 報價服務現在好像有點慢，等一下再試試」是比任何手寫錯誤分支都**更好**的失敗體驗——而且每個工具的額外成本是零行程式碼，因為翻譯發生在模型裡、不在 Python 裡。
+
+反過來——讓例外往上竄——會為了一次失敗的工具呼叫廢掉整則回覆。在多工具回合裡（「比較台積電和蘋果，然後換算台幣」），一個不穩的上游會把有查到的部分一起炸掉。
+
+## 脈絡往下穿，但只有部分工具在乎
+
+有些工具需要知道問題*從哪來*、*誰問的*：提醒得送回正確的群、記憶屬於某一個對話。這份脈絡起於 webhook 事件，以一個普通 dict 往下穿——`handle_event → llm.complete → dispatch → run(args, ctx)`——帶著 `source_id` 和 `user_id`。
+
+設計重點在於*沒有*發生的事：純查詢工具（天氣、匯率、報價）接同一個 `ctx` 參數、直接無視它。十四個工具一種簽名，而不是兩類工具、或一堆越長越多的 optional 參數。這份一致性正是「加工具＝加一個檔案」得以成立的原因。
+
+## 呈現是 opt-in：卡片與 chip
+
+純文字答案正確但扁平。LINE 支援 Flex message（結構化卡片 UI）和 quick reply chip。兩者都以**可選協定**的形式外掛：工具*可以*輸出 `build_card(result)` 和／或 `quick_replies(result)`，收集器用 `getattr` 探測：
+
+- `build_card(result)` 回一張 Flex bubble（報價卡帶紅綠漲跌、天氣卡帶降雨機率、提醒清單卡每列一顆取消鈕）——或回 `None`。
+- `quick_replies(result)` 回一排點一下就送出的追問：報價後「換算台幣」、今天天氣後「明天呢？」。
+
+兩個收集器都無條件吞例外。卡片渲染失敗會留下 stack trace，使用者照樣收到純文字答案——**呈現是加分層，絕不能弄壞本體**。這條規則聽起來理所當然，但只要卡片組裝程式碼直接寫在回覆路徑裡，它預設就是被違反的。
+
+<Callout variant="info" title="卡片拿 API 驗證，不要拿家人驗證">
+  LINE 有一個驗證端點（<code>POST /message/validate/reply</code>），檢查 Flex JSON 但不送出任何東西。每次改卡片版面都先過它。另一種測試策略——把卡片推進群裡看看——會把僅有一次的 replyToken 燒在格式錯誤的 payload 上，順便教你的親戚認識 JSON schema 錯誤。
+</Callout>
+
+## 叫不醒 bot 的 chip
+
+quick reply chip 有一個只在群組發作的陷阱。點 chip 送出的是它的 `text`——**一則純訊息，不帶任何 mention**。DM 裡沒事（bot 每則都回）。群組裡 bot 只在被叫喚時回應——於是 chip 送出文字、沒有任何東西 @ 到 bot、按鈕*什麼都沒發生*。一顆看起來活著的死按鈕。
+
+修法在 chip 組裝的地方：群組裡，把送出文字前面補上 bot 的第一個觸發詞——就是[第二篇](/zh/blog/line-messaging-api-gotchas)講的關鍵字觸發機制——讓這一下點擊產生一則跟手打訊息一樣能叫醒 bot 的訊息：
+
+<CodeBlock label="main.py — 群組裡 chip 必須能重新觸發 bot" lang="python">
+{`prefix = ""
+if source_type in ("group", "room") and TRIGGER_KEYWORDS:
+    prefix = TRIGGER_KEYWORDS[0] + " "
+...
+items.append({
+    "type": "action",
+    "action": {
+        "type": "message",
+        "label": label[:20],            # LINE label 上限 20 字
+        "text": (prefix + text)[:300],
+    },
+})`}
+</CodeBlock>
+
+「chip 就是普通訊息」有個愉快的副作用：跨工具組合是免費的。報價工具的「換算台幣」chip 吐出的句子，下一輪會路由進匯率工具——零編排程式碼的跨工具接力，因為 LLM 的日常路由就把事做完了。
+
+「chip 只是訊息」有一個例外：提醒清單卡上的取消鈕是 **postback**——它帶結構化資料（`action=cancel_reminder&id=…`）而不是文字，由獨立的事件分支處理。那個 handler 把取消動作綁定在對話的 `source_id` 上，被轉傳或過期的卡片沒辦法取消別的群的提醒。會改動狀態的按鈕走帶授權的結構化路徑；只是*換個問題問*的按鈕留在純訊息。
+
+## 收穫
+
+<Lesson label="關於錯誤即資料">
+  把 <code>{`{"error": ...}`}</code> 回進 tool loop，每次失敗都變成 LLM 能用對話解釋的東西。錯誤路徑免費獲得跟正常路徑同級的體驗——包括你還沒寫的那十五個工具。
+</Lesson>
+
+<Lesson label="關於 opt-in 呈現">
+  鴨子型別的 <code>build_card</code>／<code>quick_replies</code> 協定，讓工具在合理時才採用富輸出，而收集器吞掉它們的失敗。呈現一旦有能力弄壞本體，每次版面微調都變成對答案本身的風險。
+</Lesson>
+
+<Lesson label="關於設計完整的來回">
+  按鈕不是在真空裡被點的——它的輸出會以輸入的身分重新進入系統。chip 陷阱（純文字、無 mention、群組裡無聲失效）只有把整條迴圈走完才看得到：點擊 → 訊息 → 觸發判斷 → LLM。要設計的是來回，不是按鈕。
+</Lesson>

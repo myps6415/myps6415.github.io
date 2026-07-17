@@ -1,0 +1,121 @@
+---
+title: "One file per tool: the registry that turned a chatbot into a family utility"
+description: "The function-calling contract behind 14 tools — errors as data, context threading, and two opt-in presentation protocols with one sharp gotcha about buttons that don't wake the bot."
+tag: "LLM · API design"
+date: "2026-07-17"
+postSlug: "line-bot-tool-system"
+meta:
+  - text: "line-bot series · 4"
+---
+
+<StatRow
+  stats={[
+    { value: "14", label: "Tools, one file each" },
+    { value: "2", label: "Opt-in presentation protocols" },
+    { value: "0", label: "Exceptions that reach the LLM loop" },
+  ]}
+/>
+
+## Background
+
+Part 4 of the [LINE family assistant series](/blog/line-bot-family-assistant). The bot's usefulness lives in its tools — weather, quotes, FX, reminders, price alerts, recaps, memory. Fourteen of them, and the number keeps growing, which means the interesting design question isn't any single tool. It's the **contract**: what does it cost to add the fifteenth?
+
+The answer the codebase settled on: one new file, one line in a registry list. Everything else — schema exposure to the LLM, dispatch, error handling, cards, follow-up chips — is machinery that already exists. This post is that machinery.
+
+## The contract: a schema and a run function
+
+A tool module exports two things: `SCHEMA` (the OpenAI function-calling definition the LLM sees) and `async run(args, ctx)`. The registry is a list; everything else derives from it:
+
+<CodeBlock label="tools/__init__.py — the whole registry" lang="python">
+{`_MODULES = [
+    weather, summarize_url, fx, get_quote,
+    reminder, list_reminders, cancel_reminder,
+    price_alert, list_price_alerts, cancel_price_alert,
+    web_search, recap, remember, forget,
+]
+
+_REGISTRY = {m.SCHEMA["function"]["name"]: m for m in _MODULES}
+SCHEMAS = [m.SCHEMA for m in _MODULES]`}
+</CodeBlock>
+
+The schema's `description` field deserves more care than it usually gets — it's the *only* interface documentation the LLM reads, and it's where routing precision lives. The FX tool's description explicitly says it does **not** handle crypto, because "how much is 0.1 BTC in TWD" would otherwise route to the wrong tool; crypto pricing belongs to the quote tool, and the two descriptions fence each other off. Tool descriptions are prompt engineering with a schema around it.
+
+## Errors are data, not exceptions
+
+`dispatch` is the one place tools execute, and its signature promise is: **it always returns a dict**.
+
+<CodeBlock label="tools/__init__.py — dispatch never raises" lang="python">
+{`async def dispatch(name: str, args: dict, ctx: dict) -> dict:
+    mod = _REGISTRY.get(name)
+    if mod is None:
+        return {"error": f"unknown tool: {name}"}
+    try:
+        result = await mod.run(args, ctx)
+        log.info("tool %s(%s) -> ok", name, args)
+        return result
+    except Exception as e:
+        log.exception("tool %s failed", name)
+        return {"error": f"{type(e).__name__}: {e}"}`}
+</CodeBlock>
+
+A tool that throws — Yahoo timed out, a currency code doesn't exist, the network blipped — becomes `{"error": "..."}` fed back into the tool loop like any other result. The LLM then does what LLMs are genuinely good at: it reads the error and tells the user what happened in natural language. "Yahoo's quote service seems slow right now, try again in a minute" is a *better* failure UX than anything a hand-written error branch would produce — and it costs zero extra code per tool, because the translation happens in the model, not in Python.
+
+The alternative — letting exceptions propagate — would abort the whole reply for one failed tool call. In a multi-tool round ("compare TSMC and Apple, then convert to TWD"), one flaky upstream would nuke the parts that worked.
+
+## Context threads down, but only some tools care
+
+Some tools need to know *where* the question came from and *who* asked: a reminder has to be delivered back to the right group, a memory belongs to one conversation. That context originates in the webhook event and threads down as a plain dict — `handle_event → llm.complete → dispatch → run(args, ctx)` — carrying `source_id` and `user_id`.
+
+The design point is what *doesn't* happen: pure lookup tools (weather, FX, quotes) take the same `ctx` parameter and ignore it. One signature for all fourteen tools, rather than two tool classes or a growing pile of optional keyword arguments. Uniformity is what keeps "add a tool" a one-file operation.
+
+## Presentation is opt-in: cards and chips
+
+A text answer is correct but flat. LINE supports Flex messages — structured card UI — and quick-reply chips. Both are bolted on as **optional protocols**: a tool *may* export `build_card(result)` and/or `quick_replies(result)`, and the collector checks with `getattr`:
+
+- `build_card(result)` returns a Flex bubble (price card with red/green delta, weather card with rain probability, a reminder list where every row has a cancel button) — or `None`.
+- `quick_replies(result)` returns tap-to-send follow-ups: after a quote, "convert to TWD"; after today's weather, "tomorrow?".
+
+Both collectors swallow exceptions unconditionally. A card that fails to render logs a stack trace and the user gets a plain-text answer — **presentation is a bonus layer and must never break substance**. This rule sounds obvious and is violated by default the moment card-building code runs inline in the reply path.
+
+<Callout variant="info" title="Validate cards against the API, not against your family">
+  LINE has a validation endpoint (<code>POST /message/validate/reply</code>) that checks Flex JSON without sending anything. Every card layout change goes through it first. The alternative testing strategy — push the card to the group and see — burns your one reply token on a malformed payload and teaches your relatives about JSON schema errors.
+</Callout>
+
+## The chip that couldn't wake the bot
+
+Quick-reply chips have a trap that only manifests in groups. A chip tap sends its `text` as a **plain message — no mention attached**. In a DM that's fine (the bot answers everything). In a group, the bot only responds when called — so the chip sends its text, nothing @-mentions the bot, and the button does *nothing visible at all*. A dead button that looks alive.
+
+The fix lives where the chips are assembled: in groups, prefix the outgoing text with the bot's first trigger keyword — the same keyword-trigger mechanism from [part 2](/blog/line-messaging-api-gotchas) — so the tap produces a message that wakes the bot like any typed request:
+
+<CodeBlock label="main.py — chips must re-trigger the bot in groups" lang="python">
+{`prefix = ""
+if source_type in ("group", "room") and TRIGGER_KEYWORDS:
+    prefix = TRIGGER_KEYWORDS[0] + " "
+...
+items.append({
+    "type": "action",
+    "action": {
+        "type": "message",
+        "label": label[:20],            # LINE caps labels at 20 chars
+        "text": (prefix + text)[:300],
+    },
+})`}
+</CodeBlock>
+
+A pleasant side effect of chips being ordinary messages: they compose *across* tools for free. The quote tool's "convert to TWD" chip emits a sentence that routes into the FX tool on the next turn — a cross-tool handoff with zero orchestration code, because the LLM's normal routing does the work.
+
+One exception to "chips are just messages": the cancel buttons on reminder-list cards are **postbacks** — they carry structured data (`action=cancel_reminder&id=…`) instead of text, handled by a dedicated event branch. That handler binds the cancellation to the conversation's `source_id`, so a forwarded or stale card can't cancel another group's reminders. Buttons that mutate state get the structured path with authorization; buttons that just *ask something else* stay plain messages.
+
+## Takeaways
+
+<Lesson label="On errors as data">
+  Returning <code>{`{"error": ...}`}</code> into the tool loop turns every failure into something the LLM can explain conversationally. The error path gets the same UX quality as the happy path, for free, in every tool — including the fifteen you haven't written yet.
+</Lesson>
+
+<Lesson label="On opt-in presentation">
+  Duck-typed <code>build_card</code> / <code>quick_replies</code> protocols mean tools adopt rich output when it makes sense, and the collector swallows their failures. The moment presentation can break substance, every layout tweak becomes a risk to the actual answer.
+</Lesson>
+
+<Lesson label="On designing the round trip">
+  A button is not clicked in a vacuum — its output re-enters the system as input. The chip gotcha (plain text, no mention, silent no-op in groups) is invisible unless you trace the full loop: tap → message → trigger check → LLM. Design the round trip, not the button.
+</Lesson>
