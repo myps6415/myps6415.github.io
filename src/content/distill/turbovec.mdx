@@ -1,0 +1,17 @@
+---
+title: "記憶體省 87% 的向量資料庫爆紅：turbovec 用 4GB 塞完 10M 文件…"
+description: "記憶體省 87% 的向量資料庫爆紅：turbovec 用 4GB 塞完 10M 文件，比 FAISS 還快"
+date: "2026-07-19"
+postSlug: "turbovec"
+sourceUrl: "https://github.com/RyanCodrai/turbovec"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Da8-VjZD7WS"
+---
+
+記憶體省 87% 的向量資料庫爆紅：turbovec 用 4GB 塞完 10M 文件，比 FAISS 還快
+
+多數向量資料庫跑 RAG，1000 萬份文件吃掉 31GB 記憶體。turbovec 把它壓到 4GB，靠的不是更猛的硬體，是演算法。
+
+TurboQuant 的做法：先把向量長度拔掉、套上隨機旋轉矩陣，讓每個座標落在已知分布上，接著用 Lloyd-Max 純數學壓縮——邊界和中心點從機率算出來，不需要訓練階段，向量進來就直接進索引，隨時可新增。這套做法距離資訊理論下限只差 2.7 倍，已經很接近理論極限。
+
+速度呢？ARM 平台比 FAISS IndexPQFastScan 快 10–19%，x86 在 4-bit 設定也贏了，2-bit 差距則不大。過濾功能也實用：丟一個允許的 ID 清單進去，結果只從這範圍取，不會多抓，不浪費分數。支援 LangChain、LlamaIndex、Haystack、Agno，純本地、資料不離開機器，對隱私有剛性需求的團隊很值得一試。
