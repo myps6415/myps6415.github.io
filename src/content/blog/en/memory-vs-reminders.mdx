@@ -1,0 +1,90 @@
+---
+title: "Same write path, opposite read models: long-term memory vs reminders"
+description: "An LLM doesn't learn you — 'it gets smarter the more you use it' has to be engineered. Two features that write identically and read in opposite directions, and why the bot has no recall tool."
+tag: "LLM · Design"
+date: "2026-07-20"
+postSlug: "memory-vs-reminders"
+meta:
+  - text: "line-bot series · 5"
+---
+
+<StatRow
+  stats={[
+    { value: "0", label: "Recall tools" },
+    { value: "60s", label: "Reminder scan tick" },
+    { value: "#id", label: "How the LLM edits memory" }
+  ]}
+/>
+
+## First, the honest part
+
+Part 5 of the [LINE family assistant series](/blog/line-bot-family-assistant). It starts with the disclaimer I owe every user of the bot: **the model does not learn you.** Each reply sees the last N messages of the conversation and nothing else; message N+1 back might as well never have happened. Your chats don't train the weights. Out of the box, "it gets smarter the more you use it" is marketing, not mechanism.
+
+If you want a bot that knows you live in Hualien when you ask about the weather, and knows your wife's birthday when you ask what day it falls on this year — someone has to *engineer* that. Which turns out to be a genuinely interesting design problem, because the bot already had a feature that looked almost identical and needed to work completely differently.
+
+## One question, two opposite answers
+
+Both features store a fact now so it can matter later. The design fork is a single question: **when should the stored thing surface?**
+
+| | Write | Read |
+|---|---|---|
+| **Reminder** | `set_reminder` tool | Background scheduler pushes **at one moment** |
+| **Memory** | `remember` / `forget` tools | **Injected into every single call**, unconditionally |
+
+A reminder is a point event: "9 PM" arrives, a push goes out, done. A background loop scans SQLite every 60 seconds for due rows, pushes them back to the group they came from as real @-mentions, and marks them done — with the operational trimmings you'd expect (restart-safe because state is in SQLite; missed-while-down reminders delivered late with an explicit "(late)" tag; recurring ones re-scheduled instead of closed).
+
+A memory is the opposite of a point event — it's *ambient*. "John lives in Hualien" isn't relevant at some timestamp; it's potentially relevant to **every future reply**. So the read model is: on every call, the bot loads the conversation's memories from SQLite and prepends them to the LLM's context as a `【long-term memory】` block. The model doesn't fetch memories. It simply *has* them, the way it has the system prompt.
+
+## Why there is no recall tool
+
+The symmetric design — `remember` plus a `recall` tool the LLM calls when it thinks history matters — is the shape most people (and most models, when asked) reach for first. It's worse in two compounding ways:
+
+- **It costs a round trip.** Tool call, dispatch, result, second inference pass — for information that was sitting in a local table all along.
+- **It requires the model to know it should ask.** A weather question doesn't *look* like it needs memory. The model would answer "which city?" — because nothing in the question hints that the answer is on file. The recall tool that's only called when needed is never called when it's actually needed.
+
+Unconditional injection deletes both failure modes for the price of some context tokens — bounded by a per-conversation injection cap, with a "N older memories not shown" line appended when it overflows, so the model doesn't mistake the window for the whole truth. The general rule: **the best tool is the one the model doesn't have to call.** If information should influence every answer, put it in every prompt; don't make an agent decide to go get it.
+
+Deleting works without a lookup for the same reason. Every injected memory line carries its row id — `#12 "John lives in Hualien" (noted by John)` — so when someone says "actually, forget where I live", the model already has the handle and calls `forget(12)` directly. The injection format doubles as the edit interface.
+
+## Teaching the model which feature is which
+
+With two features this similar, misrouting is the daily failure mode: "remind me to take out the trash in 10 minutes" must not become a permanent memory. That fence is built where the LLM actually reads — the tool descriptions:
+
+<CodeBlock label="tools/remember.py — the description does the routing" lang="python">
+{`"description": (
+    "Store a long-term fact that should still be true later, "
+    "persisted across conversations. Call when the user says "
+    "'remember...', 'my birthday is...', 'call me...' — "
+    "a stable fact that keeps applying. "
+    "⚠️ Only for long-term stable facts (preferences, names, "
+    "family members, places, habits); a one-shot todo "
+    "('remind me in 10 minutes') is set_reminder, not this. "
+    "⚠️ If this corrects an existing fact in the "
+    "【long-term memory】 block, forget the old one by its #id "
+    "first, then remember the new one."
+)`}
+</CodeBlock>
+
+This is the same lesson as [part 4](/blog/line-bot-tool-system)'s FX-vs-crypto fencing, one level up: when two tools overlap in surface phrasing, their descriptions have to partition the space *explicitly* — including telling the model what to do when both could apply.
+
+## Group memory is a bulletin board
+
+Memories are isolated per conversation — what group A records, group B never sees, same as messages and reminders. But *within* a group, the model is deliberately communal: anyone can read, and anyone can delete, what anyone else recorded. Every memory is tagged with who wrote it, and that's the only attribution there is.
+
+For a high-trust family group, shared consciousness is the feature: "remember mom's flight lands Thursday 3 PM" *should* be visible to everyone the bot serves in that room, and *should* be correctable by whoever spots that the time changed. Building per-user ACLs into a family bulletin board would import workplace assumptions into a kitchen.
+
+The same property is why the caps are small and the privacy note is blunt: single memories are capped at 500 characters (a memory is one durable fact, not an archive), and everything in the memory table goes into the prompt of every reply — so the bot's documentation says, in as many words, don't ask it to remember passwords.
+
+## Takeaways
+
+<Lesson label="On read models">
+  Both features write the same way; every design decision that matters is on the read side. "Surface at a moment" and "surface always" produce a scheduler and an injector — code that shares almost nothing. Ask when stored data should resurface before asking how to store it.
+</Lesson>
+
+<Lesson label="On ambient vs fetched">
+  Information that should influence every answer belongs in every prompt, not behind a tool the model must remember to call. Injection trades tokens for the elimination of an entire failure class — the model can't forget to consult what it was never asked to fetch.
+</Lesson>
+
+<Lesson label="On honest framing">
+  "The model doesn't learn you" is a better pitch than pretending otherwise, because it points at the real work: memory is a database feature with an LLM-shaped read path. Users who understand that also understand why correcting the bot works instantly — they're editing rows, not retraining anything.
+</Lesson>
