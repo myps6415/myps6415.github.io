@@ -1,0 +1,19 @@
+---
+title: "影像切割模型要認新品類，以前只能重訓練，代價不小"
+description: "影像切割模型要認新品類，以前只能重訓練，代價不小。REBASE 把這件事搬到推理階段，一張標記過的參考圖就夠，零訓練、零參數更新。"
+date: "2026-07-23"
+postSlug: "2607-09082"
+sourceUrl: "https://arxiv.org/abs/2607.09082"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbHRgnWE16_"
+---
+
+影像切割模型要認新品類，以前只能重訓練，代價不小。REBASE 把這件事搬到推理階段，一張標記過的參考圖就夠，零訓練、零參數更新。
+
+常見解法結合 vision foundation model 跟 SAM，問題在於：參考圖和目標圖背景太像時，背景區域也會被誤判成「高度相似」，真正的目標物反而被稀釋掉。
+
+REBASE 的做法是：先從參考圖找出背景的 low-rank subspace，再把兩張圖的特徵投影到這個空間的正交補集上。背景造成的相似性直接用數學方式消除，不需要 training，不需要調參數。之後用 similarity-weighted farthest-point sampling 選出最有價值的點當 prompt，餵給 SAM 吐出最後的遮罩。
+
+在 PACO-Part、FSS-1000 跟跨領域的 ISIC2018 資料集上，REBASE 都刷新了 training-free 方法的天花板。
+
+還在土法煉鋼訓練新類別的團隊，或許可以先看看這篇。
