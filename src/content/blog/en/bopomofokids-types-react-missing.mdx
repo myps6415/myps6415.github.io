@@ -1,0 +1,122 @@
+---
+title: "tsc kept saying 0 errors — because it had stopped checking anything"
+description: "@types/react quietly went missing from node_modules on a side project. tsc --noEmit kept running, kept exiting 0 — it just wasn't checking anything React-shaped anymore, and nothing about a green CI run said so."
+tag: "Side Project · Type Safety"
+date: "2026-07-15"
+postSlug: "bopomofokids-types-react-missing"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "0", label: "errors reported, before and after" },
+    { value: "any", label: "what every React import silently became" },
+    { value: "1 command", label: "the actual check — ls node_modules/@types/react" },
+  ]}
+/>
+
+## Background
+
+[bopomofokids.com](https://bopomofokids.com/en) is a static React SPA I built
+for my kid — no backend, no test framework beyond Playwright e2e and Vite's
+build. Its `lint` script is just `tsc --noEmit`; there's no ESLint, no
+separate type-coverage tool. That one command is the entire static-analysis
+safety net for the project.
+
+The `tsconfig.json` has neither `strict` nor `noImplicitAny` turned on — a
+deliberate choice to keep a solo side project's type checking lightweight
+rather than importing a large ruleset for a codebase with one contributor.
+That looseness is exactly what let this go unnoticed.
+
+## What actually happened
+
+At some point `@types/react` and `@types/react-dom` went missing from
+`node_modules` — not through any change to `package.json`, just an
+environment where they hadn't actually been installed. `npm run lint` kept
+running. It kept exiting `0`.
+
+That's the surprising part: a missing type package for a module you import
+everywhere should be the loudest possible failure. It wasn't, because of how
+TypeScript resolves an import it can't find a declaration for.
+
+<Callout variant="warn" title="An unresolvable module doesn't fail — it becomes any">
+  Without `@types/react` installed, every `import ... from 'react'` resolves
+  to `any`. With `noImplicitAny` off, TypeScript doesn't complain about that —
+  `any` is a perfectly legal type as far as the compiler's rules are
+  concerned. It just means every value that came from that import — props,
+  hooks, refs, the JSX namespace itself — stops being checked against
+  anything.
+</Callout>
+
+Concretely, this quietly disabled:
+
+<CodeBlock label="what `any` silently swallows" lang="typescript">
+{`// useCallback's generic inference — the callback's param/return types
+// stop being inferred or checked; TypeScript just accepts whatever's passed
+const onSelect = useCallback((symbol: BopomofoItem) => { ... }, []);
+
+// React.FC<Props> — prop type checking on every component
+// with 'React' resolved to any, the whole generic is inert
+const QuizCard: React.FC<QuizCardProps> = ({ item, onPick }) => { ... };
+
+// JSX itself — a typo'd prop, a nonexistent one, a wrong type,
+// none of it gets flagged once the JSX namespace is untyped`}
+</CodeBlock>
+
+A typo'd prop name, a component given the wrong shape of data, a hook used
+with the wrong argument type — all of these are exactly the class of bug
+`tsc --noEmit` exists to catch, and all of them stopped being caught, with no
+error, warning, or exit-code change to say so.
+
+## Why `skipLibCheck` doesn't explain this away
+
+This project's `tsconfig.json` has `skipLibCheck: true`, which sounds
+related but isn't the cause. `skipLibCheck` only skips checking the
+*contents* of `.d.ts` files that do exist — it doesn't fabricate type
+declarations for a package that's missing entirely. The failure here is one
+level earlier: there was no `.d.ts` to skip checking, so TypeScript fell back
+to its default answer for an import with no available types, which is `any`.
+
+## How something like this gets noticed at all
+
+Nothing about a CI run flags this. "0 errors" prints identically whether the
+codebase is genuinely clean or the type checker has quietly stopped looking
+at anything React-shaped. The only tell is behavioral: `tsc` feeling
+strangely untroubled by a mistake that should obviously fail — a prop that
+doesn't exist on a component, a hook called with the wrong type — is the
+signal to check the checker's own inputs, not the code it's supposedly
+checking.
+
+<Callout variant="info" title="The check to run when lint feels suspiciously calm">
+  <CodeBlock label="verify the type packages are actually there" lang="bash">
+{`ls node_modules/@types/react node_modules/@types/react-dom`}
+  </CodeBlock>
+  If `npm run lint` doesn't flag an obvious, deliberately-introduced mistake —
+  a nonexistent prop, a typo'd hook — that's the moment to run this before
+  trusting the rest of the green output.
+</Callout>
+
+## Takeaways
+
+<Lesson label="A passing type check and a blind one print the same output">
+  `0 errors` is not evidence of a clean codebase — it's evidence that
+  whatever the checker was actually looking at had no errors. When the thing
+  being looked at silently shrinks to nothing, the exit code doesn't change
+  to tell you.
+</Lesson>
+
+<Lesson label="Under a permissive tsconfig, a missing type package fails open">
+  With `noImplicitAny` off, an unresolved import doesn't error — it becomes
+  `any`, which the compiler treats as fully legal. The safety a type checker
+  provides is only as strong as its own dependencies being present; a
+  lightweight `tsconfig` makes that dependency invisible when it's missing,
+  rather than loud.
+</Lesson>
+
+<Lesson label="skipLibCheck skips checking library types — it doesn't invent them">
+  It's easy to conflate "lib check is off" with "missing types don't matter."
+  `skipLibCheck` only applies to `.d.ts` files that exist. A package with no
+  installed types at all isn't in that category — it just resolves to `any`,
+  silently, one step before `skipLibCheck` would even apply.
+</Lesson>

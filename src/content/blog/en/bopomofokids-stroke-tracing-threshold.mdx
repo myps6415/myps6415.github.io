@@ -1,0 +1,199 @@
+---
+title: "We skipped the stroke-order library — then needed three tries to get 'close enough' right"
+description: "Zhuyin symbols only have 1-4 strokes, simple enough to hand-roll stroke tracing instead of adopting a library built for full Chinese characters. The build-vs-buy call was easy. Scoring how close a 4-year-old's finger has to get to 'correct' took three rounds — and the first two were both wrong in opposite directions."
+tag: "Side Project · Build vs Buy"
+date: "2026-07-21"
+postSlug: "bopomofokids-stroke-tracing-threshold"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "320 → 45 → 80", label: "the accuracy threshold's actual history" },
+    { value: "2×", label: "times synthetic gesture modeling got it wrong" },
+    { value: "111", label: "strokes across all 37 symbols, hand-verified" },
+  ]}
+/>
+
+## Background
+
+TraceMode (寫寫看) is [bopomofokids.com](https://bopomofokids.com/en)'s
+finger-tracing mode — a child draws each Zhuyin symbol's strokes in the
+correct order on a touch or mouse surface. The stroke geometry itself came
+free: Taiwan's Ministry of Education publishes an open-component package as
+part of the same 《國語注音符號手冊》 that the app's reading audio already
+draws on, and it includes per-symbol stroke outlines and centerline tracks
+in a 0-2048 coordinate square that renders correctly with no transform at
+all — confirmed by screenshotting the raw data before writing a line of
+conversion code.
+
+The harder question wasn't where the stroke data would come from. It was
+whether to hand-roll the drawing capture and scoring, or adopt
+`hanzi-writer` — an existing, well-established library for exactly this kind
+of stroke-order animation and quiz. It was actually installed and verified
+working during planning, including the scale-and-Y-flip its font-baseline
+coordinate system needs. It worked. The decision was to not use it anyway.
+
+<Callout variant="info" title="Build-vs-buy isn't just 'does it work'">
+  `hanzi-writer` is built and tuned for the full complexity of Chinese
+  characters — tens of strokes, subtle stroke-order rules, a much larger
+  scoring surface. Zhuyin symbols top out at 4 strokes. Hand-rolling the
+  capture and scoring kept full control over exactly how forgiving the
+  matching should be for a small child's finger, without carrying a
+  dependency sized for a much harder problem than the one actually being
+  solved.
+</Callout>
+
+Capture itself turned out to need no special-casing at all: React's Pointer
+Events natively unify mouse and touch, so there's no device detection
+branch — just one accuracy tolerance that has to work for both a small
+child's finger and a parent's mouse.
+
+## Distance alone can't tell you the direction
+
+Scoring a drawn stroke against the reference track uses average
+point-to-polyline distance — how far, on average, does each point the child
+drew sit from the intended line. That catches wobble and imprecision fine.
+It catches nothing about *direction*, because averaging distances has no
+notion of order: a stroke traced perfectly backward, end to start, matches
+the reference track exactly as well as one traced forward.
+
+For an app whose entire point is teaching correct stroke order, that's not a
+minor gap — a backward stroke that scores as "correct" teaches the wrong
+lesson while displaying a success animation. A real user caught this during
+play-testing (a stroke drawn back-to-front was accepted), and the fix is a
+second, independent check:
+
+<CodeBlock label="src/components/TraceMode.tsx — isReversed" lang="typescript">
+{`function isReversed(drawn: Point[], track: Point[]): boolean {
+  const first = drawn[0];
+  const start = track[0];
+  const end = track[track.length - 1];
+  const distToStart = Math.hypot(first.x - start.x, first.y - start.y);
+  const distToEnd = Math.hypot(first.x - end.x, first.y - end.y);
+  return distToEnd < distToStart;
+}`}
+</CodeBlock>
+
+It's deliberately simple — just "which endpoint is the first drawn point
+closer to" — rather than a full path-direction analysis, because it's
+sufficient: every one of the 111 strokes across all 37 symbols has its
+track's start and end at least 469 viewBox units apart, checked against the
+real data rather than assumed. With that much margin, proximity to an
+endpoint is unambiguous.
+
+## The threshold that took three tries — and two of them were the same mistake
+
+The average-distance score needs a cutoff: how far off, on average, counts
+as "close enough." This one number went through three real values, and the
+comment left in the code is candid about why:
+
+<CodeBlock label="src/components/TraceMode.tsx — the threshold's own history, in-code" lang="typescript">
+{`// found 45 swung too far the other way: honest, genuinely-trying strokes
+// were getting rejected for drifting only slightly outside it. Synthetic
+// jitter modeling underestimated how much a real hand/mouse naturally
+// deviates even when honestly trying to follow a line - loosened to 80,
+// ...
+// Tune further from real device play-testing, not more synthetic modeling
+// - that channel has now been wrong twice.
+const ACCURACY_THRESHOLD = 80;`}
+</CodeBlock>
+
+The full arc: it started at **320**, which real play-testing showed was
+absurdly loose — a wavy, meandering scribble along a simple single-line
+stroke (ㄧ, for instance) still scored as correct regardless of how smooth
+the line actually was. That got re-tuned against synthetic gesture modeling
+down to **45**, with a second independent check (`isTooWandering`, a
+path-length-ratio test) added alongside it to catch scrubbing motions that
+distance alone missed.
+
+45 turned out to be wrong in the opposite direction. The commit message for
+the next fix says it plainly:
+
+> Real-device feedback from the user play-testing the PR: honest,
+> genuinely-trying strokes were getting rejected for drifting only slightly
+> outside the previous threshold. The synthetic gesture modeling used to
+> pick 45 (natural jitter topping out ~20 units) underestimated how much a
+> real hand/mouse deviates even when honestly trying to follow a line —
+> this is the second time synthetic modeling alone has been wrong about
+> real device behavior for this scoring logic.
+
+The fix that stuck, **80**, was verified against an actual browser instead
+of more synthetic gesture math: moderate and extreme wave shapes are still
+correctly rejected, honest wobbly input up to a fairly shaky 6% jitter now
+passes, and clean attempts pass easily. One tradeoff was accepted knowingly
+— the single gentlest wave shape found during the original modeling now
+also passes, which was judged an acceptable cost against the app's
+no-frustration principle for real children, rather than a residual bug.
+
+<Callout variant="warn" title="Two wrong answers from the same method, in a row">
+  Both 320-was-too-loose and 45-was-too-tight came from reasoning about the
+  scoring math and synthetic gesture data rather than watching a real child
+  or a real hand actually draw. The method wasn't unreasonable the first
+  time. Being wrong about the same thing twice in a row using the same
+  method is the signal to change the method, not to tune the number again
+  with more of the same kind of input.
+</Callout>
+
+## A conversion-script gotcha that only showed up on the second batch
+
+The 37 symbols were rolled out in two passes: 7 single-stroke symbols first,
+specifically to validate the whole pipeline before investing further, then
+the remaining 30 once real play-testing had shaken out the bugs above. The
+stroke-data conversion script (`scripts/generate-stroke-data.mjs`) handles
+the MOE source's two outline-point shapes — quadratic (`Q`) and cubic (`C`)
+Bézier control points:
+
+<CodeBlock label="scripts/generate-stroke-data.mjs — outlineToPathD" lang="javascript">
+{`else if (pt.type === 'Q') d += \`Q\${pt.begin.x} \${pt.begin.y} \${pt.end.x} \${pt.end.y} \`;
+// Cubic bezier - only shows up in some of the 30-symbol expansion batch
+// (the first 7-symbol batch never hit this case).
+else if (pt.type === 'C') d += \`C\${pt.begin.x} \${pt.begin.y} \${pt.mid.x} \${pt.mid.y} \${pt.end.x} \${pt.end.y} \`;
+else throw new Error(\`unknown outline point type: \${pt.type}\`);`}
+</CodeBlock>
+
+The first 7-symbol validation batch happened to only exercise `Q` points;
+`C` only appeared once the remaining 30 symbols were converted. The script
+throws rather than guessing on an unrecognized point type — so a small
+validation batch that never hits a data shape isn't the same as having
+proven the converter handles that shape; it just hasn't had the chance to
+be wrong about it yet.
+
+All 111 strokes across all 37 symbols were then individually screenshot and
+checked against the MOE reference — outline and centerline track overlaid —
+rather than trusting the converter once it ran without throwing.
+
+## Takeaways
+
+<Lesson label="Build-vs-buy isn't resolved by 'does the library work'">
+  `hanzi-writer` worked, fully verified, coordinate transforms and all. The
+  decision to hand-roll instead came from matching tool complexity to actual
+  problem complexity — a library tuned for the full space of Chinese
+  characters carries scoring and tuning knobs sized for a much bigger
+  problem than 1-to-4-stroke Zhuyin symbols actually present.
+</Lesson>
+
+<Lesson label="A distance score has no concept of direction — check it separately">
+  Average point-to-polyline distance is symmetric in time; it can't
+  distinguish a stroke drawn forward from the same stroke drawn backward.
+  When order matters to what's being taught, that has to be a second,
+  explicit check, not an assumption that a tight distance score implies
+  correct execution.
+</Lesson>
+
+<Lesson label="Being wrong twice with the same method is a signal to change the method">
+  320 and 45 were both derived from synthetic gesture modeling, and both
+  were wrong in opposite directions. The fix that stuck came from watching
+  the actual behavior in a real browser instead of refining the same kind of
+  model a third time. Two failures from one method aren't evidence you need
+  a third iteration of it — they're evidence the method itself can't see
+  what you're trying to measure.
+</Lesson>
+
+<Lesson label="A small validation batch that never exercises a data shape hasn't cleared it">
+  The first 7-symbol batch passing didn't mean the Bézier-handling code was
+  correct — it meant that batch never contained a cubic curve. Converting
+  the rest of the data was what actually tested that path, and it failed
+  loudly (a thrown error) rather than silently producing a wrong shape.
+</Lesson>

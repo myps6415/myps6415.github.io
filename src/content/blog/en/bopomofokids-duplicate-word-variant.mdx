@@ -1,0 +1,115 @@
+---
+title: "The bug that only showed up on 1 in 4 page loads"
+description: "Two Zhuyin symbols quietly shared the same example word. On roughly a quarter of page loads, a quiz question showed two choice cards with the identical emoji and word — a coincidence that only became visible once someone did the math on why."
+tag: "Side Project · Randomness & Data Integrity"
+date: "2026-07-20"
+postSlug: "bopomofokids-duplicate-word-variant"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "~25%", label: "of page loads actually showed the bug" },
+    { value: "2", label: "candidate words per symbol at the time" },
+    { value: "1", label: "shared word (飛機) behind it all" },
+  ]}
+/>
+
+## Background
+
+[bopomofokids.com](https://bopomofokids.com/en) teaches each of its 37 Zhuyin
+symbols alongside an example word — ㄈ pairs with 飛機 (airplane) ✈️, for
+instance. Rather than hard-coding one word per symbol, each symbol carries a
+small array of *candidate* words, and `getWordVariant(item)` picks one at
+random the first time a symbol is shown, then caches that choice for the
+rest of the session. Reload the page and you might get a different word for
+the same symbol; within one session, it stays consistent across every mode.
+
+There's one hard rule that makes this safe: every `word` in the dataset is
+supposed to be unique. No word is meant to appear as a candidate under two
+different symbols. That rule wasn't actually being checked anywhere — it was
+just an assumption everyone adding new words was expected to hold in their
+head.
+
+## The bug
+
+ㄈ's word list included 飛機 (fēijī, airplane). So, at the time, did ㄟ's —
+because 飛機's second character legitimately contains the ㄟ sound
+(f-**ei**-jī), and both symbols' candidate lists had only two words each. Both
+were valid choices individually. Nobody had checked whether the *same* word
+showing up under two *different* symbols was a problem, because on any single
+page load it usually wasn't visible at all.
+
+QuizMode draws its wrong-answer choices partly from other symbols' resolved
+example words. When a question involving both ㄈ and ㄟ came up and *both*
+symbols happened to have resolved their random pick to 飛機 in that session,
+the quiz rendered two choice cards showing the identical ✈️ emoji and the
+identical word — a child (or a QA pass, or a screenshot) had no way to tell
+which card was the intended answer.
+
+<Callout variant="warn" title="A coincidence in the data, not a bug in the selection logic">
+  `getWordVariant` was working exactly as designed — pick uniformly at random,
+  cache per session. The randomness wasn't the problem. The problem was that
+  the space it was picking from let two symbols share an outcome, and nothing
+  checked for that at the data level.
+</Callout>
+
+## Why this hid for a while
+
+With two candidate words per symbol at the time, and each symbol's pick made
+independently, the odds that *both* ㄈ and ㄟ landed on their shared word
+(飛機) in the same session were:
+
+<CodeBlock label="the actual odds" lang="text">
+{`P(ㄈ picks 飛機) × P(ㄟ picks 飛機) = 1/2 × 1/2 = 1/4  →  ~25% of loads`}
+</CodeBlock>
+
+A quarter of the time isn't rare — but it's exactly the kind of probability
+that survives casual manual testing. Reload the page a couple of times while
+eyeballing the quiz, see it look fine both times, and move on: the chance of
+missing a 25%-likely bug across two independent checks is `0.75 × 0.75`, or
+roughly 56%. You'd need to reload it around ten times in a row before the
+odds of never seeing it dropped under 6%. Nobody reloads a page ten times to
+manually re-check a quiz screen that already looked correct the first two
+tries.
+
+## The fix
+
+The immediate fix was narrow: swap ㄟ's first candidate word from 飛機 to
+杯子 (bēizi, cup) — still phonetically correct for ㄟ, no longer shared with
+ㄈ. That made the specific collision impossible, not just less likely.
+
+The real fix was broader: the "every word is unique across the dataset" rule
+became an actual documented invariant instead of an assumption, with an
+explicit instruction to grep the full word list for a candidate word before
+adding it under a new symbol. Around the same change, each symbol's candidate
+list grew from two words to three — which incidentally lowers the odds of
+*any* future accidental collision surviving unnoticed, but that's a side
+effect, not the fix. The fix is that the collision is no longer allowed to
+exist in the data at all.
+
+## Takeaways
+
+<Lesson label="A 25%-probability bug will pass most manual spot-checks">
+  The odds of missing a bug that shows up 1 in 4 times, across two casual
+  reloads, are better than half. If a code path depends on randomness,
+  reasoning about how many trials it actually takes to surface a given
+  probability is worth doing explicitly — "I checked it and it looked fine"
+  means very little at 25%.
+</Lesson>
+
+<Lesson label="Lowering a collision's odds and eliminating the collision are different fixes">
+  Adding a third candidate word per symbol makes a similar future accident
+  less likely to be *visible*, but doesn't make it impossible — two symbols
+  could still legitimately share a candidate word by coincidence. The actual
+  fix was turning "words should be unique" from an assumption into a checked
+  rule, which makes the bug structurally impossible rather than merely rarer.
+</Lesson>
+
+<Lesson label="Randomness moves a bug from 'always' to 'sometimes,' not to 'never'">
+  The selection logic here was correct by design; the bug lived entirely in
+  the data it was selecting from. A random pick over an unchecked candidate
+  set doesn't remove a data-integrity problem — it just makes the problem
+  intermittent, which is usually harder to notice than if it were constant.
+</Lesson>

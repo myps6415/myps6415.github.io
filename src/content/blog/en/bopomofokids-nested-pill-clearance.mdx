@@ -1,0 +1,125 @@
+---
+title: "The same CSS bug shipped three times because fixing it once didn't fix the ratio"
+description: "A pill nested inside another pill needs real clearance between the two curves, or the inner shape visibly pokes into the outer border. Fixed once, fixed again elsewhere, then shipped a third time — inside new size variants of the very component already fixed."
+tag: "Side Project · CSS"
+date: "2026-07-21"
+postSlug: "bopomofokids-nested-pill-clearance"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "3×", label: "times this exact bug shipped" },
+    { value: "p-1 → p-1.5", label: "the fix, every single time" },
+    { value: "1 day", label: "from ship to a user catching the 3rd occurrence" },
+  ]}
+/>
+
+## Background
+
+[bopomofokids.com](https://bopomofokids.com/en)'s whole visual style is one
+deliberate system — thick ink-colored outlines on every element, hard offset
+shadows, no blur. Buttons and pills are always fully round
+(`rounded-full`). A recurring pattern in that system is a segmented control:
+a `rounded-full` colored pill representing the active option, sliding inside
+another, larger `rounded-full` container — used for the header's
+language toggle, the settings panel's various switches, and a mode's own
+in-game speed switcher.
+
+That pattern has a geometry problem that isn't visible from reading the
+class names, only from actually looking at the rendered result.
+
+## Why two nested full circles need real clearance
+
+<Callout variant="warn" title="Both curves are tightest at the same edges">
+  A `rounded-full` shape's curvature is steepest at its top and bottom
+  edges — that's true for both the outer container and the inner active
+  pill. If the padding between them is thin relative to the inner pill's own
+  height, the inner pill's curve and the outer container's curve converge at
+  exactly the point where both are curving hardest. The result: the active
+  pill visually touches or poked into the outer ink border, right at the top
+  or bottom of the row. It's easy to miss glancing at a dev server at 100%
+  zoom, and obvious the moment you zoom in or look at a screenshot.
+</Callout>
+
+This isn't a fixed pixel value you can set once and forget — it's a ratio
+between the outer padding and the inner pill's rendered height, and the
+pill's rendered height depends on font size, line height, and how much text
+the label itself needs.
+
+## First two times
+
+The bug shipped in two different components independently: the header/
+settings `Segmented` component (at `p-1`) and `BalloonMode`'s own in-game
+speed switcher (at `p-1.5`). Both were fixed the same way — more padding —
+landing at `p-1.5` and `p-2` respectively. Two separate components, two
+separate fixes, same underlying cause.
+
+## The third time — inside a component that was already fixed
+
+`Segmented` later grew `sm` and `xs` size variants for a more compact header
+toggle, added as part of a 2026-07-20 layout redesign. Both new variants
+copied the already-fixed `md` variant's border width, but reset the padding
+back to `p-1`:
+
+<CodeBlock label="App.tsx — Segmented size variants, before the third fix" lang="typescript">
+{`const SIZES = {
+  md: { box: 'border-3 p-1.5 gap-1', option: 'px-2.5 py-1.5 text-xs' },
+  sm: { box: 'border-3 p-1   gap-1', option: 'px-2   py-1   text-[11px]' }, // ← same bug, back again
+  xs: { box: 'border-2 p-1   gap-0.5', option: 'px-1.5 py-0.5 text-[10px]' }, // ← same bug, back again
+};`}
+</CodeBlock>
+
+Same component, same border width, same fix already shipped once for the
+`md` size — and the exact same bug reappeared in the two new size variants,
+because the fix that had already landed only touched the one size variant
+that existed at the time. It was caught the very next day from a user's
+screenshot of the language toggle, and fixed the same way, again: bump the
+padding, `p-1` to `p-1.5`, on both new variants.
+
+<CodeBlock label="App.tsx — Segmented size variants, after the third fix" lang="typescript">
+{`const SIZES = {
+  md: { box: 'border-3 p-1.5 gap-1', option: 'px-2.5 py-1.5 text-xs' },
+  sm: { box: 'border-3 p-1.5 gap-1', option: 'px-2   py-1   text-[11px]' },
+  xs: { box: 'border-2 p-1.5 gap-0.5', option: 'px-1.5 py-0.5 text-[10px]' },
+};`}
+</CodeBlock>
+
+## Why the English label made it worse
+
+The app's language toggle can render either "中文｜EN" or the equivalent in
+English UI copy, and English labels tend to run taller and wider than the
+Chinese ones they sit next to — more line-height needed for the same visual
+weight. That shrinks the effective clearance further without changing a
+single padding value: the same numeric padding produces less real headroom
+once the label inside the pill needs more vertical space. A control that
+passed a quick glance in Chinese could still fail in English at the exact
+same CSS values.
+
+## Takeaways
+
+<Lesson label="This is a property of a ratio, not a property of 'the component'">
+  Fixing `Segmented`'s `md` variant didn't fix `Segmented` — it fixed one
+  specific border-width-to-padding ratio. `sm` and `xs` are, in effect, new
+  components that happen to share a name and a file. Each new size variant
+  of a nested-pill control needs its own clearance check; having been wrong
+  once elsewhere in the same file doesn't make a new variant immune.
+</Lesson>
+
+<Lesson label="Content length changes the geometry without changing the CSS">
+  The exact same padding value renders with different real clearance
+  depending on how tall the label inside the pill needs to be — which
+  depends on language, font, and text length. A control that looks fine in
+  one language's copy isn't proven fine until checked in every language it
+  actually ships with.
+</Lesson>
+
+<Lesson label="A rendering bug like this needs eyes on the actual pixels, not the class list">
+  Nothing about `p-1` vs `p-1.5` looks obviously wrong when reading the
+  Tailwind classes — the bug only exists in the rendered geometry. When
+  adding or resizing any nested-pill control, screenshotting the real output
+  at its actual pixel size (not eyeballing a dev server at 100% zoom) is
+  what actually catches this, and it needs to happen for every new variant,
+  not once for the component as a whole.
+</Lesson>

@@ -1,0 +1,125 @@
+---
+title: "When the 'wrong' answer was actually the right sound"
+description: "A child heard the sound ㄅㄟˋ at the start of a completely different symbol's example word, picked ㄅ — and the matching game told them no. The fix wasn't really a bug fix; it was making a product principle enforceable: never punish correct listening."
+tag: "Side Project · Game Design"
+date: "2026-07-20"
+postSlug: "bopomofokids-never-punish-correct-listening"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "ㄅㄟˋㄎㄜˊ", label: "貝殼 — the example word behind it" },
+    { value: "1 substring check", label: "the entire guard, in the end" },
+    { value: "2 directions", label: "MatchMode checks both; QuizMode only needs one" },
+  ]}
+/>
+
+## Background
+
+[bopomofokids.com](https://bopomofokids.com/en) teaches Zhuyin partly through
+a matching game — a symbol card and a spoken example-word card, and the
+child pairs them up by ear and by sight. ㄟ's example word is 貝殼 (bèiké,
+"shell"). Its full phonetic breakdown, syllable by syllable, is `ㄅㄟˋ` `ㄎㄜˊ`
+— which is worth reading closely, because the very first syllable of ㄟ's own
+example word is `ㄅㄟˋ`, and that syllable *contains* the symbol ㄅ.
+
+## The bug a real child found
+
+A user reported this directly: in one round, both ㄅ and the 貝殼 pair (for
+ㄟ) were in play together. A child heard "ㄅㄟˋ," correctly recognized the ㄅ
+sound at the start of it, and picked the ㄅ card — and the game told them it
+wasn't a match.
+
+The child wasn't wrong. Nothing about their listening was mistaken. The game
+was the one with the bug, and the bug wasn't a rendering glitch or an off-by-one
+— it was a design gap: nothing in the round-building logic knew that ㄅ's own
+sound is *audibly present* inside ㄟ's example word, and so nothing stopped
+the two from appearing together in a context where a phonetically correct
+answer would be scored as incorrect.
+
+<Callout variant="warn" title="This isn't a logic bug — it's an un-encoded invariant">
+  The matching and quiz logic were both working exactly as written. What was
+  missing was a rule that had never been written down: no round may pair a
+  symbol with another item whose spoken content contains that symbol's own
+  sound, in either direction. Once stated plainly, it reads as obvious. It
+  wasn't obvious until an actual child's actual correct answer got marked
+  wrong.
+</Callout>
+
+## The fix: one substring check, applied in two different shapes
+
+The data already had everything needed to check this — `wordZhuyin` stores
+the exact phonetic breakdown of each example word, syllable by syllable
+(`['ㄅㄟˋ', 'ㄎㄜˊ']` for 貝殼). The guard is a single small function:
+
+<CodeBlock label="src/utils/wordVariant.ts" lang="typescript">
+{`export function variantContainsSymbol(variant: WordVariant, symbol: string): boolean {
+  return variant.wordZhuyin.some((syllable) => syllable.includes(symbol));
+}`}
+</CodeBlock>
+
+What differs between the two game modes is *which direction* this check
+needs to run, because they don't expose the same information to the player.
+
+**MatchMode** shows and speaks both sides of every pair symmetrically — the
+child both sees and hears each card. So a clash can happen either way: the
+newly-drawn symbol's own sound could appear inside an already-placed pair's
+word, or an already-placed symbol's sound could appear inside the new
+symbol's own word. `buildRound` excludes a candidate symbol from the draw if
+it clashes with any already-picked pair *in either direction* before adding
+it to the round.
+
+**QuizMode** only speaks the *target* word aloud — the wrong-choice symbols
+are never themselves pronounced as part of the question. So only one
+direction of the check applies: `generateQuestion` filters out any wrong
+choice whose own glyph shows up inside the target's spoken word. There's no
+need to check the reverse, because the wrong choices' own sounds are never
+part of what the child actually hears.
+
+<Callout variant="info" title="Same invariant, asymmetric implementation">
+  It would have been easy to copy-paste one mode's exclusion logic into the
+  other and call it consistent. The two modes expose different information
+  to the player (both sides heard vs. only the target heard), so the same
+  underlying rule — no audible phonetic clash — needed a one-directional
+  filter in one mode and a two-directional one in the other. Matching the
+  implementation to what the player actually perceives mattered more than
+  making the two modes look symmetric in code.
+</Callout>
+
+## Why this one mattered more than a typical logic bug
+
+Most bugs cost a user some friction or confusion. This one told a child, in
+an app whose entire purpose is teaching them to listen for these sounds
+correctly, that their correct listening was wrong. For an app aimed at
+4-to-6-year-olds who are just learning to trust their own ear for Zhuyin
+sounds, that's a worse failure mode than a crash — a crash doesn't teach
+the wrong lesson.
+
+## Takeaways
+
+<Lesson label="Some bugs are missing rules, not broken code">
+  The round-building and quiz-generation logic were both doing exactly what
+  they were told. The gap was a rule nobody had written down yet: an item's
+  audible content and another item's identity aren't allowed to phonetically
+  overlap in a way that makes a correct answer look wrong. Code review can't
+  catch a rule that was never stated.
+</Lesson>
+
+<Lesson label="Encode the invariant using data you already trust, not a new lookup">
+  `wordZhuyin` already existed as the ground truth for each word's phonetic
+  breakdown — the exact same data used to render the annotation. Building
+  the exclusion check as a substring match against that field meant no new
+  data source, and no risk of the check drifting out of sync with what's
+  actually displayed and spoken.
+</Lesson>
+
+<Lesson label="The same rule can need different code in different places">
+  Two modes, one invariant, two different filters — because the modes expose
+  different information to the player. Forcing identical implementations in
+  the name of consistency would have either over-filtered one mode or
+  under-filtered the other. What has to stay consistent is the rule; the
+  code enforcing it can and should differ when what the player perceives
+  differs.
+</Lesson>

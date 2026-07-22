@@ -1,0 +1,107 @@
+---
+title: "tsc 一直說 0 error——因為它早就沒在檢查任何東西了"
+description: "side project 裡的 @types/react 悄悄從 node_modules 消失。tsc --noEmit 照樣跑、照樣吐出 0 error——只是它已經不再檢查任何 React 相關的東西了，而 CI 綠燈完全看不出這件事。"
+tag: "Side Project · 型別安全"
+date: "2026-07-15"
+postSlug: "bopomofokids-types-react-missing"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "0", label: "回報的 error 數，事前事後都一樣" },
+    { value: "any", label: "每個 React import 悄悄變成的型別" },
+    { value: "1 行指令", label: "真正的檢查——ls node_modules/@types/react" },
+  ]}
+/>
+
+## 背景
+
+[bopomofokids.com](https://bopomofokids.com) 是我幫孩子做的純前端 React
+SPA——沒有後端，除了 Playwright e2e 跟 Vite 的 build 之外沒有其他測試框架。它的
+`lint` 腳本就只是 `tsc --noEmit`；沒有 ESLint，沒有另外的 type-coverage 工具。
+這一行指令,就是整個專案的靜態分析安全網。
+
+`tsconfig.json` 沒開 `strict`,也沒開 `noImplicitAny`——這是刻意的選擇,讓一個
+單人 side project 的型別檢查保持輕量,不用為了一個人的 codebase 引進一大套規則。
+而正是這個寬鬆,讓這件事悄悄溜了過去。
+
+## 到底發生了什麼
+
+不知道什麼時候,`@types/react` 跟 `@types/react-dom` 從 `node_modules` 裡消失
+了——不是 `package.json` 被改過,只是某個環境裡它們其實沒被裝進去。`npm run
+lint` 照樣跑。照樣吐出 `0`。
+
+這才是驚訝的地方:一個到處被 import 的模組,它的型別套件不見了,理論上應該是
+最吵、最藏不住的那種失敗。結果完全不是,原因出在 TypeScript 怎麼處理一個找不到
+宣告檔的 import。
+
+<Callout variant="warn" title="解析不到的模組不會報錯——它會變成 any">
+  沒裝 `@types/react` 的情況下,每一個 `import ... from 'react'` 都會解析成
+  `any`。`noImplicitAny` 沒開的話,TypeScript 對這件事完全不會有意見——就編譯器
+  的規則來說,`any` 是完全合法的型別。這代表所有從那個 import 來的東西——props、
+  hooks、refs、甚至 JSX namespace 本身——都不再被拿去跟任何東西比對檢查。
+</Callout>
+
+具體來說,這悄悄關掉了:
+
+<CodeBlock label="any 悄悄吞掉的東西" lang="typescript">
+{`// useCallback 的泛型推斷——callback 的參數/回傳型別
+// 不再被推斷或檢查;TypeScript 會接受任何傳進去的東西
+const onSelect = useCallback((symbol: BopomofoItem) => { ... }, []);
+
+// React.FC<Props> ——每個元件的 prop 型別檢查
+// 'React' 解析成 any 之後,整個泛型都是死的
+const QuizCard: React.FC<QuizCardProps> = ({ item, onPick }) => { ... };
+
+// JSX 本身——打錯的 prop 名、不存在的 prop、型別錯誤,
+// 一旦 JSX namespace 沒有型別,全部都不會被標出來`}
+</CodeBlock>
+
+一個打錯字的 prop 名、一個給錯資料形狀的元件、一個帶錯參數型別的 hook——這些
+本來正是 `tsc --noEmit` 存在的理由,結果全部都不再被抓到,而且沒有任何 error、
+warning 或 exit code 的變化會告訴你這件事。
+
+## 為什麼 skipLibCheck 解釋不了這件事
+
+這個專案的 `tsconfig.json` 有開 `skipLibCheck: true`,聽起來好像有關係,但其實
+不是原因。`skipLibCheck` 只會跳過檢查*已經存在*的 `.d.ts` 檔案的內容——它不會
+替一個根本沒裝的套件生出型別宣告。這裡的失敗發生得更早一步:根本沒有 `.d.ts`
+可以跳過檢查,所以 TypeScript 直接退回它對「找不到型別的 import」的預設答案,
+也就是 `any`。
+
+## 這種事到底怎麼會被發現
+
+CI 跑出來的結果完全看不出這件事。不管 codebase 真的乾淨、還是型別檢查器早就
+悄悄不再看任何 React 相關的東西,「0 error」印出來都長得一模一樣。唯一的破綻是
+行為上的:`tsc` 對一個理論上該報錯的錯誤——一個元件上不存在的 prop、一個帶錯
+型別參數的 hook——顯得異常淡定,這就是該去檢查檢查工具自己的輸入、而不是它正在
+檢查的程式碼的訊號。
+
+<Callout variant="info" title="當 lint 淡定得可疑時,該跑的檢查">
+  <CodeBlock label="確認型別套件真的在" lang="bash">
+{`ls node_modules/@types/react node_modules/@types/react-dom`}
+  </CodeBlock>
+  如果 `npm run lint` 沒抓到一個明顯、刻意加進去的錯誤——一個不存在的 prop、
+  一個打錯的 hook——在信任其他綠燈輸出之前,先跑一次這個指令。
+</Callout>
+
+## 這次學到什麼
+
+<Lesson label="通過的型別檢查跟瞎掉的型別檢查,印出來一模一樣">
+  `0 error` 不是 codebase 乾淨的證據——它只是「檢查器實際在看的東西沒有錯誤」的
+  證據。當被看的東西悄悄縮到什麼都不剩,exit code 不會變來告訴你這件事。
+</Lesson>
+
+<Lesson label="在寬鬆的 tsconfig 底下,遺失的型別套件是 fail open">
+  `noImplicitAny` 沒開的話,一個解析不到的 import 不會報錯——它會變成 `any`,
+  編譯器把它當成完全合法。型別檢查器提供的保障,強度就等於它自己的依賴是不是
+  真的存在;輕量的 `tsconfig` 讓這個依賴消失時是無聲的,而不是吵的。
+</Lesson>
+
+<Lesson label="skipLibCheck 是跳過檢查函式庫型別,不是生出型別">
+  很容易把「lib check 關了」跟「遺失的型別無所謂」搞混。`skipLibCheck` 只套用在
+  已經存在的 `.d.ts` 檔案上。一個完全沒裝型別的套件不屬於這個範疇——它會直接、
+  無聲地解析成 `any`,比 `skipLibCheck` 能生效的那一步還要早一步。
+</Lesson>
