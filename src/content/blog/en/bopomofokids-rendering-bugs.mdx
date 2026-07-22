@@ -1,0 +1,158 @@
+---
+title: "Fine in Chrome, broken in Safari: two bugs a kids' app only caught by checking twice"
+description: "A Zhuyin-teaching app for my kid rendered perfectly in Chrome — twice. One bug only surfaced in Safari, the other only in an actual print preview. Both times the fix was checking a different lens, not staring harder at the same one."
+tag: "Side Project · Frontend"
+date: "2026-07-22"
+postSlug: "bopomofokids-rendering-bugs"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "2", label: "rendering bugs, two different lenses" },
+    { value: "vertical-rl", label: "Bug 1's actual culprit" },
+    { value: "3 layouts", label: "attempts before Bug 2's print fix stuck" },
+  ]}
+/>
+
+## Background
+
+[bopomofokids.com](https://bopomofokids.com/en) is a free, ad-free web app that
+teaches Traditional-Chinese Zhuyin (Bopomofo, ㄅㄆㄇ) to a 4-to-6-year-old — my
+wife built the first version to practice with our own kid, and I picked it up
+and grew it into a full React SPA with seven game modes. No backend, no
+accounts, no API keys; the reading audio is real human recordings from
+Taiwan's Ministry of Education, not synthesized speech.
+
+Being static and client-only means almost all of the risk in this codebase is
+rendering risk, not server risk. And the audience skews heavily toward
+phones and iPads — a lot of them iOS. Twice now, a change looked completely
+correct in the browser I happened to have open, and was actually broken for a
+meaningful slice of that audience. Both times, the bug only existed from a
+different vantage point than the one I'd checked.
+
+## Bug 1: vertical-rl fell over in WebKit
+
+Zhuyin annotation belongs to one character at a time: the phonetic letters
+for a syllable stack top-to-bottom in a narrow column to that character's
+right, with the tone mark floating in its own smaller column beside them. The
+first implementation of this leaned on the browser's own CJK vertical text
+shaping to do the stacking — `writing-mode: vertical-rl` on the letter
+column, so the letters would lay out top-to-bottom for free instead of being
+positioned by hand.
+
+It looked exactly right in Chromium. It only fell apart once the e2e suite
+ran the same assertions against a second engine: in WebKit, `vertical-rl`
+scattered the letters out of their stacked order — one that should render
+upright came out sideways, letters detached from the ones next to them —
+while the identical markup stayed correct in Chromium the whole time.
+
+<Callout variant="warn" title="A property named 'writing-mode' invoking real text shaping">
+  `vertical-rl` doesn't just rotate a box — it hands layout to the browser's
+  own vertical text-shaping engine, and that shaping isn't specified tightly
+  enough to guarantee identical results across engines for arbitrary content.
+  For four Bopomofo letters that need to stay in an exact, deliberately
+  chosen order, that's the wrong tool even when it happens to look fine in
+  the engine you're staring at.
+</Callout>
+
+The fix removed the special layout entirely: the letter column is now a plain
+`flex flex-col` stack of individual `<span>` elements, one span per letter,
+positioned by ordinary block layout instead of vertical text shaping. It
+renders identically across engines for the boring reason that it isn't doing
+anything engine-specific — just stacking boxes.
+
+Since then, the project's Playwright config runs this component's spec on
+**both** `chromium` and `webkit` projects on purpose, specifically because
+this is the bug that only reproduced in one of them. A chromium-only run
+would have shipped it again.
+
+## Bug 2: the print layout that took three tries
+
+The app has a printable flashcard sheet — all 37 symbol cards, laid out for
+an actual kindergarten parent to print and cut up. Getting 37 cards to
+paginate cleanly across physical A4 pages turned out to need three separate
+attempts, and the first two both looked fine on screen.
+
+**Attempt 1 — CSS grid, `break-inside: avoid` on each card.** Cards still
+split in half across the printed page boundary. `break-inside` /
+`page-break-inside` is unreliably honored inside `display: grid` (and
+`display: flex`) containers in Chrome and Safari's print pagination — a
+long-standing engine limitation, not a bug in the CSS written here (see
+Chromium issues [616228](https://bugs.chromium.org/p/chromium/issues/detail?id=616228)
+and [719908](https://bugs.chromium.org/p/chromium/issues/detail?id=719908),
+and Firefox [bug 1375736](https://bugzilla.mozilla.org/show_bug.cgi?id=1375736)).
+
+**Attempt 2 — CSS multi-column (`columns-3`).** This computed a correct
+3-column layout on screen. Once the container's total height spanned many
+printed pages, though, Chrome filled column 1 across several pages before
+ever moving to column 2 or 3 — one full-width card per printed page, roughly
+eight pages for 37 cards instead of the expected three or four. That's a
+distinct multicol-and-print-fragmentation interaction, not a repeat of
+attempt 1's issue.
+
+**What actually worked — a flat list of row `<div>`s.** The 37 cards are
+hand-chunked into rows of 3, each row an ordinary block-level `<div>` that is
+internally `flex` but is *not itself* part of any grid, flex-wrap, or
+multi-column container at the outer level:
+
+<CodeBlock label="print sheet — deliberately flat rows, not grid/columns" lang="tsx">
+{`{chunk(ALL_SYMBOLS, PRINT_COLUMNS).map((row, i) => (
+  <div key={i} className="flex gap-4 break-inside-avoid">
+    {row.map((item) => (
+      <PrintCard key={item.id} item={item} />
+    ))}
+  </div>
+))}`}
+</CodeBlock>
+
+Each row is a plain block box — the one case `break-inside: avoid` reliably
+supports — and each row is far shorter than a full page, so pagination just
+moves a whole row down when it doesn't fit. No column-fill interaction, no
+per-card fragmentation.
+
+<Callout variant="info" title="page.pdf() only reproduces this at the right viewport">
+  Playwright's `page.pdf()` only reproduces real print-pagination behavior if
+  you set a narrow viewport matching the print page width *before* calling
+  it — e.g. 794×1123 for A4 at 96dpi — then `emulateMedia({ media: 'print'
+  })`, then `page.pdf()`. With Playwright's much wider default viewport, both
+  bugs above pass silently. Neither was caught by an automated check running
+  at the default width; both were only caught by an actual Chrome print
+  preview, and only reproduced in Playwright once the viewport was narrowed
+  to match.
+</Callout>
+
+## The thread connecting both
+
+Neither bug was found by looking harder at the same screen. Bug 1 was found
+by pointing the *same* assertions at a second rendering engine instead of
+trusting the first one that passed. Bug 2 was found by switching from "does
+this look like three columns on my monitor" to "what does an actual printed
+page look like" — and even the automated version of that check only works if
+the tool is told to emulate the real output medium, not left at its
+convenient default.
+
+## Takeaways
+
+<Lesson label="A screen that looks right only proves the case you checked">
+  Chromium rendering a component correctly says nothing about WebKit, and a
+  browser window rendering a layout correctly says nothing about a printed
+  page. Both are real, common output targets for this app's audience — and
+  both needed to be checked as their own case, not inferred from the case
+  that was already open.
+</Lesson>
+
+<Lesson label="Fragmentation bugs under grid/flex/multicol are a known limitation, not a signal to keep debugging your CSS">
+  `break-inside` is unreliable-to-ignored inside grid, flex, and multi-column
+  containers in current Chrome/Safari print pagination — a known engine gap,
+  not something a cleverer selector fixes. A flat list of ordinary block
+  boxes sidesteps the whole class of problem instead of fighting it.
+</Lesson>
+
+<Lesson label="A testing tool's default configuration can silently skip the exact case you need">
+  Playwright's `page.pdf()` at its default (wide) viewport doesn't reproduce
+  print pagination at all — it'll pass on a layout that fails in a real
+  print preview. A tool being available isn't the same as it being
+  configured to actually exercise the scenario you care about.
+</Lesson>

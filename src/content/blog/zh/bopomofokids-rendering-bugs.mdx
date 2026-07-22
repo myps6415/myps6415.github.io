@@ -1,0 +1,129 @@
+---
+title: "Chrome 裡完全正常：兒童注音 App 兩個只換個角度看才現形的 bug"
+description: "幫女兒做的注音符號 App，兩個畫面 bug 都在 Chrome 裡看起來完全正常——一個要 Safari 才會現形，一個要真的印出來才會現形。兩次都是換一個檢視角度抓到的，不是盯著同一個畫面看更仔細。"
+tag: "Side Project · 前端渲染"
+date: "2026-07-22"
+postSlug: "bopomofokids-rendering-bugs"
+meta:
+  - text: myps6415
+---
+
+<StatRow
+  stats={[
+    { value: "2", label: "渲染 bug，各自要換一個角度才看得到" },
+    { value: "vertical-rl", label: "Bug 1 的真兇" },
+    { value: "3 種佈局", label: "Bug 2 才抓到能用的做法" },
+  ]}
+/>
+
+## 背景
+
+[bopomofokids.com](https://bopomofokids.com) 是一個免費、無廣告的注音符號
+（ㄅㄆㄇ）教學網站，教學對象是 4 到 6 歲的小孩——我太太起的頭，本來只是陪孩子練
+注音隨手做的小東西，我接手把它做成一個有 7 種遊戲模式的完整 React SPA。沒有後端、
+沒有帳號、沒有 API 金鑰；讀音全部是教育部的真人錄音，不是機器合成。
+
+純前端、無後端，代表這個專案幾乎所有風險都是**渲染**風險,不是伺服器風險。而使用
+族群又高度集中在手機和平板,其中不少是 iOS。已經有兩次,一個改動在我手邊開著的
+瀏覽器裡看起來完全正確,實際上卻對相當一部分使用者是壞的。兩次的 bug 都只存在於
+一個我沒去檢查的角度裡。
+
+## Bug 1：vertical-rl 在 WebKit 摔了一跤
+
+注音標注是屬於單一個字的:一個字的注音字母由上到下疊在那個字右邊的窄欄裡,聲調
+符號則浮在旁邊自己更小的欄位。這個元件最早的實作借用了瀏覽器自己的 CJK 直書排版
+能力來做這個堆疊——在字母欄位上用 `writing-mode: vertical-rl`,讓字母免費由上到下
+排好,不用自己手動定位。
+
+這在 Chromium 裡看起來完全正確。直到 e2e 測試把同一組斷言拿去對第二個 engine 跑,
+才整個現形:在 WebKit 裡,`vertical-rl` 把字母排出了原本的順序——該正立的一個
+變成側躺,字母之間也脫節分散——而同一份 markup 在 Chromium 裡從頭到尾都是對的。
+
+<Callout variant="warn" title="一個叫 writing-mode 的屬性,其實在呼叫真的文字排版引擎">
+  `vertical-rl` 不只是把一個 box 轉個方向——它把排版交給瀏覽器自己的直書文字排版
+  引擎,而這套排版規格對任意內容並沒有嚴謹到能保證跨引擎結果一致。對於四個必須維持
+  精確、刻意選定順序的注音字母來說,就算它在你正盯著的那個 engine 裡看起來沒事,
+  這也是用錯了工具。
+</Callout>
+
+修法是把這套特殊排版整個拿掉:字母欄位現在是一個普通的 `flex flex-col` 堆疊,每個
+字母一個獨立的 `<span>`,靠一般的 block layout 定位,而不是靠直書文字排版。它在
+每個引擎上都渲染一致,原因很無聊——因為它根本沒做任何引擎專屬的事,只是把方塊疊
+起來而已。
+
+從那之後,這個專案的 Playwright 設定刻意讓這個元件的測試同時跑在 `chromium` 和
+`webkit` 兩個 project 上,因為這正是那個只在其中一個引擎裡才會重現的 bug。只跑
+chromium 會再把它放出去一次。
+
+## Bug 2：印刷版面試了三次才對
+
+App 裡有一份可列印的小卡頁——37 張注音符號小卡,排版給真的幼兒園家長印出來剪開用。
+讓 37 張卡在實體 A4 頁面上乾淨分頁,結果得試了三次才成,而且前兩次在螢幕上看起來
+都沒問題。
+
+**第一次——CSS grid,每張卡加 `break-inside: avoid`。** 卡片還是會被印刷頁面邊界
+攔腰切成兩半。`break-inside` / `page-break-inside` 在 `display: grid`
+(以及 `display: flex`) 容器裡,Chrome 和 Safari 的列印分頁常常不理它——這是
+engine 長期存在的限制,不是這裡 CSS 寫錯 (見 Chromium issue
+[616228](https://bugs.chromium.org/p/chromium/issues/detail?id=616228)、
+[719908](https://bugs.chromium.org/p/chromium/issues/detail?id=719908),
+以及 Firefox [bug 1375736](https://bugzilla.mozilla.org/show_bug.cgi?id=1375736))。
+
+**第二次——CSS multi-column (`columns-3`)。** 螢幕上算出了正確的三欄佈局。但一旦
+容器總高度橫跨了很多印刷頁面,Chrome 會先把第一欄填滿好幾頁,才輪到第二、第三欄——
+變成每頁印一張橫跨全寬的卡,37 張卡印了大概八頁,而不是預期的三、四頁。這是
+multicol 跟列印分頁交互作用的另一個獨立問題,不是第一次那個 bug 的重複。
+
+**真正管用的做法——把卡片攤平成一列列的 `<div>`。** 37 張卡手動分成每 3 張一列,
+每一列是普通的 block-level `<div>`,內部用 `flex` 排,但最外層本身**不**屬於任何
+grid、flex-wrap 或 multi-column 容器:
+
+<CodeBlock label="列印頁 — 刻意攤平成一列列,不是 grid/columns" lang="tsx">
+{`{chunk(ALL_SYMBOLS, PRINT_COLUMNS).map((row, i) => (
+  <div key={i} className="flex gap-4 break-inside-avoid">
+    {row.map((item) => (
+      <PrintCard key={item.id} item={item} />
+    ))}
+  </div>
+))}`}
+</CodeBlock>
+
+每一列都是一個普通的 block box——這正是 `break-inside: avoid` 唯一可靠支援的
+情況——而且每一列都遠比一整頁矮,所以分頁時裝不下就整列往下移就好。沒有欄位填充
+的交互作用,也沒有卡片本身被切開的問題。
+
+<Callout variant="info" title="page.pdf() 要對的 viewport 才會重現這個 bug">
+  Playwright 的 `page.pdf()` 只有在呼叫之前先設定一個貼近印刷頁寬的窄
+  viewport——例如 A4 @ 96dpi 對應的 794×1123——再 `emulateMedia({ media:
+  'print' })`、才呼叫 `page.pdf()`,才會真的重現列印分頁行為。用 Playwright
+  預設寬很多的 viewport,上面兩個 bug 都會悄悄通過。這兩個 bug 都不是被跑在預設
+  寬度的自動化檢查抓到的——都是靠一次真的 Chrome 列印預覽才發現,而且要把
+  viewport 縮到對的寬度,Playwright 才重現得出來。
+</Callout>
+
+## 兩個 bug 背後同一條線索
+
+這兩個 bug 都不是盯著同一個畫面看更仔細才抓到的。Bug 1 是把同一組斷言指向第二個
+渲染引擎,而不是相信第一個通過的引擎;Bug 2 是把「螢幕上看起來像不像三欄」換成
+「印出來的實體頁面長什麼樣子」——而且連自動化版本的這個檢查,也只有在工具被設定成
+模擬真正的輸出媒介、而不是停在方便的預設值時,才有用。
+
+## 這次學到什麼
+
+<Lesson label="畫面看起來對,只證明了你檢查的那個情境是對的">
+  Chromium 把一個元件渲染對了,不代表 WebKit 也對;瀏覽器視窗把一個版面排對了,
+  不代表印出來的實體頁面也對。這兩個都是這個 App 使用族群真實會遇到的輸出情境,
+  都需要當成獨立的情況去驗證,不能從已經開著的那個情況去推論。
+</Lesson>
+
+<Lesson label="grid/flex/multicol 底下的分頁失效是已知限制,不是要你繼續改 CSS 的訊號">
+  `break-inside` 在目前 Chrome/Safari 的列印分頁裡,套在 grid、flex、multi-column
+  容器內就是不可靠——這是 engine 已知的落差,不是換個更聰明的選擇器就能修好的東西。
+  把版面攤平成一列列普通的 block box,直接繞開整類問題,而不是跟它硬碰硬。
+</Lesson>
+
+<Lesson label="測試工具的預設設定,可能悄悄跳過你真正在意的那個情境">
+  Playwright 的 `page.pdf()` 在預設 (寬) viewport 下根本不會重現列印分頁行為——
+  一個在真實列印預覽裡會壞的版面,在預設設定下會直接通過。工具存在,不代表它已經
+  被設定成真的在驗證你在乎的那個情境。
+</Lesson>
