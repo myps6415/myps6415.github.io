@@ -1,0 +1,17 @@
+---
+title: "訓練 AI 代理呼叫 API 時，最大瓶頸從來不是模型本身，而是資料從哪來"
+description: "訓練 AI 代理呼叫 API 時，最大瓶頸從來不是模型本身，而是資料從哪來。"
+date: "2026-07-24"
+postSlug: "2607-16900"
+sourceUrl: "https://arxiv.org/abs/2607.16900"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbJ2TguE04Y"
+---
+
+訓練 AI 代理呼叫 API 時，最大瓶頸從來不是模型本身，而是資料從哪來。
+
+現在主流做法需要先架好完整後端資料庫與狀態系統，資料還要夠真實、夠多，否則學到的軌跡根本不夠用。擴展困難，是業界痛點。
+
+這篇論文乾脆把環境拿掉，改用純 LLM 生成訓練資料。流程很直接：給 LLM API 規格文件，它先生出多樣化的任務，接著 teacher agent 解題，解題時另一個 LLM simulator 即時生成虛擬回應，最後由 LLM judge 過濾掉有問題的軌跡。
+
+在 AppWorld 和 OfficeBench 兩個 benchmark 上測試，結果很有意思：不需要任何真實執行環境，光用這套合成資料 fine-tuning，模型效能就有明顯進步。對資料工程來說關鍵在於：不再需要等環境就緒才能訓練 agent，API 規格文件本身就能驅動整個資料生成流程，原則上任何 API 集合都可以生出訓練資料。
