@@ -66,7 +66,7 @@ The platform quirks behind decisions 2–4 — plus UTF-16 mention offsets and o
 [The tool registry](/blog/line-bot-tool-system) is where the bot stopped being a chatbot and became a family utility. Each tool is a small module — a JSON schema plus an async `run()` — and the LLM decides when to call one:
 
 - **Lookups** — weather (with an umbrella verdict), FX conversion, stock/crypto/index quotes, URL summarization, web search with cited sources
-- **Time-shifted** — reminders (one-shot and recurring, delivered as real @-mentions), price alerts ("tell me if 2328 drops below 50" — polled during market hours only, with a freshness gate so a weekend's stale quote can't false-trigger)
+- **Time-shifted** — reminders (one-shot and recurring, delivered as real @-mentions), [price alerts](/blog/price-alert-two-gates) ("tell me if 2328 drops below 50" — polled during market hours only, with a freshness gate so a weekend's stale quote can't false-trigger)
 - **Context** — chat recap ("what did everyone talk about this week?"), [long-term memory](/blog/memory-vs-reminders) ("remember I live in Hualien" — injected into every subsequent reply), vision on images and short videos, sticker sentiment
 - **Presentation** — structured results ship as LINE Flex cards (price with red/green delta, weather with rain probability, a cancel button on every reminder) plus one-tap follow-up chips, all over the free reply API
 

@@ -1,0 +1,101 @@
+---
+title: "Price alerts without a holiday calendar: two gates instead of an almanac"
+description: "How a family bot watches stock prices with zero idle cost and no false alarms on holidays — a market-hours gate for cost, a freshness gate for correctness, and a boundary decision that got reversed in one day."
+tag: "Design · Data freshness"
+date: "2026-07-23"
+postSlug: "price-alert-two-gates"
+meta:
+  - text: "line-bot series · 6"
+---
+
+<StatRow
+  stats={[
+    { value: "2", label: "Gates, different jobs" },
+    { value: "0", label: "Holiday tables maintained" },
+    { value: "0", label: "API calls when idle" }
+  ]}
+/>
+
+## Background
+
+Part 6 of the [LINE family assistant series](/blog/line-bot-family-assistant). The request came from a family member with a stock position and a phone: *"tell me if 2328 drops below 50."* Not portfolio analytics — one public ticker, one threshold, one notification. The feature is a price alert: the bot polls quotes in the background and pushes a real @-mention the moment the price crosses the line.
+
+Mechanically it's a sibling of [the reminder system](/blog/memory-vs-reminders) — same skeleton of *background loop + push back to the source conversation*, same SQLite persistence, same one-shot semantics. The difference is the trigger condition: a reminder fires when a **timestamp** arrives; a price alert fires when a **price crosses a threshold**. That one difference turns out to carry all the design weight, because time arrives on schedule and prices don't.
+
+## First, the decision that got reversed
+
+Part 1 described [the dividing line](/blog/line-bot-family-assistant) drawn before any code: single-person private goes to my personal agent stack, family-shared goes to the bot. The first ruling under that principle sent price alerts to the *private* side — they're investment-flavored, my portfolio automation already lived there, case closed.
+
+One day later the ruling was reversed. The tell was the actual request: a family member wanted to watch **their own** stock, on **their own** phone, in the shared group. Routing that through my personal Telegram would have been absurd. The principle wasn't wrong — its criterion was. **"Private" is a property of the data, not of the topic.** A whole portfolio (net worth, positions, progress toward goals) is private. One public ticker price is a number anyone can Google; a family member asking to watch it is exactly the shared case the bot exists for. My portfolio automation stays where it was; the single-ticker alert became a bot feature.
+
+Design principles earn their keep the day they get *refined* under a real case — a principle that never has to sharpen its definitions is one nobody is using.
+
+## The loop, and what it costs when nobody's watching
+
+A background task wakes every `PRICE_ALERT_TICK` seconds (default 180), loads active alerts, and checks quotes — with two properties that keep it a good citizen:
+
+- **Zero alerts → zero polls.** No active rows means the loop goes back to sleep without touching the network. An idle feature costs nothing — the same discipline as the [flat-rate LLM argument](/blog/line-bot-family-assistant) applied to an unofficial quote endpoint.
+- **Deduplicated by symbol.** Five alerts on the same ticker cost one quote fetch, fanned out to all five threshold checks.
+
+When a threshold is crossed, the alert pushes once, @-mentions whoever set it, and marks itself done. One-shot is deliberate: a price oscillating around the threshold would otherwise machine-gun the group every three minutes — the alert's job is "wake me when it happens", not "narrate the crossing".
+
+## The hard part: weekends, holidays, and typhoon days
+
+Here's the failure that makes naive price alerts embarrassing. Quote APIs don't stop answering when markets close — they answer with **the last trade**. Saturday's "current price" of a Taiwan stock is Friday's close. If Friday closed below the user's threshold, a naive loop happily "detects" the crossing on Saturday morning and fires an alert about a market that isn't moving.
+
+The instinctive fix is a trading calendar: check weekday, check market hours, check national holidays. And there's the trap — for Taiwan stocks that's not just weekends but Lunar New Year (different dates yearly), national holidays, make-up trading days, and **typhoon days announced the night before**. A holiday table is a liability you maintain forever, and its first missed entry is a false alarm.
+
+The bot maintains no such table. It uses two gates with strictly separated jobs:
+
+<CodeBlock label="tools/price_alert.py — gate 1: market hours, for cost only" lang="python">
+{`def should_poll(symbol: str, now_ms: int) -> bool:
+    """Should we even fetch this symbol now? (Cost gate.)
+
+    TW stocks: only during the Taipei session. Everything else
+    (US, crypto, indices): always poll — correctness is the
+    freshness gate's job, not this one's.
+    """
+    if not is_tw_symbol(symbol):
+        return True
+    now = datetime.fromtimestamp(now_ms / 1000, _TPE)
+    if now.weekday() > 4:  # Sat/Sun
+        return False
+    return _TW_OPEN <= now.time() <= _TW_CLOSE`}
+</CodeBlock>
+
+<CodeBlock label="tools/price_alert.py — gate 2: freshness, for correctness" lang="python">
+{`def is_fresh(as_of: str | None, now_ms: int) -> bool:
+    """Is the quote's timestamp recent enough to act on?
+
+    No timestamp, or older than _FRESH_SECS → the market isn't
+    trading (weekend, holiday, after hours). Do not trigger.
+    """
+    if not as_of:
+        return False
+    try:
+        dt = datetime.strptime(as_of, "%Y-%m-%d %H:%M").replace(tzinfo=_TPE)
+    except ValueError:
+        return False
+    age = now_ms / 1000 - dt.timestamp()
+    return -60 <= age <= _FRESH_SECS  # tolerate slight clock skew`}
+</CodeBlock>
+
+The freshness gate is the correctness mechanism, and it works because **the quote itself tells you whether the market is trading**. A holiday quote carries yesterday's timestamp; the gate sees a stale `as_of` and refuses to trigger. Lunar New Year, typhoon days, surprise half-days — all handled by the same three lines, automatically, forever, because the data source is the authority on its own liveness. The market-hours gate, by contrast, exists *only* to avoid hammering an unofficial endpoint all day for a market that keeps banker's hours — which is why it only covers TW symbols. US stocks and crypto have no single tidy session window, so they poll every tick and let freshness decide.
+
+<Callout variant="info" title="Why not just one gate?">
+  Drop the market-hours gate and correctness survives, but you poll Yahoo all day for stocks that trade four and a half hours — a cost bug. Drop the freshness gate and the cost is fine, but the first holiday fires false alarms — a correctness bug. Two failure modes, two mechanisms, deliberately not merged. When one mechanism serves two masters, its edge cases serve neither.
+</Callout>
+
+## Takeaways
+
+<Lesson label="On timestamps over almanacs">
+  Any system that needs to know "is the world doing the thing right now?" can either maintain a calendar of the world or check the freshness of the world's own data. The calendar is work you do forever and get wrong once a year; the timestamp is authority delegated to the source. Prefer the source.
+</Lesson>
+
+<Lesson label="On separating cost gates from correctness gates">
+  The two gates look similar — both decide "act or skip" — but one protects a rate budget and the other protects the truth. Keeping them as two named functions with two docstrings means each can be tuned (or deleted) without touching the other's guarantee.
+</Lesson>
+
+<Lesson label="On principles that meet reality">
+  "Private goes to the private stack" survived contact with a real request only after its criterion was sharpened from topic to data. Reversing a one-day-old ruling isn't churn — it's the principle getting a definition precise enough to delegate future decisions to.
+</Lesson>
