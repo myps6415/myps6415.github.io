@@ -1,0 +1,22 @@
+---
+title: "讓 Claude Code 跑 PR review，結果行數對不上、評論飄到隔壁檔…"
+description: "讓 Claude Code 跑 PR review，結果行數對不上、評論飄到隔壁檔，應該不少人遇過。"
+date: "2026-07-25"
+postSlug: "open-code-review"
+sourceUrl: "https://github.com/alibaba/open-code-review"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DbMbGhkExmp"
+channel: "data-engineering"
+---
+
+讓 Claude Code 跑 PR review，結果行數對不上、評論飄到隔壁檔，應該不少人遇過。
+
+alibaba/open-code-review 從這個痛點出發。它是阿里巴巴內部用了兩年的 AI code review 工具，最近才開源。
+
+核心是「確定性工程＋agent」混合架構。檔案選擇、bundling（例如 i18n 檔綁成一組）、規則匹配這些步驟，全由工程邏輯硬綁死，不丟給 LLM 自由發揮。評論定位與反思也拆成獨立模組。取捨明確：精確率優先、召回率可以低。
+
+實測：同模型下 F1 與 Precision 都明顯高於通用 agent，token 消耗約 1/9。Benchmark 來自 50 個專案、200 個 PR、10 種語言，80 多位資深工程師標註 1,505 個 ground-truth issue。
+
+裝一支 ocr 就能跑，也能 delegate 給 Claude Code、Cursor。
+
+團隊還在用通用 agent 跑 review 的，先拿去 PK。
