@@ -1,0 +1,179 @@
+---
+// 內容自動化案例 + 服務洽詢頁（case study）。zh-only，B2B lead-gen 用。
+// 定位：Distill 本身就是活作品集，這頁是①訂閱服務/②接案/③課程共用的信任狀。
+import Base from "../../../layouts/Base.astro";
+
+const stats = [
+  { n: "3", unit: "個頻道", note: "持續運作（＋2 個已收斂）" },
+  { n: "240+", unit: "篇", note: "累計自動發佈" },
+  { n: "~4 萬", unit: "views／月", note: "熱門單篇破 7,000" },
+  { n: "0", unit: "人日常操作", note: "選材到發佈全自動" },
+];
+
+const pipeline = [
+  ["選材", "從數十個國外一線 RSS／雷達來源挑題，確定性程式邏輯去重、過濾離題文，不靠 LLM 亂選。"],
+  ["抓原文", "抓文章全文當唯一事實來源；抓不到就跳過這期，寧缺勿錯。"],
+  ["AI 改寫", "用自己的話重寫成繁中，套「去 AI 味」14 條規則與第一句鉤子句型，不是翻譯軟體直出。"],
+  ["事實查核", "地名／專有名詞逐一比對原文，對不上就退稿重寫——防止 AI 腦補。"],
+  ["多頻道發佈", "自動排程發到各頻道，圖片、來源留言、字數與格式全自動處理。"],
+  ["內容沉澱", "同一篇同步成自有網站頁面，累積成被 Google 索引的長期資產（你正在看的這個站）。"],
+  ["成效回饋", "每日回收觸及數據，每週歸納「哪種第一句有效」回寫策略，讓系統自己越寫越準。"],
+];
+
+const rigor = [
+  ["事實查核閘門", "地名／片假名／專有名詞必須出現在原文，否則退稿。曾靠這道擋下把大阪店寫成東京的錯誤。"],
+  ["四層發佈防線", "Writer 中途崩潰也不會送出「只有圖沒內文」的空殼貼文——四道獨立防線層層把關。"],
+  ["去 AI 味自審", "14 條清單掃掉罐頭句、假推論、套話，讓讀者看不出是機器寫的。"],
+  ["成效驅動", "第一句句型不是憑感覺，是從實測觸及數據（20 倍分化）歸納出來的贏家結構。"],
+];
+
+const offers = [
+  ["客製建置", "幫你的品牌／公司從零搭一套內容自動化管線，一次交付，你擁有系統。"],
+  ["月費代營運", "不想自己顧？我用這套系統每天幫你的頻道自動產出內容，月費訂閱、交付全自動。"],
+  ["課程／顧問", "想自己學著做？線上課程與一對一顧問，把整套方法交給你的團隊。"],
+];
+
+const alternateUrls = { en: "/", zh: "/zh/services/" };
+---
+
+<Base
+  title="內容自動化 — 案例與合作｜童曉瑜"
+  description="一台 Mac、一套自動化系統，每天把國外一線內容蒸餾成中文、自動發佈到多個社群頻道並沉澱成自有資產。案例、運作方式與合作方案。"
+  lang="zh"
+  alternateUrls={alternateUrls}
+>
+  <main class="px-6 md:px-10 py-20 md:py-28">
+    <div class="max-w-3xl mx-auto">
+      <a
+        href="/zh/"
+        class="font-mono text-xs text-ink-500 hover:text-ink-900 transition-colors"
+      >
+        ← 回首頁
+      </a>
+
+      <p class="mt-8 font-mono text-xs uppercase tracking-widest text-ink-500 mb-6">
+        Case Study
+      </p>
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 mb-5 leading-[1.25]">
+        一台 Mac，自動經營多個內容頻道
+      </h1>
+      <p class="text-ink-700 leading-relaxed text-lg mb-4">
+        Distill 是我寫的一套內容自動化系統：每天從國外一線部落格與論文挑題，
+        用繁體中文重寫、事實查核，再自動發佈到多個社群頻道，並沉澱成自有網站資產。
+        全程在一台 Mac 上排程運作，日常零人工操作。
+      </p>
+      <p class="text-ink-700 leading-relaxed mb-12">
+        這個站本身就是它的產物之一。以下是它怎麼運作、以及為什麼它不只是「叫 AI 寫一寫」。
+      </p>
+
+      <!-- 數字 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-200 border border-ink-200 rounded-lg overflow-hidden mb-14">
+        {
+          stats.map((s) => (
+            <div class="bg-white p-5">
+              <div class="text-2xl md:text-3xl font-semibold text-ink-900 tracking-tight">
+                {s.n}
+              </div>
+              <div class="font-mono text-[11px] uppercase tracking-widest text-ink-500 mt-1">
+                {s.unit}
+              </div>
+              <div class="text-[0.8rem] text-ink-700 mt-2 leading-snug">{s.note}</div>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- 問題 -->
+      <section class="mb-14">
+        <h2 class="text-xl font-semibold text-ink-900 tracking-tight mb-3">要解決的問題</h2>
+        <p class="text-ink-700 leading-relaxed">
+          規模化經營內容通常要一整個小編團隊：找題、翻譯、改寫、排版、發文、看數據。
+          用 AI 直接產出又常常是「一眼看穿的機器文」，甚至把事實寫錯。
+          Distill 的目標是：把整條產線自動化，同時守住「像真人寫、而且不出錯」這條底線。
+        </p>
+      </section>
+
+      <!-- 運作方式 -->
+      <section class="mb-14">
+        <h2 class="text-xl font-semibold text-ink-900 tracking-tight mb-5">系統怎麼運作</h2>
+        <ol class="space-y-4">
+          {
+            pipeline.map(([step, desc], i) => (
+              <li class="flex gap-4">
+                <span class="font-mono text-xs text-ink-500 pt-1 w-5 shrink-0">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <div class="font-semibold text-ink-900 text-[0.95rem]">{step}</div>
+                  <div class="text-ink-700 leading-relaxed text-[0.9rem]">{desc}</div>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <!-- 工程嚴謹度（差異化） -->
+      <section class="mb-14">
+        <h2 class="text-xl font-semibold text-ink-900 tracking-tight mb-2">
+          為什麼不是「叫 ChatGPT 寫一寫」
+        </h2>
+        <p class="text-ink-700 leading-relaxed mb-5">
+          差別在工程。這套系統把「不出錯」當成可靠性問題來設計，而不是碰運氣：
+        </p>
+        <ul class="divide-y divide-ink-200 border-t border-b border-ink-200">
+          {
+            rigor.map(([title, desc]) => (
+              <li class="py-4">
+                <div class="font-semibold text-ink-900 text-[0.95rem] mb-1">{title}</div>
+                <div class="text-ink-700 leading-relaxed text-[0.9rem]">{desc}</div>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <!-- 誰做的 -->
+      <section class="mb-14">
+        <h2 class="text-xl font-semibold text-ink-900 tracking-tight mb-3">這是誰做的</h2>
+        <p class="text-ink-700 leading-relaxed">
+          我是童曉瑜，Principal Data Engineer，日常在做的就是把社群平台資料端到端接進
+          資料倉儲、用排程與資料建模讓它穩定運轉。Distill 是把同一套工程能力用在
+          「內容生產」上的成果——選材、改寫、查核、發佈、沉澱、回饋，每一環都是可維運的自動化，
+          不是一次性的 demo。
+        </p>
+      </section>
+
+      <!-- CTA -->
+      <section class="border-t border-ink-200 pt-10">
+        <h2 class="text-xl font-semibold text-ink-900 tracking-tight mb-5">合作方式</h2>
+        <ul class="space-y-4 mb-8">
+          {
+            offers.map(([title, desc]) => (
+              <li>
+                <div class="font-semibold text-ink-900 text-[0.95rem]">{title}</div>
+                <div class="text-ink-700 leading-relaxed text-[0.9rem]">{desc}</div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="flex flex-wrap gap-x-6 gap-y-3 font-mono text-sm">
+          <a
+            href="mailto:myps6415@gmail.com?subject=Distill%20內容自動化合作洽詢"
+            class="text-ink-900 border-b border-ink-300 hover:border-ink-900 transition-colors"
+          >
+            ✉ 合作洽詢：myps6415@gmail.com
+          </a>
+          <a
+            href="https://www.threads.com/@myps6415"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-ink-500 hover:text-ink-900 border-b border-ink-200 hover:border-ink-500 transition-colors"
+          >
+            看實際成果 → Threads @myps6415
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</Base>
