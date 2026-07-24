@@ -1,20 +1,41 @@
 ---
-// Distill 選文 index — zh-only（無 EN twin，alternate 回首頁配對）。
+// Distill 選文中樞 — zh-only（無 EN twin，alternate 回首頁配對）。
+// 兩個分區入口：資料工程選文 / 理財選文（共用 distill collection，用 channel 分流）。
 // 與 Writing（blog collection）刻意分離：這裡是每日自動化策展短文的沉澱區。
 import { getCollection } from "astro:content";
 import Base from "../../../layouts/Base.astro";
 
 const entries = await getCollection("distill");
-const posts = entries
-  .map((e) => e.data)
-  .sort((a, b) => (a.date < b.date ? 1 : -1));
+const data = entries.map((e) => e.data);
+
+function section(channel: string) {
+  const posts = data
+    .filter((d) => d.channel === channel)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  return { count: posts.length, latest: posts[0] };
+}
+
+const sections = [
+  {
+    href: "/zh/distill/data-engineering/",
+    title: "資料工程選文",
+    blurb: "國外資料工程一線部落格與工程實務，繁中濃縮重點。",
+    ...section("data-engineering"),
+  },
+  {
+    href: "/zh/distill/money/",
+    title: "理財選文",
+    blurb: "國外 FIRE 與投資理財部落格，繁中濃縮並給台灣對照。",
+    ...section("money"),
+  },
+];
 
 const alternateUrls = { en: "/", zh: "/zh/distill/" };
 ---
 
 <Base
   title="Distill 選文 — 童曉瑜"
-  description="每日一篇資料工程選文：從國外一線部落格與工程實務文章中挑一篇，用繁體中文濃縮重點。"
+  description="每日從國外一線部落格挑一篇，用繁體中文濃縮重點。分資料工程與理財兩個選文分區。"
   lang="zh"
   alternateUrls={alternateUrls}
 >
@@ -34,10 +55,10 @@ const alternateUrls = { en: "/", zh: "/zh/distill/" };
       <h1
         class="text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 mb-4"
       >
-        資料工程選文
+        每日選文
       </h1>
       <p class="text-ink-700 leading-relaxed mb-12">
-        每天從國外資料工程的一線文章中挑一篇，用繁體中文濃縮重點。同步發布於
+        每天從國外一線部落格挑一篇，用繁體中文濃縮重點。同步發布於
         <a
           href="https://www.threads.com/@myps6415"
           target="_blank"
@@ -49,28 +70,28 @@ const alternateUrls = { en: "/", zh: "/zh/distill/" };
 
       <ul class="divide-y divide-ink-200 border-t border-b border-ink-200">
         {
-          posts.map((p) => (
+          sections.map((s) => (
             <li>
               <a
-                href={`/zh/distill/${p.postSlug}/`}
-                class="group block py-5 transition-colors hover:bg-white -mx-3 px-3 rounded-md"
+                href={s.href}
+                class="group block py-6 transition-colors hover:bg-white -mx-3 px-3 rounded-md"
               >
                 <div class="flex items-baseline justify-between gap-4 mb-1.5 flex-wrap">
-                  <span class="font-mono text-[11px] text-ink-500">
-                    {p.date}
+                  <h2 class="text-lg md:text-xl font-semibold text-ink-900 tracking-tight group-hover:underline underline-offset-4 decoration-ink-300">
+                    {s.title}
+                  </h2>
+                  <span class="font-mono text-[11px] uppercase tracking-widest text-ink-500">
+                    {s.count} 篇
                   </span>
-                  {p.sourceName && (
-                    <span class="font-mono text-[11px] uppercase tracking-widest text-ink-500">
-                      {p.sourceName}
-                    </span>
-                  )}
                 </div>
-                <h2 class="text-base md:text-lg font-semibold text-ink-900 tracking-tight leading-snug mb-1.5 group-hover:underline underline-offset-4 decoration-ink-300">
-                  {p.title}
-                </h2>
-                <p class="text-ink-700 leading-relaxed text-[0.9rem]">
-                  {p.description}
+                <p class="text-ink-700 leading-relaxed text-[0.9rem] mb-1">
+                  {s.blurb}
                 </p>
+                {s.latest && (
+                  <p class="font-mono text-[11px] text-ink-500">
+                    最新：{s.latest.date}｜{s.latest.title}
+                  </p>
+                )}
               </a>
             </li>
           ))

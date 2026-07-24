@@ -1,0 +1,81 @@
+---
+// 資料工程選文分區 — zh-only。與 money 分區共用 distill collection，用 channel 過濾。
+import { getCollection } from "astro:content";
+import Base from "../../../../layouts/Base.astro";
+
+const entries = await getCollection("distill");
+const posts = entries
+  .map((e) => e.data)
+  .filter((d) => d.channel === "data-engineering")
+  .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+const alternateUrls = { en: "/", zh: "/zh/distill/data-engineering/" };
+---
+
+<Base
+  title="資料工程選文 — 童曉瑜"
+  description="每日一篇資料工程選文：從國外一線部落格與工程實務文章中挑一篇，用繁體中文濃縮重點。"
+  lang="zh"
+  alternateUrls={alternateUrls}
+>
+  <main class="px-6 md:px-10 py-20 md:py-28">
+    <div class="max-w-3xl mx-auto">
+      <a
+        href="/zh/distill/"
+        class="font-mono text-xs text-ink-500 hover:text-ink-900 transition-colors"
+      >
+        ← 回選文首頁
+      </a>
+      <p
+        class="mt-8 font-mono text-xs uppercase tracking-widest text-ink-500 mb-6"
+      >
+        Distill
+      </p>
+      <h1
+        class="text-3xl md:text-4xl font-semibold tracking-tight text-ink-900 mb-4"
+      >
+        資料工程選文
+      </h1>
+      <p class="text-ink-700 leading-relaxed mb-12">
+        每天從國外資料工程的一線文章中挑一篇，用繁體中文濃縮重點。同步發布於
+        <a
+          href="https://www.threads.com/@myps6415"
+          target="_blank"
+          rel="noreferrer"
+          class="border-b border-ink-200 hover:border-ink-500 hover:text-ink-900 transition-colors"
+          >Threads</a
+        >。
+      </p>
+
+      <ul class="divide-y divide-ink-200 border-t border-b border-ink-200">
+        {
+          posts.map((p) => (
+            <li>
+              <a
+                href={`/zh/distill/${p.postSlug}/`}
+                class="group block py-5 transition-colors hover:bg-white -mx-3 px-3 rounded-md"
+              >
+                <div class="flex items-baseline justify-between gap-4 mb-1.5 flex-wrap">
+                  <span class="font-mono text-[11px] text-ink-500">
+                    {p.date}
+                  </span>
+                  {p.sourceName && (
+                    <span class="font-mono text-[11px] uppercase tracking-widest text-ink-500">
+                      {p.sourceName}
+                    </span>
+                  )}
+                </div>
+                <h2 class="text-base md:text-lg font-semibold text-ink-900 tracking-tight leading-snug mb-1.5 group-hover:underline underline-offset-4 decoration-ink-300">
+                  {p.title}
+                </h2>
+                <p class="text-ink-700 leading-relaxed text-[0.9rem]">
+                  {p.description}
+                </p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </main>
+</Base>

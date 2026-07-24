@@ -1,0 +1,17 @@
+---
+title: "物理世界犯錯代價高"
+description: "物理世界犯錯代價高。RynnWorld-Teleop 把「試誤」從產線轉移到計算環境——先在數位空間跑動作，確認沒問題再實際執行。"
+date: "2026-07-10"
+postSlug: "2607-06558"
+sourceUrl: "https://arxiv.org/abs/2607.06558"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DalzLOGk5Ur"
+---
+
+物理世界犯錯代價高。RynnWorld-Teleop 把「試誤」從產線轉移到計算環境——先在數位空間跑動作，確認沒問題再實際執行。
+
+它是 action-conditioned world model，專為數位遙控操作設計。傳統視覺模型回答「這是什麼」，它回答「做這個動作之後場景會變怎樣」。操作者先在模擬環境驗證軌跡、力道、角度，確認安全才下場。
+
+對資料工程團隊而言，這套邏輯很有感。資料治理的品質直接決定模型預測的可靠度——garbage in, garbage out 不只是口號。資料結構乾淨的團隊，採用這類技術的落地成本自然最低。
+
+精密組裝、遠端手術、工廠危險作業，共同點是「錯一次代價極大」。我特別好奇它對接真實感測器串流時，資料延遲和雜訊會如何影響預測穩定性——這大概是所有想在生產環境落地 world model 的團隊遲早要處理的問題。

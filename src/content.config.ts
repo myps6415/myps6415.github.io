@@ -23,9 +23,10 @@ const blog = defineCollection({
   }),
 });
 
-// Distill — zh-only daily curated picks (data-engineering channel), authored by
-// the automated pipeline in ~/Documents/work/distill. Deliberately a separate
-// collection so the hand-crafted Writing section is never flooded by daily posts.
+// Distill — zh-only daily curated picks, authored by the automated pipeline in
+// ~/Documents/work/distill. Deliberately a separate collection so the
+// hand-crafted Writing section is never flooded by daily posts. Spans multiple
+// channels (data-engineering, money) filtered per-section via `channel`.
 const distill = defineCollection({
   loader: glob({ pattern: "**/*.mdx", base: "./src/content/distill" }),
   schema: z.object({
@@ -36,6 +37,9 @@ const distill = defineCollection({
     sourceUrl: z.string(),
     sourceName: z.string().default(""),
     threadUrl: z.string().default(""),
+    // 頻道分區（2026-07-24）：既有 12 篇無此欄，default 回填 data-engineering，
+    // 各分區 index 頁據此過濾（資料工程選文 / 理財選文）。
+    channel: z.enum(["data-engineering", "money"]).default("data-engineering"),
   }),
 });
 
