@@ -18,6 +18,7 @@ export interface SiteContent {
       title: string;
       body: string[];
       tags: string[];
+      href?: string;
     }>;
   };
   writing: {
@@ -66,6 +67,17 @@ export const content: Record<Locale, SiteContent> = {
       label: "Selected Work",
       intro: "Things I've shipped that made a measurable dent.",
       cases: [
+        {
+          metric: "240+ posts",
+          metricLabel: "auto-published",
+          title: "Content automation system (Distill)",
+          body: [
+            "A content line on a single Mac: picks topics from frontline sources daily, rewrites them in Traditional Chinese, fact-checks, auto-publishes to several social channels, then sediments them into an owned website. 3 channels, ~40k views/month, zero daily human ops.",
+            "Engineered for \"reads human, never wrong\" as a reliability problem — a fact-check gate, a four-layer publish defense, de-AI style rules, and an engagement feedback loop. This site is one of its outputs.",
+          ],
+          tags: ["LLM Pipeline", "Automation", "Threads API"],
+          href: "/services/",
+        },
         {
           metric: "$300 → <$1",
           metricLabel: "monthly cost",
@@ -163,6 +175,17 @@ export const content: Record<Locale, SiteContent> = {
       label: "代表作",
       intro: "幾個有成效的案子。",
       cases: [
+        {
+          metric: "240+ 篇",
+          metricLabel: "自動發佈",
+          title: "內容自動化系統（Distill）",
+          body: [
+            "一台 Mac 上跑的內容產線：每天從國外一線來源選題，用繁體中文重寫、事實查核，自動發佈到多個社群頻道，再沉澱成自有網站資產。3 個頻道、月觸及約 4 萬 views，日常零人工操作。",
+            "把「像真人寫、而且不出錯」當可靠性問題設計——事實查核閘門、四層發佈防線、去 AI 味規則、成效回饋。這個站本身就是它的產物。",
+          ],
+          tags: ["LLM Pipeline", "自動化", "Threads API"],
+          href: "/zh/services/",
+        },
         {
           metric: "$300 → <$1",
           metricLabel: "月成本",
