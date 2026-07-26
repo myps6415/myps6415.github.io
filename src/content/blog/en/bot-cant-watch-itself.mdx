@@ -1,0 +1,93 @@
+---
+title: "A webhook bot can't watch itself: liveness, digests, and delivery audits"
+description: "Silent death is a webhook bot's worst failure mode — and LINE makes it self-extending. Three ops loops that answer three different questions: is it alive, is it decaying, did it keep its promises."
+tag: "Observability · Self-hosting"
+date: "2026-07-26"
+postSlug: "bot-cant-watch-itself"
+meta:
+  - text: "line-bot series · 7"
+---
+
+<StatRow
+  stats={[
+    { value: "3", label: "Loops, three different questions" },
+    { value: "0", label: "Telegram noise while healthy" },
+    { value: "2 min", label: "The I/O hang that set a rule" }
+  ]}
+/>
+
+## Background
+
+Part 7 of the [LINE family assistant series](/blog/line-bot-family-assistant). A webhook bot is passive: if nobody @-mentions it, it does nothing — which means a dead bot and an idle bot look identical. When Docker restarts wrong, the tunnel drops, or the LLM provider has a bad day, the bot doesn't crash loudly. It just goes quiet, until a family member mentions it, gets nothing, and asks me instead.
+
+LINE makes this worse in a way that deserves emphasis: **webhooks that fail repeatedly get their delivery suspended.** Broken doesn't just persist — it compounds. The platform stops knocking on a door that doesn't answer.
+
+So the bot is wrapped in watchdog loops, and this post covers the first three. They answer three different questions — *is it alive?* (L1), *is it quietly getting worse?* (L2), *did it keep its promises?* (L3) — and no two of them can substitute for each other.
+
+## L1: the watchdog must live outside the blast radius
+
+The original plan for liveness was the obvious one: the homelab already runs Prometheus and Grafana with alerting — add a rule, done. That plan died on contact with one observation: **Grafana runs in Docker on the same machine.** The failure L1 most needs to catch is "Docker died entirely" — and in that scenario the monitoring stack is exactly as dead as the bot it's supposed to report on. A monitor inside the blast radius of the failure it detects is decoration.
+
+So the watchdog runs on the host, outside Docker, scheduled by the same agent-runtime cron that runs my other automation — a process tree that survives Docker's death. Its alerts go to **Telegram**, not LINE, for the same reason stated as a principle in the ops doc: *you can't use the bot to report that the bot is dead.* The notification path must share no dependencies with the thing being watched.
+
+Every five minutes it checks the same `/health` contract from two directions:
+
+- **`localhost:8083/health`** — is the container up and serving?
+- **`https://<public-domain>/health`** — the full chain: Cloudflare edge → tunnel container → API. If this passes, LINE's webhooks can reach us.
+
+Why probe `/health` and not `/webhook` itself? Because `/webhook` only accepts POSTs, and a GET gets bounced at Cloudflare's edge — a 403 from the edge tells you nothing about whether the origin is reachable. The `/health` 200 is spoken by the origin itself, end to end, no ambiguity. (It also covers the tunnel container for free: if `cloudflared` is down, the public probe fails.)
+
+## The self-gate: empty stdout is the alert gate
+
+The scheduler has a property that turned into a design pattern: **empty stdout means nothing gets delivered.** So the watchdog prints nothing when healthy — and only speaks on **state transitions**:
+
+<Flow
+  steps={[
+    { marker: "OK", title: "Healthy, was healthy", desc: "Print nothing. No delivery, no noise. This is 99% of runs.", status: "ok" },
+    { marker: "🔴", title: "Down, was healthy", desc: "Print one alert — after two consecutive failures, so a single blip doesn't page anyone.", status: "bad" },
+    { marker: "…", title: "Down, was down", desc: "Print nothing. The outage is known; repeating it every 5 minutes is an alarm bell nobody can turn off.", status: "warn" },
+    { marker: "🟢", title: "Healthy, was down", desc: "Print one recovery line with the estimated downtime. Close the loop.", status: "ok" },
+  ]}
+/>
+
+State lives in a small JSON file between runs. And one more contrarian detail: the script **always exits 0** — even when the bot is down. Detecting an outage is the check *succeeding*. A non-zero exit would tell the scheduler the job failed and invite retries; a retried alert is a duplicated alert, and the double-push has been personally experienced and personally regretted.
+
+## L2: a daily digest, deliberately not gated
+
+L1 catches death. It's blind to decay: the [tool-markup salvage rate](/blog/cleaning-llm-output-for-line) creeping up, tool errors becoming frequent, the web-search quota quietly burning down. Each is invisible in the moment and obvious in a trend line.
+
+L2 is a daily digest — scan the last 24h of container logs plus the bot's SQLite, summarize into one Telegram message: message volume, active groups, LLM/tool/reply error counts, how often the salvage parser had to rescue leaked markup, and month-to-date search-API usage. On the last one: the API's quota is *monthly* but container logs rotate away in days — so the digest accumulates daily counts into its own state file. When the raw data outlives its source, the monitor becomes the system of record.
+
+Unlike L1, the digest **pushes every day**, healthy or not. That's the opposite gating decision, made on purpose: a trend report you only see when something's wrong isn't a trend report, and the daily arrival doubles as a heartbeat for the monitoring itself — if the digest doesn't show up one morning, *that* is a signal.
+
+## The two-minute hang that set a permanent rule
+
+L2's first version read the bot's SQLite directly from the host — the file sits on an external drive both the container and the host can see. The job hung for over two minutes and timed out.
+
+The diagnosis was a compounding pair: macOS gives background services restricted access to external volumes, and SQLite's `timeout` parameter only guards against *locks* — it does nothing about an `open()` that hangs at the I/O layer. The connection didn't fail; it just never returned.
+
+The fix: never touch the external drive from the background service. Read the database *through the container* — `docker exec` a query inside, where `/data` is a native path — because the Docker daemon does that I/O, not the restricted service session. That rule is now stamped on every loop that touches the DB, including [the audit below](#l3-auditing-promises-not-mechanisms) and the backup job in the next post. Environment-specific, hard-won, and exactly the kind of thing that only exists in documentation because it once cost two minutes per run to not know it.
+
+## L3: auditing promises, not mechanisms
+
+The failure L1 and L2 *cannot* see: the bot is alive (L1 green), logs are clean (L2 quiet) — and a reminder someone was promised never arrived. A push can fail without throwing; a background loop can wedge without logging. The user finds out by missing the thing they asked not to miss, which for a bot whose flagship feature is reminders is the reputation-ending failure.
+
+L3 doesn't try to enumerate the ways delivery can fail. It audits the **end state**: every 15 minutes, query the reminders table for rows that are *due, past a grace window, and still not marked done*. In a healthy system that set is empty — the delivery loop marks reminders done as it sends them. A row overdue by more than the grace period is terminal evidence that *something* failed, regardless of mechanism: push error, wedged loop, crashed task. The evidence is in the state, not the logs.
+
+It self-gates like L1 (silence when clean) with one refinement: state remembers which overdue reminders it has already reported, so one stuck row alerts once — not every 15 minutes until fixed. Delivered or cancelled rows drop out of the state naturally.
+
+The general shape is the same as data-engineering's reconciliation checks: don't monitor the process, **reconcile the outcome**. Processes lie by omission; end states don't.
+
+## Takeaways
+
+<Lesson label="On blast radius">
+  A monitor that shares infrastructure with what it monitors reports every failure except the one that takes them both. "Where does the watchdog live" is the first design decision, before cadence, before alerting — and the answer must be: outside.
+</Lesson>
+
+<Lesson label="On transitions vs states">
+  Alerting on state transitions (with a flap filter and a recovery message) is what makes an alert channel trustworthy. The one loop that pushes daily does so as a deliberate heartbeat — silence from a gated loop means "healthy", so silence from the ungated one must mean "check the monitoring".
+</Lesson>
+
+<Lesson label="On end-state audits">
+  For any system that makes promises — reminders, deliveries, scheduled jobs — audit the promise, not the machinery. "Due, past grace, not done" catches every failure mechanism including the ones you haven't imagined, because it checks the only thing the user actually experiences.
+</Lesson>

@@ -76,7 +76,7 @@ Each of these earned its own set of scars — [the reasoning-model output that h
 
 A webhook bot's worst failure mode is **silence**: Docker restarts, the tunnel drops, the LLM provider has a bad day — and the bot just quietly stops, until a family member mentions it and gets nothing. LINE compounds this by suspending webhooks that fail repeatedly, so "broken" self-extends.
 
-The bot is therefore wrapped in six independent watchdog loops — liveness probes from *outside* Docker, a daily health digest, a delivery audit that catches reminders that were promised but never sent, weekly verified backups, and a daily regression probe that checks the *quality* of answers, not just their existence. That system took as much design as the bot itself, and it's the subject of the next posts in this series.
+The bot is therefore wrapped in [six independent watchdog loops](/blog/bot-cant-watch-itself) — liveness probes from *outside* Docker, a daily health digest, a delivery audit that catches reminders that were promised but never sent, weekly verified backups, and a daily regression probe that checks the *quality* of answers, not just their existence. That system took as much design as the bot itself, and it's the subject of the next posts in this series.
 
 ## Takeaways
 
