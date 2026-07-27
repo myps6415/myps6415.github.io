@@ -1,0 +1,22 @@
+---
+title: "7B 模型打敗 32B——聽起來不可能，但 RAGU 真的做到了"
+description: "7B 模型打敗 32B——聽起來不可能，但 RAGU 真的做到了。"
+date: "2026-07-28"
+postSlug: "2607-11683"
+sourceUrl: "https://arxiv.org/abs/2607.11683"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbUJe-0kwWc"
+channel: "data-engineering"
+---
+
+7B 模型打敗 32B——聽起來不可能，但 RAGU 真的做到了。
+
+GraphRAG 這條路，大家都在比誰模型大。RAGU 團隊卻發現，萃取與推理能力跟模型大小幾乎無關。他們因此訓練出 Meno-Lite，7B 參數、單一 GPU 就能跑，卻在知識圖譜建構任務上超越 Qwen2.5，提升 12.5%。
+
+做法也跟以往不同。傳統 GraphRAG 用單次萃取，做出來的知識圖譜噪音多、關係亂。RAGU 把流程拆成兩段：先個別處理實體與關係，接著 DBSCAN 去重，再叫 LLM 濃縮，最後用 Leiden 社群偵測。
+
+在 GraphRAG-Bench 醫療測試集裡，RAGU 證據召回率達到 0.84，勝過 HippoRAG2。團隊還戳破一個假象：HippoRAG2 在合成任務的領先，只是答案格式差異造成的錯覺。
+
+核心啟發是：in-pipeline LLM 真正需要的是語言能力，不是世界知識。用對方向，小模型真的可以打敗大模型。
+
+`pip install graph_ragu`，MIT 授權。
