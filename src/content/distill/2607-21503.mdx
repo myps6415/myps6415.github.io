@@ -1,0 +1,20 @@
+---
+title: "AI agent 多數時候出事，不是推理爛，是 context 管不住"
+description: "AI agent 多數時候出事，不是推理爛，是 context 管不住。對話歷史、工具定義、膨脹的輸出——累積的速度遠快過模型能處理的，錯過的資訊愈來愈多，帳單也爆。"
+date: "2026-07-29"
+postSlug: "2607-21503"
+sourceUrl: "https://arxiv.org/abs/2607.21503"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbWuR1Ek45v"
+channel: "data-engineering"
+---
+
+AI agent 多數時候出事，不是推理爛，是 context 管不住。對話歷史、工具定義、膨脹的輸出——累積的速度遠快過模型能處理的，錯過的資訊愈來愈多，帳單也爆。
+
+Gaurav Dadhich 新論文點破：多數人把 context 當 storage 問題做，根本方向錯了。他認為這是 lifecycle 問題，要從「什麼該記、什麼該丟、什麼該壓」的整條生命週期來處理，不是找個更快的向量資料庫就能解決。
+
+他提出五個核心primitive：architecting、ingesting、scoping、anticipating、compacting——不是流水線，是滾動的過程。
+
+經濟邏輯才是這篇最值得記的一筆：不做任何處理，token 成本會隨對話長度**平方成長**；摘要換來線性成本，但準確率會「懸崖式崩跌」。唯一能同時守住成本和品質的，是 validated compaction。參考實作逾 92%。
+
+對落地 agent 的團隊：先把 context 管理當架構問題處理，不要只靠工具。
