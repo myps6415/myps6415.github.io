@@ -1,0 +1,79 @@
+---
+title: "The loud backup and the skeptical probe: finishing the watchdog stack"
+description: "Why the backup job is the only loop forbidden to stay silent, and why the daily regression probe uses deterministic assertions instead of an LLM judge — plus the case for building baselines while everything is healthy."
+tag: "Observability · Self-hosting"
+date: "2026-07-29"
+postSlug: "backup-and-regression-probes"
+meta:
+  - text: "line-bot series · 8 (final)"
+---
+
+<StatRow
+  stats={[
+    { value: "1", label: "Loop that must never be silent" },
+    { value: "4", label: "Daily probes, zero LLM judges" },
+    { value: "2×8", label: "Backups kept, two disks" }
+  ]}
+/>
+
+## Background
+
+Final part of the [LINE family assistant series](/blog/line-bot-family-assistant). [Part 7](/blog/bot-cant-watch-itself) covered the three loops that watch the present: liveness, decay, delivery. Two questions remain, and they bracket the present from both sides: *if the worst happens, can we recover?* — and — *is it still actually smart, or just actually running?*
+
+## L5: the backup that isn't allowed to whisper
+
+The bot's SQLite database started as a message cache. By the time backups were built it held every group conversation, every scheduled reminder, and the [long-term memories](/blog/memory-vs-reminders) the family had deliberately taught the bot. Data whose value compounds is data whose loss compounds too.
+
+The weekly backup job is mechanically boring on purpose — the interesting parts are the four disciplines around the copy:
+
+- **Online backup via SQLite's backup API, not file copy.** A live database with WAL in flight can't be safely `cp`'d. One wrinkle: the container image ships no `sqlite3` CLI, so the job runs Python's `sqlite3.Connection.backup()` inside the container — same online-safe semantics, one less image dependency.
+- **Backup first, *then* VACUUM.** The maintenance step that rewrites the whole file runs after the copy exists. If VACUUM ever corrupts anything, the freshest backup predates it — ordering as insurance.
+- **Verify the copy, not the intention.** Every backup gets `PRAGMA integrity_check` before it counts. An unverified backup is a hope with a filename.
+- **Two disks, because the threat model says so.** The container's data directory lives on the same external drive as the original — a backup there survives corruption and fat-fingered deletes, but not the actual motivating disaster: *the drive dies*. So each backup is also copied to the internal disk. The database is a hundred-some kilobytes; the second copy is free insurance against the exact scenario the feature exists for.
+
+And one inversion of everything part 7 preached: **this is the only loop that never self-gates.** Every run prints its one-line result — ✅ with sizes and integrity status, or 🔴 — and it gets delivered every week, healthy or not. Silent backup failure is the classic infrastructure disaster: everything green for months, then the restore that reveals the backups stopped in March. At weekly cadence, one heartbeat line costs nothing and buys the guarantee that *absence of the message is itself an alarm*. Alerting discipline isn't "always be quiet"; it's "choose per loop what silence means, and make sure it can't mean two things".
+
+## L6: everything is green and the answers are wrong
+
+Here is the failure mode left over after liveness checks, error scans, delivery audits, and verified backups: the bot answers every question, throws no errors, delivers every reminder — and tells someone the weather without calling the weather tool, inventing plausible numbers instead. Quality regressions don't log.
+
+What causes them is rarely your own deploy. It's **things other people change for you**: a quote API reshapes its response, a provider's endpoint starts behaving differently, a [scrubbing defense](/blog/cleaning-llm-output-for-line) silently stops matching. Both production incidents in this bot's first month were upstream changes, not local ones.
+
+The original plan scheduled this loop last, "for when model churn gets frequent". That reasoning got reversed before writing a line of it, on two grounds. First, **a baseline is only trustworthy if it was established while the system was known-good** — wait until you suspect breakage and you no longer have a reference for "normal". Second, since the trigger is other people's changes, waiting for *your own* next model swap guards the wrong door. The probe went live while everything was healthy, which is the only time it can.
+
+## Deterministic assertions, not an LLM judge
+
+Every day, the probe runs four fixed questions through the bot's real LLM pipeline — inside the container, real tools, real model, but never through LINE and never touching the conversation store:
+
+| Probe | Asserts |
+|---|---|
+| "TSMC's current price?" | called `get_quote` **and** the answer contains digits |
+| "Weather in Hualien tomorrow?" | called `get_weather` |
+| "100 USD in TWD?" | called `get_fx` **and** digits |
+| plain small talk | called **no tools at all** |
+
+Plus, on every probe: answer non-empty, and no `<think>`/tool-markup residue — which makes the probe a daily regression test on the entire scrubbing pipeline for free.
+
+The design pushed back on two tempting defaults. The obvious grader for LLM output is another LLM — but a judge model drifts for exactly the same upstream reasons the system under test does, and a baseline that can drift isn't a baseline. Everything asserted here is mechanically checkable: *which tools were called* is captured by wrapping the dispatch function with a recording spy (not by grepping logs), and *digits in the answer* is a regex. The second default was symmetrical coverage — probe everything. Two deliberate exclusions: write-path tools are hard-blocked (a probe that can set reminders isn't a probe, it's a user), and web search is skipped because it burns a metered monthly quota on a synthetic question — thirty free probes a month isn't free if one of them is.
+
+LLM nondeterminism gets one concession: a failing probe is retried once before it counts, so a single flaky sample doesn't page anyone. Persistent failure does — self-gated like the watchdog, silent when green.
+
+## Series wrap-up
+
+Eight posts, one system: a [family assistant in a LINE group](/blog/line-bot-family-assistant), the [platform tax](/blog/line-messaging-api-gotchas) paid to build on LINE, the [output scrubbing](/blog/cleaning-llm-output-for-line) between a reasoning model and a chat full of relatives, the [tool registry](/blog/line-bot-tool-system) that keeps features one-file cheap, the [read-model split](/blog/memory-vs-reminders) behind memory and reminders, the [two gates](/blog/price-alert-two-gates) that watch prices without a holiday calendar, and the [watchdog stack](/blog/bot-cant-watch-itself) — finished here — that watches all of it.
+
+None of this is novel infrastructure. It's the same discipline I apply to data platforms at work — reconciliation checks, freshness gates, baselines, blast-radius thinking — pointed at eighty kilobytes of SQLite and a chat group. The scale is a toy; the failure modes are not. That was the whole experiment: whether "small enough to be personal" and "engineered enough to be trusted" can be the same system. The family keeps using it, which is the only metric that was ever going to count.
+
+## Takeaways
+
+<Lesson label="On loud backups">
+  Self-gating is for checks that fire often and matter rarely. Backups are the opposite — rare and existential — so they report every run, and a missing report is an alert. Decide per loop what silence means; never let it be ambiguous.
+</Lesson>
+
+<Lesson label="On baselines and timing">
+  A regression baseline built after the first incident is a photograph of the wreckage. The only time you can capture "known good" is while it's true — which means quality probes are cheapest to build exactly when they feel least necessary.
+</Lesson>
+
+<Lesson label="On judges that can't drift">
+  Grading LLM behavior with another LLM imports the same drift you're trying to detect. Tool-call spies and digit regexes are humbler and they never change their minds — for a daily baseline, boring beats clever.
+</Lesson>
