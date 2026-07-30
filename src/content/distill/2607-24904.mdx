@@ -1,0 +1,18 @@
+---
+title: "視覺語言模型向來有個矛盾：離線推理很強，即時串流感知卻又慢又卡"
+description: "視覺語言模型向來有個矛盾：離線推理很強，即時串流感知卻又慢又卡。Mage-VL 想把這個倒過來。"
+date: "2026-07-31"
+postSlug: "2607-24904"
+sourceUrl: "https://arxiv.org/abs/2607.24904"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dbb33xHD8ry"
+channel: "data-engineering"
+---
+
+視覺語言模型向來有個矛盾：離線推理很強，即時串流感知卻又慢又卡。Mage-VL 想把這個倒過來。
+
+核心是自製的 Mage-ViT tokenizer。它不做均勻取樣，靠 motion vector 跟殘差能量，專門挑 I 幀、P 幀中最有資訊量的動態區塊處理。16×16 patch，視覺 token 少 75%，時空脈絡幾乎沒折損。
+
+模型用 5.6 億張未標籤圖片、1 億個未標籤影片幀從頭訓練，效果卻能和旗艦編碼器正面拼。團隊提出 AI4AI 資料流程，用 Prompt-Code 聯合優化做 captioning，AI 驅動效能診斷調整訓練配方。
+
+架構參考生物神經雙系統：System 1 輕量事件閘門負責快反，System 2 因果解碼器負責深度推理。Mage-VL-4B 靜態任務與 Qwen3-VL-4B 相當，影片理解、空間推理更強，推論速度最快 3.5 倍，超越 15B 的 Phi-4-reasoning-vision 基準線。七項實證發現開源。做即時視覺應用的話，這篇值得追。
