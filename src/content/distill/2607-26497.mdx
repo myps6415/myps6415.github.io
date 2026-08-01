@@ -1,0 +1,20 @@
+---
+title: "騰訊與北大聯手的實驗可能讓你意外：1990 年代的 BM25…"
+description: "騰訊與北大聯手的實驗可能讓你意外：1990 年代的 BM25，在大規模檢索場景打敗了一票新型 AI Agent。"
+date: "2026-08-02"
+postSlug: "2607-26497"
+sourceUrl: "https://arxiv.org/abs/2607.26497"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbhBdfXj6x-"
+channel: "data-engineering"
+---
+
+騰訊與北大聯手的實驗可能讓你意外：1990 年代的 BM25，在大規模檢索場景打敗了一票新型 AI Agent。
+
+研究團隊將語料庫擴至 450 倍大，分 28 個等級嚴控變數，不論規模大小，逐一測量各類 RAG 架構的表現。File-System Agent 在最小規模時領先，但消耗是 BM25 的 39 倍，規模愈大效率愈差。到了 1,000 萬 token，BM25 直接超車，差距最終近 20 百分點。
+
+Dense 向量檢索省 token、速度快，但準確率不及 BM25。Graph-based RAG 在建構階段就撞牆，可擴充版本在共同測試規模上依然落後。
+
+結論：語料持續成長時，全域候選排序愈來愈佔優勢。Lexical 檢索是最穩健的可擴充預設選項，Agentic 推理適合在排名發現之後介入，而非取代排名本身。
+
+我的解讀：選 RAG 架構時規模往往被低估。很多時候不是工具本身強不強，而是語料庫到了哪個量級，解法就完全不同。BM25 這個老方法在成本與效能的取捨上，比多數人以為的耐打。
