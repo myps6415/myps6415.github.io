@@ -1,0 +1,18 @@
+---
+title: "每次叫 agent 修一個 bug，代碼庫有多少時間浪費在重複解析上？"
+description: "每次叫 agent 修一個 bug，代碼庫有多少時間浪費在重複解析上？現在有了 CodeNib——Zhongming Yu 團隊做的這個系統，專門解決 coding agent 在…"
+date: "2026-08-03"
+postSlug: "2607-25431"
+sourceUrl: "https://arxiv.org/abs/2607.25431"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbjmQXyD50a"
+channel: "data-engineering"
+---
+
+每次叫 agent 修一個 bug，代碼庫有多少時間浪費在重複解析上？現在有了 CodeNib——Zhongming Yu 團隊做的這個系統，專門解決 coding agent 在不斷進化的程式碼庫裡重複找資料、重新解析的問題。
+
+CodeNib 的做法是：針對每個 commit，建立可重用的詞彙視圖、密集向量視圖和結構視圖，把輸出的一致性維護在回溯對應的範圍內。當輸出比對獨立重建結果時，圖更新快了 8.7 倍，向量更新快了 25.4 倍。靜態導航的中位延遲只有 live 的四分之一，慢了 4.7 倍。5 個模型測下來，上下文篩選策略幫忙省掉 50% 到 87% 的軌跡 token。
+
+這種多視圖的設計讓符號跳轉、語義搜尋、範圍限定的上下文讀取一次搞定，不用再分別叫索引服務、查詞典伺服器、翻本地歷史。背後的概念很直覺：視圖跟 commit 走，編輯時選擇性保留，輸出一致性靠範圍對映保障。
+
+作者已經把程式碼公開了，有興趣的人可以去找來看看。這種思路對大型代碼庫的開發者特別有價值。
