@@ -1,0 +1,18 @@
+---
+title: "效能保留 98%，FLOPs 卻只剩 16.7%——多模態模型終於有一個不用犧牲準確率的理由了"
+description: "效能保留 98%，FLOPs 卻只剩 16.7%——多模態模型終於有一個不用犧牲準確率的理由了。"
+date: "2026-08-07"
+postSlug: "2608-03812"
+sourceUrl: "https://arxiv.org/abs/2608.03812"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dbt5b24Dymf"
+channel: "data-engineering"
+---
+
+效能保留 98%，FLOPs 卻只剩 16.7%——多模態模型終於有一個不用犧牲準確率的理由了。
+
+OmniPack 是一套訓練-free 的 token 壓縮框架，專門幫 Omni-modal LLM（能同時處理音訊、影像、文字的模型）省計算量。它的核心想法很直覺：壓縮分兩階段，先在 LLM 之前把結構性冗餘砍掉，互動完再做一次語意精煉。
+
+研究者在 Qwen2.5-Omni-7B 上測試，結果很有感：保留 98% 原始效能，FLOPs 降到 16.7%。如果願意再多犧牲一點，6.8% FLOPs 還能維持 92.9% 的表現。這個數字對實際部署很有吸引力——現在很多團隊在邊緣裝置跑多模態模型，記憶體和算力都是瓶頸，這種壓縮率打開了新的可能性。
+
+跟現有方法比起來，OmniPack 在各種保留比例下都是最優解。這篇適合在看 ML 推理優化或 LLM 部署的人參考，方法不算新，但拿出來的數字很實在。
