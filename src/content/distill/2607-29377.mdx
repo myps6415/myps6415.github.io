@@ -1,0 +1,18 @@
+---
+title: "LLM agent 很會答…"
+description: "LLM agent 很會答，但它的「記憶」反而是成本大戶——每次 memory lookup 都要再多跑一次 LLM call，生成摘要再塞回去，中間燒掉的 token 與時間，累…"
+date: "2026-08-08"
+postSlug: "2607-29377"
+sourceUrl: "https://arxiv.org/abs/2607.29377"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbweOp6k_rB"
+channel: "data-engineering"
+---
+
+LLM agent 很會答，但它的「記憶」反而是成本大戶——每次 memory lookup 都要再多跑一次 LLM call，生成摘要再塞回去，中間燒掉的 token 與時間，累積起來很可觀。
+
+Zero-Mem 把這件事整個砍掉。它聲稱零 token 的 memory 操作：不做任何 LLM 加工，把原始對話痕跡直接存下來，連最終答案那步都不需要 LLM 墊記憶。
+
+架構靠兩層互補結構：entity-context graph 拉出實體關聯圖，temporal hierarchy 依時間順序保留對話先後。查詢時兩層一起檢索，最後用 deterministic calibration 把衝突資料踢掉，確保答案真的來自原始記錄而非 LLM 自己補的。
+
+結果：做到了更好品質，同時把 memory 操作時間減少 57.6%。原因是簡單的——保留完整原始資料，比生成摘要再還原，資訊損失更少，中間那一輪 LLM 費用也完全省掉。
