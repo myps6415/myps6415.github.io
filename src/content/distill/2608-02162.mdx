@@ -1,0 +1,20 @@
+---
+title: "模型 checkpoint 愈來愈大，儲存與傳輸成本跟著飆"
+description: "模型 checkpoint 愈來愈大，儲存與傳輸成本跟著飆。通用壓縮工具不管 tensor 結構，有團隊想到一招：把壓縮問題當成「程式合成」來解。"
+date: "2026-08-09"
+postSlug: "2608-02162"
+sourceUrl: "https://arxiv.org/abs/2608.02162"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DbzDBexgS5N"
+channel: "data-engineering"
+---
+
+模型 checkpoint 愈來愈大，儲存與傳輸成本跟著飆。通用壓縮工具不管 tensor 結構，有團隊想到一招：把壓縮問題當成「程式合成」來解。
+
+他們開發的系統叫 Brevis。核心概念是觀察資料裡的規律——重複區塊、浮點數欄位——再把規律寫成一支小型程式。解壓縮時直接跑這支程式還原，結果跟原始資料一個位元不差。
+
+實測在 10 個公開 checkpoint 上做，涵蓋語言、音訊、影像生成模型。本來占 2.13 TB，現在只要 1.41 TB，空間省了約三分之一。跟 zstd 和 gzip 比，歸檔最多再縮 30.87%。比 ZipNN 和 DFloat11 也更小。
+
+速度方面，實際併發情境下壓縮達每秒 3.60 GB，解壓縮跑到 6.61 GB/s，且保證每個位元都正確。
+
+這篇 8 月初發上 arXiv，作者來自多個研究機構。如果 checkpoint 儲存一直是你們的痛點，這篇值得放進待讀清單。
