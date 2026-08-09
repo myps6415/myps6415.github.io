@@ -1,0 +1,18 @@
+---
+title: "丟一句自然語言，AI 就幫你從 CSV、JSON、PDF…"
+description: "丟一句自然語言，AI 就幫你從 CSV、JSON、PDF、影片裡挖出答案——DataSpace 這個 benchmark 在測的就是這件事到底有多靠譜。"
+date: "2026-08-10"
+postSlug: "2608-03451"
+sourceUrl: "https://arxiv.org/abs/2608.03451"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Db1n0dNgQFw"
+channel: "data-engineering"
+---
+
+丟一句自然語言，AI 就幫你從 CSV、JSON、PDF、影片裡挖出答案——DataSpace 這個 benchmark 在測的就是這件事到底有多靠譜。
+
+研究者收集了 410 個跨格式任務、7,439 個檔案、15.01 GB，含 CSV、JSON、SQLite、Markdown、PDF、影片，做成 KDD Cup 2026 正式競賽題。評估方式做了嚴格設計：header 不變的欄位對齊、類型與精度正規化，讓機器打分盡量接近人工判斷。
+
+結果有點意外：六個最新多模態模型，最高準確率停在 66.34%；但同一個模型，換一套 agent 架構，準確率可以差到 15.36 個百分點。這說明瓶頸不在模型，在 agent 怎麼組織任務、怎麼整合不同來源。多模態證據融合與資料 join，在所有模型上都讓表現下降，目前沒有例外。
+
+我的解讀是：落地資料分析 AI agent 時，harness 的選擇可能比換模型更有效；異質資料來源的處理能力，則是整個領域還沒突破的缺口，想做出差異，著力點很明確。
