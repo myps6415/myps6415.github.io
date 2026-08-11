@@ -1,0 +1,20 @@
+---
+title: "面對一個十幾種語言混雜的龐大 codebase，多數工程師直覺是 grep"
+description: "面對一個十幾種語言混雜的龐大 codebase，多數工程師直覺是 grep。但 grep 回答不了的——誰呼叫誰、某個函式被多少地方引用——這工具畫成一張圖直接回答。"
+date: "2026-08-12"
+postSlug: "code-graph-rag"
+sourceUrl: "https://github.com/vitali87/code-graph-rag"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Db6xaTygXR5"
+channel: "data-engineering"
+---
+
+面對一個十幾種語言混雜的龐大 codebase，多數工程師直覺是 grep。但 grep 回答不了的——誰呼叫誰、某個函式被多少地方引用——這工具畫成一張圖直接回答。
+
+code-graph-rag 用 Tree-sitter 把程式 parse 成 AST，關係寫進 Memgraph，自然語言 RAG 把問題轉成 Cypher 查詢，取回真實程式碼。
+
+支援 Python、TypeScript、JavaScript、Rust、Go、Java、C、C++、C#、PHP、Lua、Dart，Ruby、Scala 開發中。新增 FLOWS_TO 追蹤資料流向，覆蓋 10 種語言。
+
+還能動手改。ast-grep 結構比對，指定「把所有長這樣的迴圈改成串列生成式」，AI 產出 diff，確認後才寫入。用 Claude Code 的話，它是 MCP server，不需要另外架服務。
+
+底層 Memgraph 加 Qdrant，一行指令備好環境。裝完丟自然語言問題追結構、找死程式，本來要花半天的事快很多。
