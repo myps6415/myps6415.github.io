@@ -1,0 +1,16 @@
+---
+title: "LLM 推理撞牆了——瓶頸根本不在算力，是記憶體"
+description: "LLM 推理撞牆了——瓶頸根本不在算力，是記憶體。那顆定時炸彈叫 KV cache，上下文越長、推理鏈越深，它就膨脹得越快，HBM 容量很快就見底。OasisKV 的做法是：在解碼…"
+date: "2026-08-13"
+postSlug: "2608-08097"
+sourceUrl: "https://arxiv.org/abs/2608.08097"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Db9WNKrAU6f"
+channel: "data-engineering"
+---
+
+LLM 推理撞牆了——瓶頸根本不在算力，是記憶體。那顆定時炸彈叫 KV cache，上下文越長、推理鏈越深，它就膨脹得越快，HBM 容量很快就見底。OasisKV 的做法是：在解碼階段把完整 KV cache 挪出 HBM，靠注意力稀疏性只留最相關的 Token 在高速記憶體，再靠投機解碼事先預測下一輪誰會變重要，提前從大容量記憶體預抓回來。
+
+效益很實際：推理工作負載吞吐量比原生 vLLM 高 1.69 倍，準確度只掉 0.1 個百分點；多 GPU 長上下文場景最高來到 2.1 倍。Prefill-decode 分離部署下，OasisKV 能把每筆請求承載的 KV 量減少 6.5 到 9.7 倍，吞吐量仍維持約兩倍，主記憶體也省下 2.2 到 2.6 倍。
+
+在 2,048 Token 的 KV budget 下，與完整注意力的差距壓在 0.7 個百分點以內，底層建置在 vLLM，已有部署可以直接實驗。如果你的場景是長上下文或多輪推理，記憶體時常緊縮，這篇值得放進待讀清單。
