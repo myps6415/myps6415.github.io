@@ -1,0 +1,18 @@
+---
+title: "監管機構要你解釋「AI 為什麼這樣核貸」，你拿得出完整脈絡嗎？"
+description: "監管機構要你解釋「AI 為什麼這樣核貸」，你拿得出完整脈絡嗎？多數系統只剩向量，出了事就是黑箱。Semantica 把每次決策變成可追查的圖譜節點，號稱「AI 時代的 Palant…"
+date: "2026-08-17"
+postSlug: "semantica"
+sourceUrl: "https://github.com/semantica-agi/semantica"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DcHpYtigd9Q"
+channel: "data-engineering"
+---
+
+監管機構要你解釋「AI 為什麼這樣核貸」，你拿得出完整脈絡嗎？多數系統只剩向量，出了事就是黑箱。Semantica 把每次決策變成可追查的圖譜節點，號稱「AI 時代的 Palantir」。
+
+它的定位是 LLM 下方的確定性基礎層：圖譜建構、推理、溯源統統不用 LLM，輸出直接是監管機構看得懂的 W3C PROV-O。核貸決定不是一個 log 行，而是附帶完整因果鏈的可查詢物件。
+
+支援前向鏈結、Rete、Datalog、SPARQL，衝突事實會被標記而非靜默覆寫。Databricks、Snowflake 上的資料直接轉成 KG，不用搬進第三方 SaaS。金融、醫療等高監管產業特別需要這種特性。
+
+不是要取代 LLM 或向量資料庫，而是補上決策記錄、因果推理、溯源這些缺少的拼圖。安裝一行 `pip install semantica`，疊在既有架構上就能用。
