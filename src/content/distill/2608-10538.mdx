@@ -1,0 +1,20 @@
+---
+title: "【讓小型模型自己學會「技能重用」】…"
+description: "【讓小型模型自己學會「技能重用」】"
+date: "2026-08-18"
+postSlug: "2608-10538"
+sourceUrl: "https://arxiv.org/abs/2608.10538"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DcKOLeQgW8F"
+channel: "data-engineering"
+---
+
+【讓小型模型自己學會「技能重用」】
+
+閉源模型的效能很香，但帳單更香。SKILLER 要做的，是把 skill 部署的門檻從雲端拉回消費級 GPU。
+
+它是第一套語言級強化學習框架，讓小型模型自動生成可重用的技能。方法：用一個大模型同時當 actor 和 critic，所有 RL 信號全部用自然語言傳遞，不需要另外標資料、也不用定義複雜的回饋格式。
+
+在五個基準測試上，Qwen3.5-9B 提升 4.3 到 20.4 個百分點，Qwen3.5-4B 也有 1.8 到 13.3 的進步，而且在 SkillsBench 單技能任務上，效能甚至追平封閉原始碼模型。一張消費級 GPU，現在可以做到過去要燒錢才能做到的事。
+
+過去大家在吵「模型太小不夠用」，SKILLER 用行動證明：瓶頸可能根本不在模型規格，而是 skill 的顆粒度與可重用性。小模型的時代，或許才真的開始。
