@@ -1,0 +1,18 @@
+---
+title: "讓 AI agent 在複雜任務裡乖乖照指令走，有個新方向值得注意"
+description: "讓 AI agent 在複雜任務裡乖乖照指令走，有個新方向值得注意。"
+date: "2026-08-20"
+postSlug: "2608-16798"
+sourceUrl: "https://arxiv.org/abs/2608.16798"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DcPXxHRk8Gd"
+channel: "data-engineering"
+---
+
+讓 AI agent 在複雜任務裡乖乖照指令走，有個新方向值得注意。
+
+ClawGym II 把 agent 與工具互動全部攔截，用前綴樹重建多輪對話軌跡，再交給 PPO/GRPO 優化，等於把訓練與執行環境徹底拆開，policy 不再被工具接口卡住，可跑大規模實驗。
+
+用 Qwen3-30A3B 在 ClawGym-Bench 測試，Pass@1 經 OpenClaw 提升 9.98 點，經 Claude Code 提升 14.81 點，相當穩定，JobBench、OfficeQA 也有感進步。
+
+這篇點出一個多數人忽略的問題：為什麼同樣的工具，模型不同表現差很多？答案不只是模型本身，而是 harness 的引導方式。ClawGym II 讓同一套模型能被多套異質 harness 聯合優化，這在以前幾乎做不到。對工程師而言，複雜場景 agent 終於有系統性的解法，不必逐個工具微調，統一框架就能在不同環境裡維持水準。
