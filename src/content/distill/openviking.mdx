@@ -1,0 +1,16 @@
+---
+title: "AI agent 最常見的毛病就是記錯事實、把過時上下文拿出來用"
+description: "AI agent 最常見的毛病就是記錯事實、把過時上下文拿出來用。火山引擎開源的 OpenViking 把 agent 記憶做成虛擬檔案系統，格式 viking://，在終端機打 …"
+date: "2026-08-22"
+postSlug: "openviking"
+sourceUrl: "https://github.com/volcengine/OpenViking"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DcUhXIJE1ZF"
+channel: "data-engineering"
+---
+
+AI agent 最常見的毛病就是記錯事實、把過時上下文拿出來用。火山引擎開源的 OpenViking 把 agent 記憶做成虛擬檔案系統，格式 viking://，在終端機打 ls、tree、find 就能翻出 agent 記了什麼，不再是黑盒子向量資料庫查出什麼就只能接受什麼。
+
+核心設計分三層：L0 摘要（約 100 tokens）、L1 結構概覽（約 2k tokens）、L2 完整內容。Agent 只載入任務所需深度，不用每次灌整份上下文。實測：記憶任務準確率從 24–57% 提升到 80–83%，Token 消耗減少 34–91%，延遲縮短 58–66%。多輪任務測試裡，加入經驗記憶後零售成功率提升近 7 個百分點，航空業提升近 12 個百分點。
+
+支援 Claude Code、Codex、Cursor、TRAE、OpenCode 等主流 coding agent，裝好 server 就能用。開源版本無功能閹割，AGPLv3 授權。
