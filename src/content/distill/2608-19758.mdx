@@ -1,0 +1,18 @@
+---
+title: "注意力複雜度隨序列長度平方成長，處理128K上下文的prefill是GPU上最貴的瓶頸之一"
+description: "注意力複雜度隨序列長度平方成長，處理128K上下文的prefill是GPU上最貴的瓶頸之一。FlashPrefill V2用block-sparse注意力繞過這個問題。"
+date: "2026-08-23"
+postSlug: "2608-19758"
+sourceUrl: "https://arxiv.org/abs/2608.19758"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DcXGJtVk8Ms"
+channel: "data-engineering"
+---
+
+注意力複雜度隨序列長度平方成長，處理128K上下文的prefill是GPU上最貴的瓶頸之一。FlashPrefill V2用block-sparse注意力繞過這個問題。
+
+團隊在原有FlashPrefill基礎上做了三件事：加入mean correction修正項把稀疏近似誤差壓低；重寫稀疏注意力算子，整合PackGQA、Warp Specialization、Pingpong Pipeline，相容FA3/4並支援FP8；最後支援paged KV cache與continuous batching，直接接進SGLang。
+
+實測在NVIDIA H20 GPU上對比FlashAttention-2：FP8精度快47.26倍，BF16快27.19倍。即使對上同樣FP8的FA3/4 dense baseline，仍領先30.49倍。這個數字說明長上下文場景下，稀疏計算節省的成本已遠遠把密度運算的優化甩在後面。
+
+論文八月新上、已開源。如果你正在優化推論延遲，這篇值得細讀。
