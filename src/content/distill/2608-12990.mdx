@@ -1,0 +1,20 @@
+---
+title: "LLM Agent 長期記憶有個根本矛盾：每輪都叫 LLM 摘要，對話越長成本越高…"
+description: "LLM Agent 長期記憶有個根本矛盾：每輪都叫 LLM 摘要，對話越長成本越高；少叫幾次，又怕漏掉重要細節。"
+date: "2026-08-24"
+postSlug: "2608-12990"
+sourceUrl: "https://arxiv.org/abs/2608.12990"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DcZq8vkAS-7"
+channel: "data-engineering"
+---
+
+LLM Agent 長期記憶有個根本矛盾：每輪都叫 LLM 摘要，對話越長成本越高；少叫幾次，又怕漏掉重要細節。
+
+LycheeMemory V2 換了顆粒度。它把多輪對話打包成語意段落再統一編碼，好處是減少叫 LLM 的頻率，同時靠語意邊界偵測保住事件層級脈絡，不像固定窗口那樣硬切。
+
+實測用 GPT-4.1-Mini 達到 LoCoMo 89.22%、LongMemEval-S 92.20%。對比 A-Mem，構建 token 減少 86%（LoCoMo）與 75.9%（LongMemEval-S），查詢階段 token 用量完全沒增加。
+
+作者是 Dongfang Li 與六位共同作者，採用語意段落層級 consolidation，論文 34 頁，程式即將開源。
+
+看完我的解讀是：記憶系統的代價不只取決於「存多少」，還有「用什麼顆粒度存」——顆粒度選對，省下的 token 很可觀，且不需要更大模型就能做到。
