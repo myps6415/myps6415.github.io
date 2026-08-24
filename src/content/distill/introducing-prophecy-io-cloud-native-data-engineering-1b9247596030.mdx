@@ -1,0 +1,16 @@
+---
+title: "企業遷移資料架構，最怕的不是新舊技術差距，是幾萬筆 ETL 流程綁在手邊動不了"
+description: "企業遷移資料架構，最怕的不是新舊技術差距，是幾萬筆 ETL 流程綁在手邊動不了。Prophecy.io 的核心做法是「Transpiler」——把 Legacy ETL 自動轉譯成…"
+date: "2026-08-25"
+postSlug: "introducing-prophecy-io-cloud-native-data-engineering-1b9247596030"
+sourceUrl: "https://medium.com/prophecy-io/introducing-prophecy-io-cloud-native-data-engineering-1b9247596030"
+sourceName: "medium.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DccPvduAYwx"
+channel: "data-engineering"
+---
+
+企業遷移資料架構，最怕的不是新舊技術差距，是幾萬筆 ETL 流程綁在手邊動不了。Prophecy.io 的核心做法是「Transpiler」——把 Legacy ETL 自動轉譯成 Spark 程式碼，工作流、設定檔、資料集一併處理，不用從頭重寫。
+
+另一個重點是他們的「Unified Control Plane」設計。企業上雲常變成各部門各自為政，Prophecy 選擇把控制層統一，資料平面可分散在多雲或地端，確保合規與效能。介面則同時支援視覺化拖曳與程式碼編輯，底層靠編譯技術保證兩端一致——這點在資料工程圈不多見。
+
+背景是 SignalFire 領投，Ilya Kirnos 加入董事會，Andrew Ng 深度參與。2019 年發布的這篇，回頭看他們對 Spark 生態與多雲混合佈局的判斷，算是押對方向。對正在評估資料平台現代化的團隊，仍有參考價值。
