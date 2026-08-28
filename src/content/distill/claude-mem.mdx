@@ -1,0 +1,22 @@
+---
+title: "你花了二十分鐘讓 Claude 搞懂一個很醜的 schema，第二天再問，它一臉問號"
+description: "你花了二十分鐘讓 Claude 搞懂一個很醜的 schema，第二天再問，它一臉問號。"
+date: "2026-08-29"
+postSlug: "claude-mem"
+sourceUrl: "https://github.com/thedotmack/claude-mem"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dcmi7Nqk6Fu"
+channel: "data-engineering"
+---
+
+你花了二十分鐘讓 Claude 搞懂一個很醜的 schema，第二天再問，它一臉問號。
+
+這不是你的錯。Context window 每次 session 都會清掉，架構限制。
+
+claude-mem 想解決這件事。它自動捕捉每次操作時觀察到的東西，生成語意摘要，在未來的 session 主動拿出來用。底層是六個生命週期鉤子，搭配 SQLite 存放資料、Chroma 向量資料庫處理語意搜尋。
+
+三層搜尋：先用 search 拿到含 ID 的精簡索引，再透過 timeline 拉出脈絡，最後根據過濾後的 ID 取出完整記錄。理論上省下約十倍 token。
+
+作者 Alex Newman，Apache-2.0 授權。支援 Claude Code、OpenCode、Antigravity CLI 及 OpenClaw Gateway，後者一行指令裝完。系統需求只有 Node.js、Bun 和 SQLite 3。
+
+如果專案橫跨好幾週，每次重新對齊現況就要花上半小時，這套機制值得直接試。
