@@ -1,0 +1,20 @@
+---
+title: "只要一個指令，465 個平台同時跑完——email 帳號…"
+description: "只要一個指令，465 個平台同時跑完——email 帳號、username 別名一次鉤出來，不需要手動登入任何一個網站。"
+date: "2026-08-31"
+postSlug: "user-scanner"
+sourceUrl: "https://github.com/kaifcodec/user-scanner"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dcrsg8CD3B6"
+channel: "data-engineering"
+---
+
+只要一個指令，465 個平台同時跑完——email 帳號、username 別名一次鉤出來，不需要手動登入任何一個網站。
+
+user-scanner 的核心厲害在 cross-scan：email 可以一路追出目標在各平台上的 handle，handle 再反查其他 email。多輪偵查全自動跑完，比人工一個個查省太多時間。
+
+它還支援 MCP 協定，scan_username、scan_email 這些工具在 Claude Desktop 或 Cursor 裡可以直接呼叫，等於把 OSINT 能力嫁接進 AI  workflow。加上 --hudson 參數還能查 Hudson Rock 的惡意程式入侵日誌。
+
+輸出格式有 PDF（附大頭貼）、JSON 和 CSV，直接匯進其他系統使用。用 pip install user-scanner 就能裝，nix run 也能直接跑。
+
+滲透測試、數位足跡調查，或是需要對帳號進行批量關聯分析的人，這個工個很難找到替代品。
