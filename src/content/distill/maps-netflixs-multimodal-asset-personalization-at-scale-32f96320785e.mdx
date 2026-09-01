@@ -1,0 +1,18 @@
+---
+title: "Netflix 最近公開了怎麼用多模態嵌入解決推薦系統的冷啟動問題——新…"
+description: "Netflix 最近公開了怎麼用多模態嵌入解決推薦系統的冷啟動問題——新內容上架時沒有互動資料，模型不知道該推薦哪張圖。"
+date: "2026-09-02"
+postSlug: "maps-netflixs-multimodal-asset-personalization-at-scale-32f96320785e"
+sourceUrl: "https://netflixtechblog.com/maps-netflixs-multimodal-asset-personalization-at-scale-32f96320785e"
+sourceName: "netflixtechblog.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dcw2GerEgVx"
+channel: "data-engineering"
+---
+
+Netflix 最近公開了怎麼用多模態嵌入解決推薦系統的冷啟動問題——新內容上架時沒有互動資料，模型不知道該推薦哪張圖。
+
+傳統做法把每張圖當成代號（ID）來學，只認得之前有人互動過的。Netflix 的解法是用 CLIP 把圖片轉成 768 維向量，模型看得到圖的內容，不必等互動資料就能開始推薦。同一張圖裁成不同尺寸時向量幾乎不變，所以五個尺寸本來要五個模型，現在一個統一模型就夠——高流量尺寸學到的偏好可以直接轉移到流量低的尺寸。
+
+訓練時不同尺寸曝光量差很大，直接混合會讓大尺寸主導。Netflix 用長期獎勵權重來調整，根據互動對會員長期滿意度的貢獻加權，確保各尺寸公平貢獻。
+
+線下評估用逆傾向分數（IPS）處理展示偏差，線上 A/B 測試結果很明確：單獨加分圖嵌入或單獨做模型整合都沒有顯著效果，兩者同時上線才出現統計顯著提升。這說明兩個改動互補——豐富資料教會模型怎麼解讀 CLIP 向量，再轉移到資料稀疏的新尺寸，產生複合效果。
