@@ -1,0 +1,20 @@
+---
+title: "檢索系統優化，過去多數做法只改善query端——讓問題描述更清楚、文件更容易被找到"
+description: "檢索系統優化，過去多數做法只改善query端——讓問題描述更清楚、文件更容易被找到。但文件的表達方式本身，幾乎沒人動過。"
+date: "2026-09-05"
+postSlug: "2609-00638"
+sourceUrl: "https://arxiv.org/abs/2609.00638"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dc4kfE_E8-f"
+channel: "data-engineering"
+---
+
+檢索系統優化，過去多數做法只改善query端——讓問題描述更清楚、文件更容易被找到。但文件的表達方式本身，幾乎沒人動過。
+
+CoGR的思路是讓LLM在query端和文件端同時生成關鍵詞，兩套generator各自壓縮出有意義的關鍵詞組，再靠倒排索引直接匹配，兼容既有的關鍵詞檢索基礎建設。
+
+訓練分兩階段。先做監督式微調，把兩端的關鍵詞空間對齊；再進到強化學習，讓兩端的generator交替優化——query端直接拿F1分數當reward，文件端則靠counterfactual marginal reward，在不知道自己影響了什麼的情況下，仍然有方向可以調整。
+
+實測在兩個公開資料集上，F1分別比最強baseline多了10.9%和36.1%。
+
+這套框架的本質，是讓query端和文件端像對抗式網路那樣互相對抗，在迭代中逐漸收斂——不是誰打敗誰，而是共同演化出更好的匹配方式。這種協作式的訓練思路，可能比單純優化query端更有潛力。
