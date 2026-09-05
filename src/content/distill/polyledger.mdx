@@ -1,0 +1,20 @@
+---
+title: "Polymarket 資料分散兩處：CLOB API 給市場報價，鏈上 event 才是真實成交"
+description: "Polymarket 資料分散兩處：CLOB API 給市場報價，鏈上 event 才是真實成交。多數工具只取其一，PolyLedger 兩邊都拉，寫進同一個 DuckDB，SQL…"
+date: "2026-09-06"
+postSlug: "polyledger"
+sourceUrl: "https://github.com/nahrek/polyledger"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dc7JSM1n-cy"
+channel: "data-engineering"
+---
+
+Polymarket 資料分散兩處：CLOB API 給市場報價，鏈上 event 才是真實成交。多數工具只取其一，PolyLedger 兩邊都拉，寫進同一個 DuckDB，SQL 直接查。
+
+實測已有 120 萬筆成交、1.4 萬筆市場掛單，時間從 2026-05-14 至今。鏈上從 Polygon 拉（需 HyperSync token，免費方案夠用），CLOB 與 Gamma API 公開免認證。
+
+幾個實用的設計：中斷後從上筆區塊接著跑，不重刷；寫入 idempotent，跑兩次不長兩列；Schema 過 Pydantic validation，上游格式改了直接炸、不會靜悄悄寫進 null。可一次倒出 Parquet 給 pandas 或 Spark 分析。
+
+V2 合約 2026 年 4 月上線，支援舊 V1，兩個世代各維護 checkpoint、互不干擾。合約改版常讓歷史資料接不起來，這個設計幫了大忙。
+
+想試可先跑 polyledger markets，感受一下再跑 chain。
