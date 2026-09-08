@@ -1,0 +1,18 @@
+---
+title: "Rishi Jha 團隊有個讓工程師坐立難安的發現：只要拿到一個向量資料庫…"
+description: "Rishi Jha 團隊有個讓工程師坐立難安的發現：只要拿到一個向量資料庫，不需要原始模型、不需要訓練資料，光靠 embedding 本身，就能把文件內容還原出來。"
+date: "2026-09-09"
+postSlug: "2505-12540"
+sourceUrl: "https://arxiv.org/abs/2505.12540"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdC3qmLn4gt"
+channel: "data-engineering"
+---
+
+Rishi Jha 團隊有個讓工程師坐立難安的發現：只要拿到一個向量資料庫，不需要原始模型、不需要訓練資料，光靠 embedding 本身，就能把文件內容還原出來。
+
+他們假設：所有文本模型最終會收斂到同一個「通用潛在結構」。基於這個想法做出來的 vec2vec，把兩個不同模型的 embedding 放進去，讓系統自己學出一個共享空間，翻譯過去的向量 cosine similarity 最高來到 0.96，在 8000 個打散配對的 embedding 上做到完全正確對齊。
+
+帥不起來的地方在資安。向量資料庫被攻破時，攻擊者不需要拿到你的模型，只要能讀到向量，就能翻譯到一個已知模型的空間，再用現成反轉技術把文件抽出來——足以做到分類和屬性推斷。論文裡附了真實郵件主題被直接還原的截圖。
+
+現在大家拼命用 RAG 搭各種知識庫，這篇論文指出：embedding 資料庫本身就是一個攻擊面，而且多數系統沒把這個放進威脅模型裡。這個方向值得追。
