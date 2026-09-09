@@ -1,0 +1,16 @@
+---
+title: "AI 代理每次關閉上下文視窗，之前累積的架構決定、技術假設就全部消失"
+description: "AI 代理每次關閉上下文視窗，之前累積的架構決定、技術假設就全部消失。okf-agent-memory 這套工具把記憶層直接做進專案 repository，用標準 Markdown…"
+date: "2026-09-10"
+postSlug: "okf-agent-memory"
+sourceUrl: "https://github.com/okf-memory/okf-agent-memory"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DdFcdsPj30Z"
+channel: "data-engineering"
+---
+
+AI 代理每次關閉上下文視窗，之前累積的架構決定、技術假設就全部消失。okf-agent-memory 這套工具把記憶層直接做進專案 repository，用標準 Markdown 加上 YAML frontmatter 儲存，格式基於 Google OKF v0.2，查語意靠的是純本地的 BM25 全文檢索。
+
+搜尋延遲低於 300 微秒，記憶體佔用不到 15 MB，不需要任何外部服務，也不會有 API 費用。底層是零外部依賴的 Go 語言編譯成單一二進制檔，內建 MCP server，Claude Code、Cursor、Codex 這幾個主流 Agent 平台直接連。寫入前必須先查現有知識庫，防止重複記錄和幻觉飄移。
+
+凌晨三點上線出問題，要翻過去某次架構決策當時怎麼想的，./bin/okf show architecture/adr-023 直接叫出來，每次改動都有時間戳、誰改的、為什麼，全在 git 歷史裡。MIT 授權，純開源。
