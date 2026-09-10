@@ -19,9 +19,9 @@ person:
     en: Data Lead · Data Engineering · GenAI in production
   summary:
     zh: >-
-      十年資料工程，帶過 Data Team 兩年半；近一年半獨立從零交付一套企業級 Data／AI 平台給集團主管、行銷主管與編輯——使用者全是非工程師。最能發揮的地方：在有限預算下做取捨（接手的 pipeline 月成本 $300 → <$1）、把生成式 AI 帶上生產並加上守門（跌破品質門檻就讓任務失敗），以及把複雜技術轉成主管與使用者聽得懂的語言。
+      十年資料工程，帶過 Data Team 兩年半；近一年半獨立從零交付一套企業級 Data／AI 平台給集團主管、行銷主管與編輯——使用者全是非工程師。最能發揮的地方：用更少的預算做出同樣的結果（接手的資料管線，月成本從 $300 降到不到 $1）；讓 AI 真正上線、而且有品質把關（輸出品質一不達標，系統會自動攔下，不會默默變差）；以及把技術講成主管與使用者聽得懂、能據以決策的話。
     en: >-
-      Ten years in data engineering, two and a half of them leading a Data Team. Most recently I shipped an enterprise Data/AI platform end-to-end for executives, marketing leads and newsroom editors — none of them engineers. Where I add the most value: trade-offs under a tight budget (an inherited pipeline went from $300 to under $1 a month), generative AI in production with guardrails (a job fails when quality drops), and turning complex systems into language executives act on.
+      Ten years in data engineering, two and a half of them leading a Data Team. Most recently I shipped an enterprise Data/AI platform end-to-end for executives, marketing leads and newsroom editors — none of them engineers. Where I add the most value: getting the same result on a fraction of the budget (an inherited pipeline went from $300 to under $1 a month); putting AI into production with real quality control (when output quality slips, the system stops it rather than letting it quietly degrade); and explaining technical work in terms executives and users can act on.
   location: {zh: 台北，台灣, en: Taipei, Taiwan}
   phone: "0976-278696"
   email: myps6415@gmail.com
