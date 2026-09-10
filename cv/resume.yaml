@@ -1,0 +1,131 @@
+# 履歷的唯一內容來源。改這裡，再跑 `python3 scripts/build_cv.py`，
+# 會同時產出 public/cv/index.html（EN）與 public/zh/cv/index.html（ZH）。
+# 每個顯示文字都是 {zh: …, en: …}；純數字 / 網址 / 日期直接寫。
+# 列印目標是 A4 一頁——加內容前先想要拿掉什麼。
+
+meta:
+  site: https://myps6415.github.io
+  updated: "2026-09-10"
+  show_phone: true          # false → 網頁與 PDF 都不顯示電話
+
+person:
+  name: {zh: 童曉瑜, en: John Tung}
+  alt_name: {zh: John Tung · Hsiao-Yu Tung, en: 童曉瑜 · Hsiao-Yu Tung}
+  headline:
+    zh: 資料工程出身的 Data Lead
+    en: Data Lead with a data-engineering spine
+  eyebrow:
+    zh: Data Team Lead · Data Engineering · GenAI 上生產 · 台北
+    en: Data Lead · Data Engineering · GenAI in production
+  summary:
+    zh: >-
+      十年資料工程，帶過 Data Team 兩年半；近一年半獨立從零交付一套企業級 Data／AI 平台給集團主管、行銷主管與編輯——使用者全是非工程師。擅長三件事：在有限預算下做取捨（接手的 pipeline 月成本 $300 → <$1）、把生成式 AI 帶上生產並加上守門（跌破品質門檻就讓任務失敗），以及把複雜技術轉成主管與使用者聽得懂的語言。
+    en: >-
+      Ten years in data engineering, two and a half of them leading a Data Team. Most recently I shipped an enterprise Data/AI platform end-to-end for executives, marketing leads and newsroom editors — none of them engineers. What I do well: trade-offs under a tight budget (an inherited pipeline went from $300 to under $1 a month), generative AI in production with guardrails (a job fails when quality drops), and turning complex systems into language executives act on.
+  location: {zh: 台北，台灣, en: Taipei, Taiwan}
+  phone: "0976-278696"
+  email: myps6415@gmail.com
+  links:
+    - {label: LinkedIn, href: https://www.linkedin.com/in/hsiao-yu-tung-67547a119/}
+    - {label: GitHub, href: https://github.com/myps6415}
+    - {label: {zh: 個人站, en: Site}, href: https://myps6415.github.io}
+
+experience:
+  - company: {zh: 旺旺中時媒體集團, en: Want Want China Times Media Group}
+    role: {zh: 主任資料工程師（Data Lead）, en: Data Lead · Principal Data Engineer}
+    period: {zh: 2026.04 – 現在, en: Apr 2026 – present}
+    bullets:
+      - zh: >-
+          <b>從零打造集團跨平台資料平台</b>：Facebook／Instagram／Threads／YouTube／GA4 端到端 ingestion，34 個 Cloud Run Jobs 錯峰排程寫入 BigQuery（append-only 保留完整歷史），dbt 建模；以 Cloud Scheduler + Cloud Run Jobs 取代 Composer 控成本，dbt source freshness + 帳號級守門 + Cloud Monitoring 抓「job 成功卻沒寫資料」的靜默失敗。
+        en: >-
+          <b>Built the group's cross-platform data platform from zero</b>: Facebook, Instagram, Threads, YouTube and GA4 ingestion — 34 staggered Cloud Run Jobs writing append-only history into BigQuery, modelled with dbt. Cloud Scheduler + Cloud Run Jobs instead of Composer to control cost; dbt source freshness, account-level checks and Cloud Monitoring catch "job succeeded but wrote nothing" silent failures.
+      - zh: >-
+          <b>接手營收 pipeline 重寫，月成本 $300 → <$1</b>；並交付三個給非工程師的上線產品：集團數位營收儀表板（C-level）、社群成效儀表板（行銷主管／編輯）、月營收一覽表報紙版面 PDF 產製工具。Google 登入 + 三層 ACL，主管在頁面內自助增刪成員，不必找工程師。
+        en: >-
+          <b>Rewrote an inherited revenue pipeline, $300 → under $1 a month</b>; shipped three production tools for non-engineers: a group revenue dashboard (C-level), a social-performance dashboard (marketing and editors) and a tool that typesets monthly revenue tables into print-ready newspaper PDFs. Google sign-in and a three-tier ACL let managers add and remove users themselves.
+      - zh: >-
+          <b>生成式 AI 上生產，而且有守門</b>：BigQuery <span class="mono">AI.GENERATE</span>（Gemini）做留言情緒與貼文主題分類、只依當期數字的接地式 AI 觀點；Vertex 嵌入 + KMEANS 把負評分群命名；留言 RAG 檢索搭每週 LLM-as-judge 評測，品質跌破門檻即讓 job 失敗。編輯台 4 工具 agent 上線：不寫 SQL、強制自檢、成本上限，每週回放評測。
+        en: >-
+          <b>Generative AI in production, with guardrails</b>: BigQuery <span class="mono">AI.GENERATE</span> (Gemini) classifies comment sentiment and post topics and writes commentary grounded in current figures only; Vertex embeddings + KMEANS cluster and name negative-comment themes; a comment RAG layer is gated by a weekly LLM-as-judge eval that fails the job when quality drops. A four-tool newsroom agent is live — no free-form SQL, mandatory self-check, hard cost caps, weekly replay eval.
+      - zh: >-
+          <b>建立團隊的治理與交付方式</b>：資料治理盤點、成本歸屬 label、對 IT／維運方的資料存取需求清單、決策紀錄、新人 onboarding 階梯、跨專案知識庫 dd-knowledge、給主管與新進 DE 的專案簡報；為 AI agent 訂 repo 契約層（禁區、驗收指令、守門），讓人與 agent 在同一套規則下協作。
+        en: >-
+          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, an access-request list negotiated with IT, decision records, staged onboarding, a cross-project knowledge base and a project briefing for executives and new engineers; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
+
+  - company: {zh: 澄映科技, en: Cleflex Technology}
+    role: {zh: Data Team Lead, en: Data Team Lead}
+    period: {zh: 2023.05 – 2025.10, en: May 2023 – Oct 2025}
+    bullets:
+      - zh: >-
+          <b>帶領 4 人 Data Team</b>，負責排程、優先序與交付品質；以 Scrum（每日站會、衝刺規劃、回顧）與 Jira／GitLab 運作，並與產品團隊合作把資料自動化成 Superset 儀表板供決策。
+        en: >-
+          <b>Led a four-person Data Team</b> — scheduling, prioritisation and delivery quality — running Scrum (stand-ups, sprint planning, retros) on Jira/GitLab, and partnering with product to turn data into Superset dashboards used for decisions.
+      - zh: >-
+          Airflow 資料爬取 ETL（Scrapy → S3／MongoDB）、定時讀取 ElasticSearch 供 AI 自動評論、Telegram 異常告警；建置 Apache Iceberg + Spark 資料湖（Lakehouse）支援分散式分析，以 Docker／makefile 標準化部署讓成員快速起環境。
+        en: >-
+          Airflow crawling ETL (Scrapy → S3/MongoDB), scheduled Elasticsearch reads feeding AI reviews, Telegram alerts; built an Apache Iceberg + Spark lakehouse for distributed analysis and standardised deployment with Docker/makefiles so teammates could stand up environments fast.
+
+  - company: {zh: 安璞資訊, en: Amber Technology}
+    role: {zh: 資料工程師, en: Data Engineer}
+    period: {zh: 2022.11 – 2023.04, en: Nov 2022 – Apr 2023}
+    bullets:
+      - zh: Fluentd 地端 → GCP Cloud Storage ETL 自動化、Airflow 每日資料演算、導入 PySpark 分散式處理，並規劃整體資料架構。
+        en: Automated on-prem → GCP Cloud Storage ETL with Fluentd, daily Airflow computations, introduced PySpark for distributed processing and planned the overall data architecture.
+
+  - company: {zh: 痞客邦 PIXNET, en: PIXNET}
+    role: {zh: 高級演算法工程師, en: Senior Algorithm Engineer}
+    period: {zh: 2021.09 – 2022.11, en: Sep 2021 – Nov 2022}
+    bullets:
+      - zh: GKE 上的 Fluentd 日誌 ETL → Cloud Storage／BigQuery；Search Console API 每日 900 萬筆採集；熱門議題、店家排序與推薦演算法；SEO（Sitemap、JSON-LD）。
+        en: Fluentd log ETL on GKE → Cloud Storage/BigQuery; Search Console API collection at 9M rows/day; trending-topic, merchant-ranking and recommendation algorithms; SEO (Sitemap, JSON-LD).
+
+  - company: {zh: 替您錄科技, en: LiTV}
+    role: {zh: 軟體工程師, en: Software Engineer}
+    period: {zh: 2019.10 – 2021.09, en: Oct 2019 – Sep 2021}
+    bullets:
+      - zh: Ansible 大量部署 Fluentd（GCE + IDC 地端）自動寫入 BigQuery；AWS Data Pipeline 跨雲 ETL；Data Studio 自動化報表；未登入用戶性別預測與客戶演算法（XGBoost／RandomForest／SVM）。
+        en: Ansible-deployed Fluentd fleets (GCE + on-prem IDC) streaming into BigQuery; AWS Data Pipeline cross-cloud ETL; automated Data Studio reporting; gender prediction for anonymous users and customer algorithms (XGBoost/RandomForest/SVM).
+
+  - company: {zh: 早期經歷, en: Earlier}
+    role: {zh: 國網中心 軟體工程師 · 臺科大 程式設計講師 · 浚鴻數據 資料分析師, en: NCHC Software Engineer · NTUST Programming Lecturer · Dataa Data Analyst}
+    period: {zh: 2015.10 – 2019.08, en: Oct 2015 – Aug 2019}
+    bullets:
+      - zh: TWCC AI 平台功能驗測與資料市集（CKAN）自動化；Python 資料分析教學；承接政府部門與企業的多個輿情分析專案（爬蟲 → MongoDB → 文字探勘 → 專案報告）。
+        en: TWCC AI-platform acceptance testing and CKAN data-market automation; taught Python data analysis; delivered public-sector and enterprise sentiment-analysis projects (crawl → MongoDB → text mining → client reports).
+
+skills:
+  - k: {zh: 資料工程, en: Data engineering}
+    v: {zh: "BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark／Spark · Apache Iceberg · Fluentd · Scrapy／Selenium",
+        en: "BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark/Spark · Apache Iceberg · Fluentd · Scrapy/Selenium"}
+  - k: {zh: 雲端, en: Cloud}
+    v: {zh: "GCP（Cloud Run · Secret Manager · Monitoring · GKE · GCE · GCS）· AWS（Data Pipeline · S3）· Azure · 地端 IDC ↔ 雲混合",
+        en: "GCP (Cloud Run · Secret Manager · Monitoring · GKE · GCE · GCS) · AWS (Data Pipeline · S3) · Azure · on-prem ↔ cloud"}
+  - k: {zh: AI／GenAI, en: AI / GenAI}
+    v: {zh: "Gemini via BigQuery AI.GENERATE · Vertex 嵌入 + KMEANS · RAG + LLM-as-judge · agent 守門與成本控制 · XGBoost／LightGBM · 中文 NLP",
+        en: "Gemini via BigQuery AI.GENERATE · Vertex embeddings + KMEANS · RAG + LLM-as-judge · agent guardrails & cost control · XGBoost/LightGBM · Chinese NLP"}
+  - k: {zh: 交付與協作, en: Delivery}
+    v: {zh: "Streamlit（OIDC + ACL）· Superset／Looker Studio · Mann-Kendall／Sen's slope · Docker · Cloud Build／GitHub Actions · Ansible · Scrum · Jira／GitLab · Python · SQL",
+        en: "Streamlit (OIDC + ACL) · Superset · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
+
+education:
+  - school: {zh: 國立臺灣科技大學 資訊管理系, en: NTUST — Information Management}
+    degree: {zh: 博士候選人（2019 取得候選人資格，後轉職場）, en: PhD candidate (candidacy 2019; left for industry)}
+    period: "2016 – 2019"
+  - school: {zh: 元智大學 資訊管理學系, en: Yuan Ze Univ. — Information Management}
+    degree: {zh: 碩士 · 論文：汽車網路論壇雜訊過濾及口碑探索, en: M.S. · Thesis on noise filtering & word-of-mouth mining in car forums}
+    period: "2013 – 2015"
+  - school: {zh: 開南大學 資訊及電子商務學系, en: Kainan Univ. — Information & E-Commerce}
+    degree: {zh: 學士, en: B.S.}
+    period: "2009 – 2013"
+
+labels:
+  experience: {zh: 經歷, en: Experience}
+  skills: {zh: 技能, en: Skills}
+  education: {zh: 學歷, en: Education}
+  print: {zh: 存 PDF, en: Save PDF}
+  other_lang: {zh: EN, en: 中文}
+  updated: {zh: 更新於, en: Updated}
+  title_suffix: {zh: 履歷, en: Résumé}
+  description:
+    zh: 童曉瑜 John Tung 履歷——資料工程出身的 Data Lead，帶過 Data Team，從零交付企業級 Data／AI 平台，GCP／BigQuery／dbt／Gemini。
+    en: Résumé of John Tung (童曉瑜) — Data Lead with a data-engineering spine; led a Data Team and shipped an enterprise Data/AI platform from zero on GCP/BigQuery/dbt/Gemini.

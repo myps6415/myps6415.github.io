@@ -58,7 +58,7 @@ export const content: Record<Locale, SiteContent> = {
       label: "About",
       paragraphs: [
         "Based in Taiwan. I lead the social analytics data platform at a media group — owning everything from the Cloud Run Jobs that pull from the Meta Graph API to the dbt marts that surface in Looker Studio.",
-        "Across previous roles I've shipped on GCP, AWS, and Azure, orchestrating with Airflow and lightweight schedulers, and processed enough data with PySpark, dbt, and BigQuery to know that the right tool is the one that matches the actual requirement — including the team's ability to operate it. Spent 2.5 of those years as a Data Team Lead before switching back to a hands-on Principal IC role.",
+        "Across previous roles I've shipped on GCP, AWS, and Azure, orchestrating with Airflow and lightweight schedulers, and processed enough data with PySpark, dbt, and BigQuery to know that the right tool is the one that matches the actual requirement — including the team's ability to operate it. Led a four-person Data Team for 2.5 of those years, and now lead the data function at a media group — still hands-on, with the platform and the people both on my desk.",
         "I spend equal time on data modeling and on the boring infrastructure that keeps tokens fresh, jobs idempotent, and bills small.",
         "The work I'm most invested in now — LLM-augmented pipelines and semantic search over the editorial archive — is really a return to the text mining and sentiment analysis I started out in.",
       ],
@@ -166,7 +166,7 @@ export const content: Record<Locale, SiteContent> = {
       label: "關於我",
       paragraphs: [
         "人在台灣。目前在一家媒體集團負責社群分析資料平台，從 Meta Graph API 的 Cloud Run Jobs，到存入 Looker Studio 的 dbt marts，都由自己負責建置。",
-        "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，工作流程編排用過 Airflow 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個。其中 2.5 年擔任 Data Team Lead，之後選擇回到 Principal IC 的角色繼續動手做事。",
+        "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，工作流程編排用過 Airflow 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個。其中 2.5 年帶 4 人的 Data Team；目前在媒體集團負責整條資料線，平台與團隊都在手上，也還親自寫 code。",
         "資料建模和基礎建設這兩塊花的時間差不多 — 後者像是讓 token 不會過期、讓 job 保持 idempotent、讓帳單一直停在很小的數字。",
         "現在最投入的，是 LLM 強化的資料管線，以及讓編輯對歷史文章做語意搜尋——其實就是回到本業：中文文字探勘與輿情分析。",
       ],

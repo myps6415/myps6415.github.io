@@ -21,3 +21,6 @@ pnpm-debug.log*
 # IDE
 .vscode/
 .idea/
+
+# generated résumé PDFs (scripts/build_cv.py --pdf)
+cv/dist/

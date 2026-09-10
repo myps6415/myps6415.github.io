@@ -89,21 +89,29 @@ Sveltia CMS (Decap-compatible) at `/admin`, for editing posts in a browser witho
 - Caveat: the rich-text editor can reflow component blocks (`<StatRow>`, `<CodeBlock>`, …). If a CMS save mangles them, switch the `body` widget in `config.yml` from `markdown` to `text`. Prose editing is safe.
 - Don't edit the same post simultaneously in the CMS and in git — the CMS commits to `main`, so `git pull` before editing locally.
 
-## `/cv` one-pager (job-hunt leave-behind)
+## `/cv` one-pager (printable résumé)
 
-A standalone bilingual one-pager in `public/`, served verbatim by Astro (not part of the Astro page pipeline):
+A bilingual, **A4-one-page printable résumé**, served verbatim by Astro from `public/` (not part of the Astro page pipeline):
 
 - `public/cv/index.html` — EN, served at `/cv`
 - `public/zh/cv/index.html` — ZH, served at `/zh/cv`
 
-Deliberately **not** the site design system:
+**Both files are GENERATED — never hand-edit them.** Single source of truth is `cv/resume.yaml`; the template is `cv/template.html.j2`; the build is:
 
-- Self-contained HTML with its own inline CSS — IBM Plex Sans TC / Mono and a green accent (`--accent:#1C6B57`), not Geist/orange. It's an intentional standalone artifact; don't fold it into `Base.astro` or restyle it to match the site.
-- Has `@media print` styles — it doubles as a PDF leave-behind for recruiters.
-- Language switch is a plain top-right `.lang` link (EN ↔ ZH), not the site `LanguageToggle`. `hreflang` (en / zh-Hant / x-default) is hardcoded in each file's `<head>`.
-- The two locale files are **hand-kept in sync** (no shared source) — edit both when content changes. EN `Writing` links point to `/blog/<slug>`, ZH to `/zh/blog/<slug>`.
+```
+python3 scripts/build_cv.py          # writes both index.html files (needs: pip install pyyaml jinja2)
+python3 scripts/build_cv.py --pdf    # also exports cv/dist/resume-{zh,en}.pdf via headless Chromium (needs playwright)
+```
 
-Work-experience claims are anonymized (no employer named — this repo is public) and are fact-checked against local source repos before each change. Which repos, plus known fact gotchas (e.g. claims that look shippable but aren't), live in private session memory, not here.
+Editing rules:
+
+- Every display string in the YAML is `{zh: …, en: …}`; the `|t` Jinja filter picks the locale, `StrictUndefined` makes a missing locale a build error (this replaced the old hand-kept-in-sync pair of HTML files, 2026-09).
+- Bullets may contain `<b>`/`<span class="mono">` — the template does not escape.
+- `meta.show_phone: false` removes the phone from web + PDF. Employer names and phone are intentionally public (owner's decision, 2026-09-10).
+- **Print target is one A4 page in both languages.** English runs ~15% longer than Chinese, so `@media print` has `html[lang=en]` overrides. After ANY content change run `--pdf` (or Cmd+P) and check both PDFs are still 1 page; if not, cut content — don't shrink the font below what's there. Note headless Chromium without IBM Plex installed renders wider than the real page, so "fits in the container" is the conservative check.
+- Deliberately **not** the site design system: own inline CSS, IBM Plex Sans TC / Mono, green accent (`--accent:#1C6B57`). Don't fold it into `Base.astro`. Language switch is the plain top-right link; `hreflang` is emitted by the template.
+- Positioning as of 2026-09: "資料工程出身的 Data Lead" (management-track). Work claims are fact-checked against the local source repos before each change.
+- `cv/dist/` (PDF output) is gitignored.
 
 ## Design tokens
 
