@@ -85,26 +85,26 @@
   }
 
   /* print: A4, one page -------------------------------------------------- */
-  @page{size:A4;margin:10mm 12mm 9mm;}
+  @page{size:A4;margin:9mm 12mm 8mm;}
   @media print{
     :root{--paper:#fff;--sheet:#fff;--text:#1f2528;--ink:#000;--soft:#4a5257;--line:#c9ccc7;--accent-tint:#e5e5e5;}
-    body{font-size:9.15pt;line-height:1.42;background:#fff;}
+    body{font-size:9pt;line-height:1.38;background:#fff;}
     .topbar,.foot{display:none;}
     .sheet{max-width:none;margin:0;padding:0;box-shadow:none;}
-    header{padding-bottom:7pt;gap:2pt 18pt;}
-    h1{font-size:19pt;} h1 .alt{margin-top:3pt;}
+    header{padding-bottom:6pt;gap:2pt 18pt;}
+    h1{font-size:18pt;} h1 .alt{margin-top:2pt;}
     .headline{margin-top:5pt;font-size:10.2pt;}
-    .summary{margin-top:4pt;font-size:8.8pt;line-height:1.5;}
+    .summary{margin-top:3pt;font-size:8.6pt;line-height:1.45;}
     .contact{line-height:1.7;font-size:7.4pt;}
-    section{margin-top:9pt;} h2{margin-bottom:5pt;padding-bottom:2.5pt;}
-    .job{margin-bottom:6pt;break-inside:avoid;} .job-head{margin-bottom:1pt;}
-    .job li{font-size:8.7pt;line-height:1.42;margin-bottom:1.5pt;}
-    .job.compact li{font-size:8.3pt;}
-    .row,.edu{font-size:8.3pt;} .rows{gap:3pt;} .edu{margin-bottom:3pt;}
+    section{margin-top:7.5pt;} h2{margin-bottom:4pt;padding-bottom:2pt;}
+    .job{margin-bottom:5pt;break-inside:avoid;} .job-head{margin-bottom:0.5pt;}
+    .job li{font-size:8.5pt;line-height:1.38;margin-bottom:1pt;}
+    .job.compact li{font-size:8.1pt;}
+    .row,.edu{font-size:8.1pt;line-height:1.4;} .rows{gap:2.5pt;} .edu{margin-bottom:2.5pt;}
     a{color:inherit;border:none;}
     /* English runs ~15% longer than Chinese at the same size */
-    html[lang=en] body{font-size:8.7pt;}
-    html[lang=en] .job li{font-size:8.3pt;line-height:1.36;}
+    html[lang=en] body{font-size:8.6pt;}
+    html[lang=en] .job li{font-size:8.2pt;line-height:1.34;}
     html[lang=en] .job.compact li{font-size:8pt;}
     html[lang=en] .summary{font-size:8.4pt;}
     html[lang=en] .row,html[lang=en] .edu{font-size:7.9pt;line-height:1.38;}
