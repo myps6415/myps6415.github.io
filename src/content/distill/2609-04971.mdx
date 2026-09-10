@@ -1,0 +1,16 @@
+---
+title: "LRM 做推理時會把思考過程全部吐出來，形成漫長的思維鏈"
+description: "LRM 做推理時會把思考過程全部吐出來，形成漫長的思維鏈。模型越努力，KV 快取就跟著線性成長，很快超出 GPU 上限。這不是參數不夠，是快取膨脹比硬體升級還快。"
+date: "2026-09-11"
+postSlug: "2609-04971"
+sourceUrl: "https://arxiv.org/abs/2609.04971"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdIBQeHmYRo"
+channel: "data-engineering"
+---
+
+LRM 做推理時會把思考過程全部吐出來，形成漫長的思維鏈。模型越努力，KV 快取就跟著線性成長，很快超出 GPU 上限。這不是參數不夠，是快取膨脹比硬體升級還快。
+
+模型會產生 Thought Revisiting Token，回頭注意一開始的任務規劃內容，讓「用最近的 query 推估未來」站不住腳。
+
+Naver 與延世大學團隊據此提出 BeaconKV——不需要訓練，只要在快取裡保留每個向量空間群組的「燈塔 query」，就能預測哪些 KV 對會被未來步驟重新參考，不用把整個查詢歷史全部存下來。在四個開源 LRMs 上，記憶體減少可達 5.8 倍，throughput 提升超過 4.3 倍，準確率幾乎與完整快取無異。這篇被接受在 ICML 2026，程式碼已公開。如果你的服務跑的是推理模型，還在頭痛記憶體不夠，這篇值得直接評估。
