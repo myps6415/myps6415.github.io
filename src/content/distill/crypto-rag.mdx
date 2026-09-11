@@ -1,0 +1,18 @@
+---
+title: "查加密價格與鏈上資料往往要開好幾個工具切來切去"
+description: "查加密價格與鏈上資料往往要開好幾個工具切來切去。crypto-rag 把 RAG 問答與 live 市場數據串在一起，核心原則只有一條：數字永遠從源頭即時抓，絕不進向量資料庫。"
+date: "2026-09-12"
+postSlug: "crypto-rag"
+sourceUrl: "https://github.com/iamzulx/crypto-rag"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DdKmDc6D8JC"
+channel: "data-engineering"
+---
+
+查加密價格與鏈上資料往往要開好幾個工具切來切去。crypto-rag 把 RAG 問答與 live 市場數據串在一起，核心原則只有一條：數字永遠從源頭即時抓，絕不進向量資料庫。
+
+多數加密 RAG 把價格也 embed 進向量庫，三天後答「BTC 現在多少」出來的是歷史數字還以為是對的。crypto-rag 的做法是靜態知識進 FAISS，價格、Funding、TVL 全在 query 時 live 查，數值完全繞過 LLM，不可能 hallucinate 價格。
+
+系統還串了 DefiLlama、Fear &amp; Greed Index、比特幣網路現況（手續費、mempool、hashrate、以太坊 gas、SOL 供應量）。知識庫涵蓋 146 個印尼語主題，615 枚代幣已預先分類。
+
+可用 watch mode 監控多幣種並在條件觸發時 alert，也可下 portfolio 指令帶入現價計算價值與 P/L，數值繞過 LLM 這套設計值得參考。
