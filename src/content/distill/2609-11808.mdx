@@ -1,0 +1,18 @@
+---
+title: "Late-Interaction 是視覺文件檢索的主流方法，但每頁近千個向量讓儲存成本居高不下"
+description: "Late-Interaction 是視覺文件檢索的主流方法，但每頁近千個向量讓儲存成本居高不下。arXiv 新論文提出 GLIE，用「按需求重建」代替預先儲存全部向量。"
+date: "2026-09-14"
+postSlug: "2609-11808"
+sourceUrl: "https://arxiv.org/abs/2609.11808"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdPvpIrGc1L"
+channel: "data-engineering"
+---
+
+Late-Interaction 是視覺文件檢索的主流方法，但每頁近千個向量讓儲存成本居高不下。arXiv 新論文提出 GLIE，用「按需求重建」代替預先儲存全部向量。
+
+研究發現這些向量落在單位球面上且集中於固有維度僅五到六的低維流形。根據這個幾何特性，把 k-means 中心點標準化到球面上，就能為 nDCG@5 帶來最高 +0.093 的免費提升。
+
+GLIE 每頁只存 k 個遠少於 N 的經標準化中心點，搭配一個小型解碼器。查詢時先在 k 個向量上快速篩選，再把候選解碼回完整 N 個向量做精確重排。在 ViDoRe v1 上，每頁僅存 4 個向量就保留原始系統約 80% 的 nDCG@5，勝過之前最好的事後壓縮方法（70%）。模型僅 415K 參數，不到 3 GPU 分鐘用約千頁完成訓練，且同等預算微調編碼器也追不上 GLIE 的初始效果。另一編碼器與 ViDoRe v2 結果一致。
+
+把「壓縮」重新定義為「按需求重建」，GLIE 開出一條新的最佳化軸線，解碼器設計將是後續突破點。
