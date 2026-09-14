@@ -1,0 +1,20 @@
+---
+title: "多數團隊預設：省錢做 AI 搜尋就要堆 GPU"
+description: "多數團隊預設：省錢做 AI 搜尋就要堆 GPU。這篇的作者說不用。"
+date: "2026-09-15"
+postSlug: "2609-05463"
+sourceUrl: "https://arxiv.org/abs/2609.05463"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdSUb7Nj6Jk"
+channel: "data-engineering"
+---
+
+多數團隊預設：省錢做 AI 搜尋就要堆 GPU。這篇的作者說不用。
+
+OreoLook 是他們做的開源 LLM 搜尋引擎，跑在一般 CPU 伺服器上。三層架構：Session Context Window 把對話滾動存在 Redis，滿了自動壓縮進硬碟；Semantic Query Cache 用向量相似度抓 rephrasing，省下重複 LLM 呼叫；URL Embedding Cache 對同一網址的嵌入計算做去重。
+
+實測跑在 8 核 Intel 伺服器上：Redis 命中率 89.3%，讀延遲 0.1 毫秒，佔用僅 1.38 MB。背景 LRU 程式把閒置對話搬到硬碟，需要時再讀回來，中斷幾天都能繼續。
+
+我認為最有參考價值的是 Semantic Query Cache：同一個問題被改寫過，系統認得出，免打 API。省錢最有效的做法不是砍 model，是把重複計算拿掉。
+
+如果你的 pipeline 也在燒錢，先看 embedding cache 命中率。低於八成，這層優化效果最顯著。
