@@ -1,0 +1,20 @@
+---
+title: "三個研究人員把 KV cache 的記憶體佔用砍了快一半，代價幾乎看不出來"
+description: "三個研究人員把 KV cache 的記憶體佔用砍了快一半，代價幾乎看不出來。"
+date: "2026-09-17"
+postSlug: "2609-13285"
+sourceUrl: "https://arxiv.org/abs/2609.13285"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdXeBr4D93E"
+channel: "data-engineering"
+---
+
+三個研究人員把 KV cache 的記憶體佔用砍了快一半，代價幾乎看不出來。
+
+Transformer 推論的瓶頸多數人都知道在 KV cache——它隨序列長度線性膨脹，記憶體與讀取流量都是。GQA 共享 key-value 頭降低成本，但每步仍同時存 key 跟 value。
+
+Grouped Value Attention（GVA）改變了這個邏輯：儲存分組後的 value，內容 key 用學來的線性映射即時重建。在 350M 參數、30B FineWeb-Edu tokens 規模下，16 維 variant 準確率 44.18，GQA 是 44.36，MLA 是 43.88——彼此差不到 1 個百分點，但快取 scalar 少了 45 到 47%。
+
+團隊已開發自訂解碼核心，要讓節省直接轉成推論速度，開源釋出也在規劃中。
+
+說白話：LLM 推論的兩道牆——記憶體頻寬與延遲——這篇試著用同一個技巧同時拆。還能不能更快，等實測出來才有答案，但方向很明確。
