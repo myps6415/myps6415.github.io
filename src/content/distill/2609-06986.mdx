@@ -1,0 +1,18 @@
+---
+title: "Zheyuan Zhang 團隊做了一個殘酷實驗：讓模型學會 100 個問答任務…"
+description: "Zheyuan Zhang 團隊做了一個殘酷實驗：讓模型學會 100 個問答任務，學第 101 個時不准回頭看舊 training examples，結果 retention 掉到…"
+date: "2026-09-19"
+postSlug: "2609-06986"
+sourceUrl: "https://arxiv.org/abs/2609.06986"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdcnnbFDziH"
+channel: "data-engineering"
+---
+
+Zheyuan Zhang 團隊做了一個殘酷實驗：讓模型學會 100 個問答任務，學第 101 個時不准回頭看舊 training examples，結果 retention 掉到 1.2%——災難性遺忘，連大模型都躲不掉。
+
+他們試著組合三種 Anchor：Data anchor 留舊任務資料、Function anchor 留輸出分布、Weight anchor 直接在權重上鎖住重要參數。三個各有人用，但分開沒一個打得過遺忘。
+
+把三個 anchor 全上，再加 merged LoRA 把每次更新的低秩矩陣合併，這個組合在三個不同資料集全都排進前 3。平均 retention 從 1.2% 跳到 34.9%，28 倍差距。Data anchor 跟 merged LoRA 聯手時最猛，效果是 super-additive，大過各自單獨用的總和，不是加法是乘法。
+
+多數人還在問「要不要用 RAG」，但這篇告訴你：學新東西時舊東西還在不在，才是更根本的問題。
