@@ -1,0 +1,16 @@
+---
+title: "data agent查資料庫、讀CSV，卻常常不知道自己在查什麼"
+description: "data agent查資料庫、讀CSV，卻常常不知道自己在查什麼。它只有欄位名稱，不知道哪些欄位代表相同語意，也不曉得哪些表可以跨表查，所以只能東試一條SQL、西撈一份檔案，猜錯了…"
+date: "2026-09-23"
+postSlug: "2609-15779"
+sourceUrl: "https://arxiv.org/abs/2609.15779"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Ddm6y3RHwMy"
+channel: "data-engineering"
+---
+
+data agent查資料庫、讀CSV，卻常常不知道自己在查什麼。它只有欄位名稱，不知道哪些欄位代表相同語意，也不曉得哪些表可以跨表查，所以只能東試一條SQL、西撈一份檔案，猜錯了再試。
+
+EvoOntology的解法是在agent與原始資料之間加一層本體論，封裝成MCP伺服器，agent執行時可主動查詢語意、修正理解。builder agent先分析工作負載找出相關概念，再對實際資料發送探查查詢，驗證哪些概念真的存在並對應到哪些欄位。evolution agent接手後觀察失敗模式，判斷問題出在語意層、工具層還是結構層，對症提出修補，每次修補必須通過配對驗證才能被接受。
+
+實驗在DDR-Bench、InsightBench、BIRD三個資料庫測試，跨越六個骨幹模型，Trajectory-Wise準確率平均比無本體論基準高出17.8百分點，最大26.7百分點。傳統把語意層直接塞進prompt的做法在模型上反而讓表現下降，而同一份內容改成MCP工具讓agent主動查詢後，每個骨幹都有穩定進步。
