@@ -1,0 +1,16 @@
+---
+title: "AI Agent 的長期記憶怎麼做才有效率？"
+description: "AI Agent 的長期記憶怎麼做才有效率？這篇論文提出 Jev-Mem，核心想法是借鑒認知科學的 System-One/System-Two 框架，把記憶系統分成兩個平面。Sys…"
+date: "2026-09-24"
+postSlug: "2609-23986"
+sourceUrl: "https://arxiv.org/abs/2609.23986"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdpflzYmY0w"
+channel: "data-engineering"
+---
+
+AI Agent 的長期記憶怎麼做才有效率？這篇論文提出 Jev-Mem，核心想法是借鑒認知科學的 System-One/System-Two 框架，把記憶系統分成兩個平面。System-One 控制器負責快速決策——記憶分類、查詢路由、圖譜遍歷、候選評分，全部在毫秒級完成；只有真正需要複雜推理的問題才叫醒 System-Two。
+
+LoCoMo 基準測試結果：LLM-as-a-Judge 分數 0.777，比最強 baseline 高 11%；記憶建構時間 158 秒，是同類最快的 6.6 倍；平均查詢延遲 0.93 秒，延遲減少 36.7%。三個數字對應三種需求——品質、吞吐量、反應速度——通常改善一項就得犧牲另外兩項，Jev-Mem 同時拉到三個，這個數字組合在同類系統裡不多見。
+
+對工程師的參考價值在於它說清楚「什麼交給快系統、什麼必須慢系統」，而不是把所有問題都丟給同一個模型處理。可以想想自己的 Agent 目前是不是所有記憶操作都綁在同一個環節。
