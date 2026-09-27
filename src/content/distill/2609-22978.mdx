@@ -1,0 +1,22 @@
+---
+title: "每秒 5,000 個 sandbox 是什麼概念？"
+description: "每秒 5,000 個 sandbox 是什麼概念？"
+date: "2026-09-28"
+postSlug: "2609-22978"
+sourceUrl: "https://arxiv.org/abs/2609.22978"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DdzyxTFD4ea"
+channel: "data-engineering"
+---
+
+每秒 5,000 個 sandbox 是什麼概念？
+
+DeepSeek 實際在跑的數字：38 萬個同時執行環境、每日 300 萬個 sandbox 生滅，全部跑在同一套基礎設施上。支撐這件事的，就是他們剛發表的 DSec。
+
+DSec 解決的核心問題是：訓練 AI 代理需要大量隔離環境，模型要在裡面操作資料庫、呼叫工具、執行指令。這些負載會突然暴增，過去沒有統一的執行平台，各團隊只能自己堆硬體應對。
+
+DSec 做了三件事：統一 SDK 封裝容器、microVM 等多種隔離模式；Fire-Flyer 檔案系統按需載入映像檔，記憶體效率大幅提升；最重要的是把 sandbox 生命週期與 GPU 訓練完整協調，閒置資源即時回收，評估狀態不因資源搶奪中斷。
+
+160 個節點支撐這個規模，現在是實際在跑的生產系統，不是 PPT。
+
+researcher 現在不需要自己處理底層資源分配，有統一的 SDK 介面，專注在演算法本身就好。
