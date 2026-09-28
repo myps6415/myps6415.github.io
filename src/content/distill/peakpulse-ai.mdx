@@ -1,0 +1,20 @@
+---
+title: "有個工程師盯著幣圈期貨微觀數據看了三個月"
+description: "有個工程師盯著幣圈期貨微觀數據看了三個月。不是 K 線，是資金費率突然逆轉、持倉量詭異飆高、主動買賣力量失衡那種信號。他說，市場變了還不知道，代價最大。"
+date: "2026-09-29"
+postSlug: "peakpulse-ai"
+sourceUrl: "https://github.com/mrcanlaco/PeakPulse-AI"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dd2XkU5E8ws"
+channel: "data-engineering"
+---
+
+有個工程師盯著幣圈期貨微觀數據看了三個月。不是 K 線，是資金費率突然逆轉、持倉量詭異飆高、主動買賣力量失衡那種信號。他說，市場變了還不知道，代價最大。
+
+PeakPulse AI 即時監控 Binance 期貨微觀行為數據，套上 walk-forward 驗證過的機器學習模型判斷市場是否異常。重點是它 non-custodial，只發警報不自動下單，Human-in-the-loop 讓它更像情報雷達，不是交易機器人。
+
+作者還做了一件事：模型發布附 ID 與校驗碼，訓練數據截止某時間點，此後資料完全不看。484 組測試覆蓋常見資料泄露情境，系統性偏見在回歸測試時就會被發現。
+
+技術堆疊：Python 3.12 + DuckDB，React 19 + Vite + TypeScript，5 分鐘K線覆蓋數百幣種，Docker-Compose 一鍵部署。想研究直接去看 GitHub，架構文件詳細，取捨都有記錄。
+
+我推薦的是這套思考方式：把市場微觀行為轉成可靠偵測信號，用嚴謹驗證避免自我欺騙。
