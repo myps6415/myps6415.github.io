@@ -1,0 +1,18 @@
+---
+title: "一百萬個 Token，傳統 Attention 要跑一兆次——這個數字讓…"
+description: "一百萬個 Token，傳統 Attention 要跑一兆次——這個數字讓多數研究者在長上下文前卻步。Block sparse attention 被視為解方，但 block 怎麼選…"
+date: "2026-09-30"
+postSlug: "2609-31093"
+sourceUrl: "https://arxiv.org/abs/2609.31093"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dd48XCME6F1"
+channel: "data-engineering"
+---
+
+一百萬個 Token，傳統 Attention 要跑一兆次——這個數字讓多數研究者在長上下文前卻步。Block sparse attention 被視為解方，但 block 怎麼選一直是瓶頸，傳統做法仍是 O(N²)。
+
+PISA 用由粗而細的層級結構打破這件事：從最粗的顆粒開始，用 LogSumExp 對有限集合打分，只把入選者往下送，最終抵達最細層。全域複雜度因此壓到 O(N log N)。團隊寫了硬體感知的 Triton kernel，訓練和推論都能用，階層式路由不需要把 query-key 分數矩陣實際寫出來，長序列下這是關鍵節省。
+
+效能部分，PISA 在 commonsense reasoning 基準與 baseline 相當，retrieval 任務則更好。
+
+一百萬 Token 從一兆次變成二千萬次，數量級的差距在實際產品裡足以翻轉決策。如果你的應用需要處理長文件、對話歷史或大量上下文，PISA 可能是目前最值得評估的方向之一。
