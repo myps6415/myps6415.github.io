@@ -1,0 +1,12 @@
+---
+title: "向量搜尋在最佳化錯誤的目標——它找的是「語意相似」，不是「真正相關」"
+description: "向量搜尋在最佳化錯誤的目標——它找的是「語意相似」，不是「真正相關」。問題在這：一份年報有幾百頁，問它「2023年營業利益率」，相似搜尋可能找到談毛利率的章節，兩者意思接近、卻不是…"
+date: "2026-10-01"
+postSlug: "pageindex"
+sourceUrl: "https://github.com/VectifyAI/PageIndex"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dd7hJ9mkx5Z"
+channel: "data-engineering"
+---
+
+向量搜尋在最佳化錯誤的目標——它找的是「語意相似」，不是「真正相關」。問題在這：一份年報有幾百頁，問它「2023年營業利益率」，相似搜尋可能找到談毛利率的章節，兩者意思接近、卻不是你要的答案。PageIndex 用樹狀結構建立索引，讓 LLM 像人一樣翻目錄、逐層往下翻，找到真正回答問題的那幾段。整個過程可以回溯，不像傳統 RAG 那樣是黑盒子。金融文件 QA 測試集 FinanceBench 準確率 98.7%，比向量搜尋領先明顯幅度。安裝只要 pip install -U pageindex，索引一次約每頁 0.001 美元，之後每次查詢都在同一棵樹上重複用。420 頁的文件，直接餵 PDF 進去的代價是 PageIndex 的 16.6 倍；頁數再多就裝不進 context window。這套方法特別適合金融報告、法律文件、監管送件——既長又需要精準，差一個數字就完全不一樣。
