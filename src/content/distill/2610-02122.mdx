@@ -1,0 +1,20 @@
+---
+title: "現在的 AI 模型做 text-to-SQL 測試都很高分…"
+description: "現在的 AI 模型做 text-to-SQL 測試都很高分，實際丢進企業資料庫卻常常卡住——問題出在 benchmark 本身。現有測試集只模擬單表場景，與真實企業環境所需的跨表格…"
+date: "2026-10-04"
+postSlug: "2610-02122"
+sourceUrl: "https://arxiv.org/abs/2610.02122"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DeDPietAemm"
+channel: "data-engineering"
+---
+
+現在的 AI 模型做 text-to-SQL 測試都很高分，實際丢進企業資料庫卻常常卡住——問題出在 benchmark 本身。現有測試集只模擬單表場景，與真實企業環境所需的跨表格聯合查詢差距甚遠。
+
+Gabriel Tomitsuka 與其團隊打造了 Argo-Bench，用公開資料重建了一間 NYC 外送平台，模擬 2024 年 8,100 萬筆訂單、235 張表格、超過 75 億筆資料列。
+
+出來出來，行業最強的模型在 14 款 Frontier 與開源模型中，只有 34.8% 的任務拿到 95 分以上，平均成績也只有 59.5。也就是說，十題會掛六題。
+
+厲害之處不只是困難——它要求 AI 先理解資料結構、再執行實際動作，像是冻結果詐騙帳號、調整外送員獎勵預算，會直接影響模擬出來的商業後果，不能只會生出 SQL 語法就交差。模型必須同時具備分析與執行能力。
+
+作者把環境開源了，想挑戰的團隊可以直接上去跑自己的模型，看看在真實企業資料世界的天花板究竟在哪裡。
