@@ -1,0 +1,18 @@
+---
+title: "LLM 路由要多少 training feedback 才划算？"
+description: "LLM 路由要多少 training feedback 才划算？答案可能比你想的少很多。"
+date: "2026-10-05"
+postSlug: "2609-37402"
+sourceUrl: "https://arxiv.org/abs/2609.37402"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DeF0VaYgRLe"
+channel: "data-engineering"
+---
+
+LLM 路由要多少 training feedback 才划算？答案可能比你想的少很多。
+
+大型語言模型路由的邏輯是：簡單問題交小模型省錢，複雜問題再出動大模型。但多數方案在收集 training feedback 時讓所有候選模型在所有問題上跑一遍，training 成本還沒上線就先燒掉。SaveRouter 團隊看到一個反直覺的事實：路由品質往往在用完一小部分回饋資料之後就停止提升，繼續收集只是浪費。
+
+他們的解法是「稀疏監督」：每個 query 只在少數模型上跑，取決於回覆品質差異大不大。如果大家對某個問題看法一致，果斷停手；如果差異大，再多跑幾個 candidate 取決策。整體只取 33–41% 的 training feedback，路由品質卻跟用完整套資料的版本相當。
+
+最有感的數字：相較於傳統路由，SaveRouter 讓「打平成本」的部署規模縮小了 1.9–9.5 倍。如果你的系統每天處理上百萬次請求，這個差距直接決定你有沒有辦法在合理時間內把前期預算賺回來。
