@@ -1,0 +1,18 @@
+---
+title: "多數人面對資料時的痛點，不是工具不夠，而是「問題問不出來」"
+description: "多數人面對資料時的痛點，不是工具不夠，而是「問題問不出來」。過去要嘛等資料團隊有空，要嘛自己學 SQL。現在有一個開源工具 Aureka，直接把這件事變得很簡單：上傳 CSV 或 …"
+date: "2026-10-07"
+postSlug: "opne-aureka"
+sourceUrl: "https://github.com/MrXujiang/opne-aureka"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DeK97cWj89c"
+channel: "data-engineering"
+---
+
+多數人面對資料時的痛點，不是工具不夠，而是「問題問不出來」。過去要嘛等資料團隊有空，要嘛自己學 SQL。現在有一個開源工具 Aureka，直接把這件事變得很簡單：上傳 CSV 或 Excel，用自然語言提問，系統就會自動生成 SQL、跑分析、畫圖，答案直接給你。
+
+它的流程是：上傳檔案 → AI 判斷意圖 → 生成 SQL → DuckDB 執行查詢 → 輸出分析結論與 ECharts 圖表。支援 OpenAI、DeepSeek、通義千問、Kimi 等主流模型，資料全程存在本機，隱私不用擔心。前端用 Vue 3，安裝只要一個指令就能啟動。
+
+我認為這專案的價值，不在功能多不多，而在「有沒有人真的拿出來用」。多數人卡在資料前的瓶頸，其實是「問題怎麼問」這件事從來沒有人教過。Aureka 把這個障礙往下壓了一層，但門檻還是在——你起碼要知道自己在查什麼、資料長什麼樣。
+
+如果身邊有人天天被「幫我拉個數」這句話卡住，這個工具值得轉給他試試。專案開源，支援私有部署。
