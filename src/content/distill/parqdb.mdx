@@ -1,0 +1,22 @@
+---
+title: "十億筆向量，塞進 4GB 記憶體就能搜"
+description: "十億筆向量，塞進 4GB 記憶體就能搜。"
+date: "2026-10-08"
+postSlug: "parqdb"
+sourceUrl: "https://github.com/parqdb-io/parqdb"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DeNiuPGgWFb"
+channel: "data-engineering"
+---
+
+十億筆向量，塞進 4GB 記憶體就能搜。
+
+ParqDB 在 SIFT1B 實測：90.3% 召回率，中位延遲 63 毫秒，兩顆 CPU 核心。沒有概念驗證，就是這個數字。
+
+多數向量資料庫處理這個規模，記憶體要 TB 層級。ParqDB 把向量索引壓進 Parquet，HTTP Range 加 WebAssembly 直接在瀏覽器裡跑查詢，不需要查詢服務。發布一次，處處可跑。
+
+向量搜尋在這裡是關聯式運算，SQL 優化器把它跟過濾條件、JOIN、聚合包進同一個執行計畫，可以直接接上 Spark 或 StarRocks，單機無痛擴到叢集。
+
+騰訊的 TEngineDB-V 在十億筆向量上做出 52 倍加速，論文進了 VLDB 2026 產業軌。ParqDB 重現同樣思路，但用開源格式和現成 SQL 引擎重建，擺脫對專屬引擎的依賴。
+
+Python 安裝三分鐘，Browser Demo 點進去就能試。十億筆向量不需要幾百 GB 記憶體——這個前提如果成立，很多卡在成本上的系統設計都值得重新想。
