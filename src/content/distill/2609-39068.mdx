@@ -1,0 +1,18 @@
+---
+title: "長上下文的 LLM agent 跑久了，KV-cache 是多數人遲早會碰到的效能瓶頸"
+description: "長上下文的 LLM agent 跑久了，KV-cache 是多數人遲早會碰到的效能瓶頸。最近看到論文 SparseEngine，提出的做法是讓每種稀疏方法自己管理 KV 生命週期，…"
+date: "2026-10-11"
+postSlug: "2609-39068"
+sourceUrl: "https://arxiv.org/abs/2609.39068"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DeVRGsvk23h"
+channel: "data-engineering"
+---
+
+長上下文的 LLM agent 跑久了，KV-cache 是多數人遲早會碰到的效能瓶頸。最近看到論文 SparseEngine，提出的做法是讓每種稀疏方法自己管理 KV 生命週期，再用統一合約彼此協調——不是另外打造封閉引擎，而是提供一個共享底層框架。
+
+論文有幾個具體數字：開啟 KV eviction 後吞吐量提升 10 倍，比 vLLM 解碼快 2.5 倍，agent 基準測試端對端加速也有 2 倍以上。支援 15 種稀疏方法分四大類，代表的意義是日後有新方法出來幾乎可直接嫁接。
+
+我最感興趣的是 Chain Cache：傳統 KV eviction 刪掉後要再用得重新算，Chain Cache 在刪除前先墊一步，讓後續恢復有跡可循。另一個是 Prefix-Cache Pruning，可針對特定歷史區段刪 KV，同時保留邏輯前綴一致性，在多輪對話或工具串接場景特別實用。
+
+如果你也在找長上下文效能解法，這個框架值得看一下，說不定你現在卡住的問題已經被想過了。
