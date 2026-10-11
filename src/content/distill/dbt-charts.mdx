@@ -1,0 +1,16 @@
+---
+title: "儀表板做出來很好看，但做出來的人走了，別人接手處處是地雷"
+description: "儀表板做出來很好看，但做出來的人走了，別人接手處處是地雷。dbt Labs 新出的 dbt Charts 想解決的就是這件事：用 YAML 把「長相」宣告清楚，讓 SQL 處理「查…"
+date: "2026-10-12"
+postSlug: "dbt-charts"
+sourceUrl: "https://github.com/dbt-labs/dbt-charts"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DeX15yKE1Me"
+channel: "data-engineering"
+---
+
+儀表板做出來很好看，但做出來的人走了，別人接手處處是地雷。dbt Labs 新出的 dbt Charts 想解決的就是這件事：用 YAML 把「長相」宣告清楚，讓 SQL 處理「查什麼」，兩層分開不混在一起。
+
+這套語法人類和 agent 都看得懂。丢給 AI 幫你維護 BI 系統，它對照 YAML 自己生出對的格式，最後由 `dct` 統一檢查、渲染成 HTML 或 PDF。`dct validate` 不必連資料庫就能檢查格式錯在哪一行，錯誤訊息附修正建議，`dct init ci` 能生出 GitHub Actions 流程，PR 前自動跑檢查。
+
+支援 16 種核心 chart、13 種語意款（疊圖、漏斗、範圍圖等）及五套內建主題。若本來就在用 dbt，把 `charts/` 放在 `models/` 旁邊可共享同一組連線，圖和 model 的改動在同一個 PR 裡過 CI。目前仍是 beta。想先試可到 play.dbtcharts.com。
