@@ -1,0 +1,20 @@
+---
+title: "有人真的測了推薦系統，數據拿出來再說話"
+description: "有人真的測了推薦系統，數據拿出來再說話。"
+date: "2026-10-13"
+postSlug: "itlr-fullstack-recommender-rag"
+sourceUrl: "https://github.com/taovietducofficial/ITLR-Fullstack-Recommender-RAG"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DeaasmKk9fB"
+channel: "data-engineering"
+---
+
+有人真的測了推薦系統，數據拿出來再說話。
+
+這間越南 IT 學習平台把推薦演算法和 RAG Chatbot 用科學方法驗過，每個 claim 都有數字，每個決策都有代價交代。
+
+協作過濾打贏 popularity baseline，HitRate 從 0.043 爬到 0.611，大概 ×14。他們也測了 Learning-to-Rank 取代 Cross-Encoder：統計上沒有顯著差異，但延遲差 74 倍。Off-topic gate AUC 0.99，幾乎不讓無關問題浪費 LLM token。
+
+最有趣的是這條：12 個查詢時 embeddings 勝出，擴到 40 個後 TF-IDF 反而翻身。他們自己寫 benchmark 當初太小，不足以支撐語義勝出的結論。
+
+我比較買單這種做法。不是列功能，而是交代「為什麼選這個」背後的取捨邏輯。Dagster + Spark + Delta Lake 建構的 DataLake，技術棧不稀奇，但拿出數字說話的版本，就是比只貼技術名的更有說服力。
