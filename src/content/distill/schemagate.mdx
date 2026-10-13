@@ -1,0 +1,20 @@
+---
+title: "LLM 查資料庫，有張表你沒權限——RLS 把所有 row strip 掉…"
+description: "LLM 查資料庫，有張表你沒權限——RLS 把所有 row strip 掉，使用者看到的是「查無資料」，不是「拒絕存取」。這兩個錯法代價差很多，但呈現出來一模一樣。"
+date: "2026-10-14"
+postSlug: "schemagate"
+sourceUrl: "https://github.com/ashishsinha1602/schemagate"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dec_fbNkq0s"
+channel: "data-engineering"
+---
+
+LLM 查資料庫，有張表你沒權限——RLS 把所有 row strip 掉，使用者看到的是「查無資料」，不是「拒絕存取」。這兩個錯法代價差很多，但呈現出來一模一樣。
+
+問題在於：Schema 選擇發生在 RLS 之前，模型在它壓根不該看到那張表時就已經拿到了。把那張表 rank 低不夠——模型只要換個問法就能繞過。真正有效的方式是：一開始就不讓那張表出現在 prompt 裡。
+
+schemagate 做的就這個過濾。支援 LangChain、MCP 等 SQL agent，`pip install schemagate`，選擇器本身不呼叫模型，無額外費用。
+
+Benchmark：42 張表省 76% token；260 張表省 97%。有內建 Studio 可以對著自己的資料庫測試、即時看 prompt 裡出現了什麼。
+
+如果你還沒在選擇步驟做身份過濾，你其實不知道自己到底把什麼交給了模型。這個專案是代價最低的修正起點。
