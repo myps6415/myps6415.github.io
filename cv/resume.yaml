@@ -5,7 +5,7 @@
 
 meta:
   site: https://myps6415.github.io
-  updated: "2026-09-10"
+  updated: "2026-10-14"
   show_phone: true          # false → 網頁與 PDF 都不顯示電話
 
 person:
@@ -106,6 +106,9 @@ skills:
   - k: {zh: 交付與協作, en: Delivery}
     v: {zh: "Streamlit（OIDC + ACL）· Superset／Looker Studio · Mann-Kendall／Sen's slope · Docker · Cloud Build／GitHub Actions · Ansible · Scrum · Jira／GitLab · Python · SQL",
         en: "Streamlit (OIDC + ACL) · Superset · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
+  - k: {zh: 開源貢獻, en: Open source}
+    v: {zh: "Apache Airflow #67592（2026.10 合併）：修復 Airflow 3 遺失的 task.queued_duration metric，由 PMC 成員審核合併",
+        en: "Apache Airflow #67592 (merged Oct 2026): restored the task.queued_duration metric lost in Airflow 3; reviewed and merged by a PMC member"}
 
 education:
   - school: {zh: 國立臺灣科技大學 資訊管理系, en: NTUST — Information Management}
