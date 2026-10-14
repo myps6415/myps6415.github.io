@@ -1,0 +1,137 @@
+---
+title: "把 Airflow 3 弄丟的 task.queued_duration 補回來"
+description: "我的第一個 Apache Airflow PR。程式碼改不到 40 行，但「什麼情況該記一筆」來回改了四個半月，連我當初驗證過、覺得對的 guard 最後也拿掉了。"
+tag: "開源貢獻 · Observability"
+date: "2026-10-14"
+postSlug: "airflow-pr67592-queued-duration"
+meta:
+  - text: myps6415
+  - text: "PR #67592 · apache/airflow"
+    href: "https://github.com/apache/airflow/pull/67592"
+---
+
+<StatRow
+  stats={[
+    { value: "47k", label: "GitHub Stars" },
+    { value: "+38/-1", label: "正式程式碼 diff" },
+    { value: "4.5 個月", label: "Review 時間" },
+  ]}
+/>
+
+## 為什麼挑這題
+
+其實一開始挑的不是這個。我先看上 #66726（SQLite backfill 回 500），分支都開好了，
+動手前再確認一次，才發現當天早上已經有人開了 PR 在修。那個 issue 六個月沒動靜，
+我以為很安全。後來學到，光看 assignee 不夠，issue 底下的留言跟最近的 PR 都要翻過一遍。
+
+換題時我列了三個候選，最後選 [#63503](https://github.com/apache/airflow/issues/63503)：
+升到 Airflow 3 之後，`task.queued_duration` 這個 metric 不見了。它量的是 task 排進佇列後
+等多久才有 worker 接手，舊名稱是 `dag.<dag_id>.<task_id>.queued_duration`。
+
+選它是因為我平常的工作就在處理這類事情：dbt source freshness、Cloud Monitoring
+告警，都是在抓「東西壞了卻沒有人知道」。範圍也剛好，夠我摸到 task instance 的生命週期，
+又不會吃掉整個週末。
+
+## 為什麼不見了
+
+整個 repo 裡送出這個 metric 的地方只有一個：`TaskInstance.emit_state_change_metric`。
+而會呼叫它的，只有舊的 `LocalTaskJob` 流程，也就是 worker 自己把 task 改成 RUNNING 的那條路。
+
+Airflow 3 的 worker 改用 Task SDK，不再直接碰資料庫，而是呼叫 Execution API 的 `ti_run`
+請 API server 把 task 改成 RUNNING。狀態一樣有改，只是新路徑上沒有人送 metric。
+之前 `ti.start`、`ti.finish` 消失（#62019）也是同一個原因。
+
+所以修法很直覺：在 `ti_run` 裡補送。難的是「什麼時候送」。
+
+## 第一版的 guard，最後全拿掉了
+
+我的第一版照抄舊邏輯：只在 `end_date` 是空的時候送，意思是只算第一次執行，retry 不算。
+
+開 PR 當天，henry3260 提醒我：task 從 deferral 恢復時也會再進 `ti_run`，而且那時
+`end_date` 還是空的，所以會被當成第一次執行，多送一筆。他建議再加一個
+`next_method is None` 的條件。我回頭翻程式碼確認，他說的沒錯，還列了一張表把三種情況攤開，
+隔天就補上了。
+
+結果這兩個條件後來都被拿掉。
+
+- **6 月，ashb 指出 retry 不該跳過。** 每次 retry 都是一筆新的 task instance，
+  舊的那次會搬進 history。Scheduler 每次排隊都會重寫 `queued_dttm`，
+  所以 retry 是真的又排了一次隊，跳過它反而少算。
+- **8 月，kaxil 指出 henry 那個條件讓它跟 `task.scheduled_duration` 對不起來。**
+  我回頭重想，才發現 deferral 恢復也該算：恢復之後一樣要排隊等 worker。
+  有些 operator（`start_from_trigger=True`）甚至一開始就直接進 deferral，
+  恢復那次就是它唯一的一次排隊，跳過的話這個 task 永遠不會有數字。
+
+最後的規則很單純：**每排一次隊，就記一筆。** 第一次執行、retry、deferral 恢復、
+reschedule 模式的 sensor poke 都算。只有兩種情況不送：沒經過 scheduler 佇列的執行
+（例如 `dag.test()`，`queued_dttm` 是空的），以及 client 重複送來的啟動請求。
+
+我當初查證過、覺得「對」的那個 guard，只是在舊邏輯上補洞。舊邏輯本身該不該照搬，
+我沒有問。
+
+## 其他被 review 抓到的地方
+
+kaxil 還抓到兩件我沒想到的事。
+
+一是 tag 要跟同類的 `task.scheduled_duration` 一致。我原本的 tag 跟它對不上，
+dashboard 上沒辦法用同樣方式切這兩個 metric。順帶一提，帶 Dag tags
+在每次啟動 task 時會多兩次 lazy load，所以改成只有真的要送、而且有開這個設定時才預先載入。
+
+二是送出的時機。我原本在狀態一改完就送，但後面還有幾個步驟可能回 5xx。SDK 遇到 5xx 會重試，
+資料庫 rollback 又會把 task 放回 QUEUED，結果同一段等待被記兩次。所以改成擺在最後，
+`return` 前才送：
+
+<DiffBlock
+  header="airflow-core/src/airflow/api_fastapi/execution_api/routes/task_instances.py"
+  lines={[
+    { kind: "hunk", text: "@@ ti_run：真正從 QUEUED 轉成 RUNNING 的地方 @@" },
+    { kind: "add", text: "+        emit_queued_duration = ti.queued_dttm is not None" },
+    { kind: "hunk", text: "@@ ti_run：return context 之前 @@" },
+    { kind: "ctx", text: "     if token.claims.scope == \"workload\":" },
+    { kind: "ctx", text: "         issue_execution_token(services, response, sub=str(task_instance_id))" },
+    { kind: "add", text: "+    if emit_queued_duration:" },
+    { kind: "add", text: "+        dr._team_name = dr.team_name" },
+    { kind: "add", text: "+        tags = {**dr.stats_tags, \"task_id\": ti.task_id, \"queue\": ti.queue}" },
+    { kind: "add", text: "+        stats.timing(\"task.queued_duration\", timezone.utcnow() - ti.queued_dttm, tags=tags)" },
+    { kind: "ctx", text: "     return context" },
+  ]}
+/>
+
+測試加了 360 行。寫完測試，我會先把正式程式碼的改動 stash 掉跑一次，確認測試會失敗，再放回來確認會過。
+這招比多寫幾個測試有用。
+
+## 從 Airflow 2 升級要注意
+
+這次不只是把 metric 補回來，數字也會跟 Airflow 2 不一樣。Airflow 2 會跳過 retry 和
+reschedule poke（因為 `end_date` 還留著），現在都會記。
+
+<Callout variant="warn" title="Dashboard 的數字會變">
+  一個每分鐘 poke 一次、跑一小時的 reschedule sensor，Airflow 2 記 1 筆，現在大約 60 筆。
+  如果你的告警或 dashboard 有在彙總這個 timer，升級後要重新看門檻。Release note 有寫這點。
+</Callout>
+
+## 為什麼拖了四個半月
+
+上面那幾輪 review 本來就來回很久，中間也有不少時間在等。Milestone 先被挪到 3.3.2，理由是「不急」，
+後來又挪到 3.4.0。我這種第一次貢獻的人，每次 rebase 之後 CI 都要 maintainer 再核准一次。
+9 月還有人留言問我還修不修，說他需要這個修正，不然他來接。
+
+最後一輪 kaxil 說程式碼沒問題了，但 PR 描述還寫著舊的 guard。Airflow 是 squash merge，
+描述會變成 commit message，所以描述也要跟著最終行為改。改完隔天就合併了。
+
+## 下次會記得的事
+
+<Lesson label="挑 issue 前">
+  除了看 assignee，也要翻 issue 留言和最近的 PR。六個月沒動靜的 issue，也可能在你動手前幾小時被人接走。
+</Lesson>
+
+<Lesson label="照搬舊邏輯時">
+  換了執行路徑，舊程式碼裡的每個判斷條件都要重問一次：在新路徑上，這個假設還成立嗎？
+  我這次只問了「條件夠不夠」，沒問「條件該不該存在」。
+</Lesson>
+
+<Lesson label="會被重試的 API">
+  Handler 裡的副作用（送 metric、寫 log）要放在所有可能失敗的步驟之後，不然重試一次就多算一次。
+</Lesson>
+
+這個 PR 是用 Claude Code（Opus 4.7）一起寫的，依 Airflow 的規定在 PR 裡用 `Generated-by:` 標註。

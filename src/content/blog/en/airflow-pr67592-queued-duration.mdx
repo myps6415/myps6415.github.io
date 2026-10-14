@@ -1,0 +1,157 @@
+---
+title: "Putting back the task.queued_duration metric Airflow 3 lost"
+description: "My first Apache Airflow PR. Under 40 lines of production code, but deciding when to record a sample took four and a half months of review, and the guard I'd checked and agreed with didn't survive."
+tag: "Open Source · Observability"
+date: "2026-10-14"
+postSlug: "airflow-pr67592-queued-duration"
+meta:
+  - text: myps6415
+  - text: "PR #67592 · apache/airflow"
+    href: "https://github.com/apache/airflow/pull/67592"
+---
+
+<StatRow
+  stats={[
+    { value: "47k", label: "GitHub Stars" },
+    { value: "+38/-1", label: "Production diff" },
+    { value: "4.5 mo", label: "In review" },
+  ]}
+/>
+
+## Why this issue
+
+This wasn't my first pick. I'd started on #66726 (a SQLite backfill returning 500)
+and already had a branch. When I checked again before writing any code, someone had
+opened a PR for it that same morning. The issue had been quiet for six months, so I
+assumed it was safe. Lesson learned: an empty assignee field isn't enough. Read the
+issue comments and search recent PRs too.
+
+From the shortlist I made next, I picked
+[#63503](https://github.com/apache/airflow/issues/63503): after upgrading to Airflow 3,
+`task.queued_duration` was gone. It measures how long a task sits in the queue before a
+worker picks it up. The legacy name is `dag.<dag_id>.<task_id>.queued_duration`.
+
+It's close to my day job. dbt source freshness checks and Cloud Monitoring alerts are
+both about catching things that break without anyone noticing. The scope was right too:
+enough to learn the task instance lifecycle, not enough to eat a whole weekend.
+
+## Why it disappeared
+
+There was exactly one place in the repo that sent this metric:
+`TaskInstance.emit_state_change_metric`. The only caller was the old `LocalTaskJob`
+flow, where the worker set the task to RUNNING itself.
+
+In Airflow 3 the worker runs on the Task SDK. It no longer touches the database. It calls
+the `ti_run` Execution API endpoint and the API server sets RUNNING. The state still
+changes; nothing on the new path sends the metric. `ti.start` and `ti.finish` went
+missing the same way (#62019).
+
+So the fix is obvious: send it from `ti_run`. The hard part is deciding when.
+
+## The guards in my first version, and how both went away
+
+My first version copied the old logic: only send when `end_date` is empty. In other
+words, count the first run and skip retries.
+
+On the day I opened the PR, henry3260 pointed out that a task resuming from deferral
+also comes back through `ti_run`, with `end_date` still empty, so it would be counted
+as a first run. He suggested adding `next_method is None`. I went through the code,
+agreed, wrote out a table of the three cases to be sure, and pushed the change the next
+day.
+
+Both conditions were removed later.
+
+- **June: ashb said retries shouldn't be skipped.** Each retry is a new task instance
+  row; the old try moves to history. The scheduler rewrites `queued_dttm` every time it
+  queues a task, so a retry really did wait in the queue again. Skipping it undercounts.
+- **August: kaxil pointed out that henry's condition made it disagree with
+  `task.scheduled_duration`.** Thinking it through again, deferral resumes should count
+  too: after resuming, the task waits for a worker like anything else. Some operators
+  (`start_from_trigger=True`) defer before they're ever queued, so the resume is their
+  only queue wait. Skip it and that task never gets a number.
+
+The final rule is simple: **one sample per queue wait.** First run, retry, deferral
+resume and reschedule-mode sensor pokes all count. Only two cases skip it: runs that
+never went through the scheduler's queue (like `dag.test()`, where `queued_dttm` is
+empty), and a duplicate start request from the client.
+
+The guard I'd checked and agreed with was a patch on top of the old logic. I asked
+whether the condition was complete. I never asked whether it should exist at all.
+
+## Other things review caught
+
+kaxil caught two more things I'd missed.
+
+First, the tags should match the sibling metric, `task.scheduled_duration`. Mine didn't,
+so you couldn't slice the two the same way on a dashboard. Adding Dag tags also meant two
+extra lazy loads on every task start, so they're now preloaded only when the metric will
+actually be sent and that setting is on.
+
+Second, the timing. I sent the metric right after the state change, but a few later
+steps can still return a 5xx. The SDK retries a 5xx, the rollback puts the task back in
+QUEUED, and one wait gets counted twice. So it moved to the very end, just before
+`return`:
+
+<DiffBlock
+  header="airflow-core/src/airflow/api_fastapi/execution_api/routes/task_instances.py"
+  lines={[
+    { kind: "hunk", text: "@@ ti_run: on a genuine QUEUED -> RUNNING transition @@" },
+    { kind: "add", text: "+        emit_queued_duration = ti.queued_dttm is not None" },
+    { kind: "hunk", text: "@@ ti_run: just before return context @@" },
+    { kind: "ctx", text: "     if token.claims.scope == \"workload\":" },
+    { kind: "ctx", text: "         issue_execution_token(services, response, sub=str(task_instance_id))" },
+    { kind: "add", text: "+    if emit_queued_duration:" },
+    { kind: "add", text: "+        dr._team_name = dr.team_name" },
+    { kind: "add", text: "+        tags = {**dr.stats_tags, \"task_id\": ti.task_id, \"queue\": ti.queue}" },
+    { kind: "add", text: "+        stats.timing(\"task.queued_duration\", timezone.utcnow() - ti.queued_dttm, tags=tags)" },
+    { kind: "ctx", text: "     return context" },
+  ]}
+/>
+
+The tests came to 360 lines. After writing them I'd stash the production change and run
+them once to see them fail, then restore it and see them pass. That check is worth more
+than writing a few extra tests.
+
+## If you're upgrading from Airflow 2
+
+This doesn't just bring the metric back; the numbers won't match Airflow 2. Airflow 2
+skipped retries and reschedule pokes (because `end_date` was still set). Now both count.
+
+<Callout variant="warn" title="Your dashboard numbers will change">
+  A reschedule sensor that pokes every minute for an hour recorded 1 sample in Airflow 2
+  and records about 60 now. If an alert or dashboard aggregates this timer, revisit its
+  thresholds after upgrading. The release note says the same.
+</Callout>
+
+## Why it took four and a half months
+
+The review rounds above took a while on their own, and there was a lot of waiting in
+between. The milestone moved to 3.3.2 ("not critical"), then to 3.4.0. As a first-time
+contributor, every rebase meant asking a maintainer to approve CI again. In September
+someone commented asking whether I was still working on it. They needed the fix and
+offered to take it over.
+
+In the last round kaxil said the code was fine, but the PR description still described
+the old guard. Airflow squash-merges, so the description becomes the commit message and
+has to match the final behaviour. I updated it, and it was merged the next day.
+
+## What I'll remember next time
+
+<Lesson label="Before picking an issue">
+  Check the comments and recent PRs, not just the assignee. A six-month-quiet issue can
+  still get picked up a few hours before you start.
+</Lesson>
+
+<Lesson label="When copying old logic">
+  If the execution path changed, re-ask every condition you carried over: does this
+  assumption still hold on the new path? I asked whether the condition was enough, not
+  whether it belonged there.
+</Lesson>
+
+<Lesson label="For APIs that get retried">
+  Put side effects (metrics, logs) after every step that can fail. Otherwise each retry
+  counts again.
+</Lesson>
+
+I wrote this PR with Claude Code (Opus 4.7) and disclosed it with `Generated-by:` in the
+PR, as Airflow's guidelines ask.
