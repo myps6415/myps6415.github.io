@@ -1,0 +1,216 @@
+---
+title: "The lookback window set the forecast, not the data"
+description: "I tested Kronos, an open financial foundation model, zero-shot on Taiwan daily bars. Spearman IC came back at +0.187 with p<0.001. Both of my good numbers turned out to be artifacts — one of a free baseline I hadn't controlled for, one of overlapping windows inflating my sample size. The finding that outlived the test: changing only the lookback moved the same forecast from -0.35% to -29.70%."
+tag: "Quant · Negative Result"
+date: "2026-10-15"
+postSlug: "kronos-lookback-sets-the-forecast"
+meta:
+  - text: myps6415
+  - text: "shiyu-coder/Kronos"
+    href: "https://github.com/shiyu-coder/Kronos"
+---
+
+<StatRow
+  stats={[
+    { value: "+0.187", label: "Surface Spearman IC (p<0.001)" },
+    { value: "t=-0.98", label: "After controlling for mean reversion" },
+    { value: "-29.70%", label: "Same forecast, lookback 400" },
+  ]}
+/>
+
+## Why I tested it at all
+
+I had closed a stock-screening line ten days earlier. Institutional-flow
+ranking, foreign-investor flow, a multi-factor model — three attempts, all of
+them beaten by just holding the index. The written exit condition said: don't
+reopen unless the regime turns.
+
+So when [Kronos](https://github.com/shiyu-coder/Kronos) showed up — AAAI 2026,
+MIT licence, pretrained on over 12 billion K-line records from 45 global
+exchanges, open weights for mini/small/base — my first instinct was to apply the old conclusion
+and move on.
+
+That instinct was wrong, and I'm glad someone pushed back on it. The closed line
+tested *cross-sectional ranking from institutional flows*. Kronos is a
+*price-sequence forecaster*. Different hypothesis class. An exit condition for
+one hypothesis is not evidence about another, and reusing it that way is just
+motivated reasoning with a paper trail.
+
+So I ran the test.
+
+<Callout variant="info" title="Criteria fixed before running anything">
+  Three gates, written down first: the information coefficient has to be
+  significantly positive, directional accuracy has to beat a free baseline, and
+  the signal must not be pure trend extrapolation. Writing them down afterwards
+  is how you end up with a result that is "promising" no matter what comes out.
+</Callout>
+
+## The setup
+
+Kronos-small, zero-shot, Taiwan daily bars. Twenty tickers — my actual holdings
+plus the candidate pool — at 24 time points, giving 480 five-day forecasts. Each
+forecast is the ensemble mean of 20 sampled paths. Every time point sits in
+May–July 2026, after the paper's August 2025 submission, to keep the evaluation
+window away from anything the model might have memorised.
+
+One incidental finding, since I had budgeted wrongly for it: speed was never the
+problem. On an Intel Mac, CPU only, a single path took about 0.1 seconds. My
+pre-test guess had been "tens of seconds per forecast" — off by two orders of
+magnitude.
+
+## The surface result, which looks like a win
+
+- Spearman IC **+0.187**, p < 0.001
+- Directional accuracy **57.1%**, p = 0.002
+- **20 of 20** tickers with positive IC
+
+Twenty for twenty. If I had stopped here I would have written a very different
+post, wired the model into my dashboard, and been wrong for months before
+noticing.
+
+## Kill #1: it was selling me something I already had for free
+
+The forecasts correlated **-0.589** with the trailing five-day return. Kronos
+was betting against recent moves — and over that particular window, Taiwan
+equities did mean-revert. So "against the trend" was free money that had nothing
+to do with the model.
+
+The way to find out whether a signal adds anything is to put the free effect in
+the regression next to it:
+
+<CodeBlock label="future 5d return ~ past 5d return + kronos forecast" lang="text">
+{`past 5d return     t = -4.74    significant
+kronos forecast    t = -0.98    not significant, coefficient negative`}
+</CodeBlock>
+
+Controlled for the trailing return, the model's incremental contribution is
+indistinguishable from zero, and what little there is points the wrong way.
+
+Then the embarrassing comparison. The baseline — "bet against last week",
+zero parameters, one line of code — scored 56.7% directional accuracy against
+the model's 57.1%. A 12-billion-candle pretrained transformer, tied with a
+one-liner.
+
+<Lesson label="A signal is only worth what it adds">
+  Any forecast that leans on a persistent market effect will look good in a
+  window where that effect pays. The question is never "is my metric positive"
+  but "is my metric positive once the free version of the same bet is already in
+  the model". If you can't name the free baseline, you haven't finished
+  specifying the test.
+</Lesson>
+
+## Kill #2: 480 was not my sample size
+
+I had 480 forecasts and I had been treating that as n=480. It isn't, for two
+independent reasons:
+
+- **The windows overlap.** Time points are two days apart; the forecast horizon
+  is five days. Consecutive observations share most of their outcome period.
+- **The tickers don't.** Taiwan equities are highly correlated. Twenty names in
+  one small market is nowhere near twenty independent draws.
+
+Both inflate significance in the same direction — towards looking real. The
+standard fix is to collapse each day into one cross-sectional IC, then t-test
+that time series:
+
+<CodeBlock label="daily cross-sectional IC, t-test on the series" lang="text">
+{`kronos         t = +1.09    p = 0.287    not significant
+free baseline  t = +2.88                 significant`}
+</CodeBlock>
+
+The p = 0.002 I had been quoting was manufactured by overlapping samples. The
+free baseline survives this test. The model does not.
+
+<Callout variant="warn" title="Two tests, one direction">
+  Notice that both failures were invisible from the surface metrics, and both
+  errors flattered the model. That asymmetry is the thing to be scared of: the
+  mistakes you make while excited all push the same way.
+</Callout>
+
+## The finding that outlived the test
+
+This is the part I would still care about if Kronos had passed.
+
+`KronosPredictor.predict()` z-score normalises the **entire lookback window**
+before feeding it to the model. The window is therefore not just how much
+history the model sees — it is the unit the forecast is denominated in. Same
+ticker, same day, same weights, nothing changed but the lookback length:
+
+<CodeBlock label="one ticker, one day, varying lookback — actual move was +2.62%" lang="text">
+{`lookback  60   →   -0.35%
+lookback 120   →   +4.50%
+lookback 250   →  -10.08%
+lookback 400   →  -29.70%`}
+</CodeBlock>
+
+A daily-bar forecast of -29.70% over five days is not a prediction, it's a unit
+error. And the model is not hedging: at lookback 400 the p10–p90 interval does
+not contain the realised value at all. It is confident and wrong, which is worse
+than being noisy and wide, because wide intervals at least tell you to stop.
+
+I tried turning the temperature down to 0.6, on the theory that this was sampling
+noise. It changed nothing, which is the tell: lowering temperature narrows
+variance around the model's central belief, and the central belief was the broken
+part.
+
+The cause is a scale mismatch between the demo and my data. The published demo
+runs on 5-minute bars, where 400 bars is about a day and a half and the standard
+deviation of the window is small. On daily bars, 400 bars is about 1.6 years, and
+normalising across a period that long produces a standard deviation so large that
+the de-normalised output lands anywhere.
+
+Which leaves the uncomfortable conclusion for my use case: **on daily bars there
+was no configuration that was simultaneously inside the model's design envelope
+(context 512) and numerically sane.** Short windows stay sane but throw away
+history; long windows use the history and produce nonsense.
+
+<Lesson label="Normalisation is part of the interface">
+  If a model normalises over a window you choose, that window is an input to the
+  prediction, not a preprocessing detail. Any repo where the normalisation
+  window is a tunable and the output is in real units has this failure mode
+  available. The test that catches it costs one afternoon: hold everything
+  constant, sweep the window, and see whether the forecast stays in the same
+  order of magnitude. If it doesn't, you are reading a unit, not a signal.
+</Lesson>
+
+## What I did not falsify
+
+Negative results get over-quoted, so let me fence this one in precisely. What
+failed is: **zero-shot Kronos-small, Taiwan daily bars, the single numerically
+sane configuration available, sampled over roughly two months.**
+
+Explicitly untested, and in rough order of how likely I think they are to work:
+
+- **Intraday 5-minute bars.** This is the demo's home turf, where the
+  normalisation scale is sane by construction. I would not be surprised if it
+  works there, and nothing above is evidence that it doesn't.
+- **Fine-tuning.** The repo ships a `finetune/` directory, and this is the
+  obvious next step for anyone who wants to carry this further.
+- **base / large.** I only tested small. (large, at 499M, is closed-weight.)
+- **Other regimes.** Two months is one regime sample. Mean reversion happened to
+  dominate my window, which is exactly what made kill #1 detectable — in a
+  trending window the same test would have looked different and I'd have had to
+  control for momentum instead.
+
+## Why I stopped anyway
+
+Both surviving paths — fine-tune, or move to intraday — are real engineering
+projects. More to the point, both of them push towards short-horizon trading,
+and my actual strategy is index core plus dividends on a retirement horizon. A
+model that only works at five-minute resolution isn't a tool for that strategy;
+it's a different strategy wearing a tool's clothing.
+
+So the revival condition is written down rather than left to mood: fine-tune or
+intraday first, and then it has to clear both gates that killed it here —
+incremental t-value after controlling for the counter-trend baseline, *and* a
+t-test on the daily cross-sectional IC series. No more p-values from overlapping
+windows.
+
+<Lesson label="Write the exit condition before you want it">
+  The useful artifact from a failed test isn't the conclusion, it's the gate.
+  "We tried it and it didn't work" decays into folklore within a quarter and
+  gets re-litigated by whoever is most enthusiastic. "It must clear these two
+  specific tests, which are the ones it failed" is reusable, and it survives my
+  own future excitement — which, given that I nearly dismissed this model on an
+  unrelated prior, is the thing most in need of a guard.
+</Lesson>
