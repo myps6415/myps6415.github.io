@@ -1,0 +1,18 @@
+---
+title: "每位工程師多少都碰過這種場景：公司裡十幾個工具在跑，PostgreSQL、MySQL…"
+description: "每位工程師多少都碰過這種場景：公司裡十幾個工具在跑，PostgreSQL、MySQL、Stripe API、PostHog……資料各自躲在不同後台，想查個數字得在好幾個後台之間來回…"
+date: "2026-10-16"
+postSlug: "helix-foundry"
+sourceUrl: "https://github.com/HelixDB/helix-foundry"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DeiJFUrkpzU"
+channel: "data-engineering"
+---
+
+每位工程師多少都碰過這種場景：公司裡十幾個工具在跑，PostgreSQL、MySQL、Stripe API、PostHog……資料各自躲在不同後台，想查個數字得在好幾個後台之間來回切換，最後乾脆用 CSV 匯出來湊合。
+
+Helix Foundry 想解決的就是這件事。它在本地端用 Docker 把各個資料來源串起來，自動推薦一個統一的資料模型讓你直接問問題，預設跑本地 AI，資料不會離開你的電腦。第一次安裝約需 2.5GB，下完之後就可以一直用，沒有帳號要管，也不必把東西放到別人的雲端。
+
+它會幫你維護一份版本記錄，每次變更都留快照，之後想對比不同時間點的資料狀態可以直接查。查詢底層跑的是 DuckDB，規模大了也不至於卡住。安全模型乾脆把整組工具鎖在本地對外隔離，不走任何網路，薪資或用戶資料這類敏感東西處理起來相對安心。
+
+缺點是第一次架起來要花點時間熟悉，但設定好之後就是自己的私人資料工作環境，什麼時候想升級、什麼時候想備份，都自己說了算。
