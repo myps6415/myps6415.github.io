@@ -1,0 +1,16 @@
+---
+title: "Hebbian Robotics（YC S26）推出 HFlow…"
+description: "Hebbian Robotics（YC S26）推出 HFlow，開源 SDK 專門處理機器人資料流水線。機器人資料的麻煩在於影像、姿態動作、時間戳全部攪在一起，光確認攝影機沒凍住…"
+date: "2026-10-18"
+postSlug: "hflow"
+sourceUrl: "https://github.com/Hebbian-Robotics/hflow"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DenSq4Hkqsh"
+channel: "data-engineering"
+---
+
+Hebbian Robotics（YC S26）推出 HFlow，開源 SDK 專門處理機器人資料流水線。機器人資料的麻煩在於影像、姿態動作、時間戳全部攪在一起，光確認攝影機沒凍住、串流沒錯位就已經夠折騰。HFlow 用 MCAP 統一吸納，讓使用者的既有 Python 檢查函式直接長驅直入，不需要改寫任何一行。
+
+資料跑過四個階段：landing、轉換與品質閘門、DuckDB SQL 查 Parquet 目錄，最後吐出整理好的 MCAP 送訓練。每個處理過的段落都自帶血緣追蹤，誰碰過這筆資料、用了什麼工具版本，全部有紀錄可查。Airflow 3 負責排程。
+
+設計原則：標準格式站在每一個邊界、你的程式碼維護你自己的程式碼、不要用專有框架逼團隊重寫。檢查結果記錄測量值，門檻訂在 curation 階段。只要一行 `uv add hflow`，Python 3.11 就能跑，pre-v1 但核心生命周期已經 end-to-end 可用。
