@@ -1,0 +1,18 @@
+---
+title: "有個在微軟生態系打滾很久的技術人，實在受不了 Fabric 容量被砍、費用暴漲…"
+description: "有個在微軟生態系打滾很久的技術人，實在受不了 Fabric 容量被砍、費用暴漲，自己刻了一整套開源 lakehouse 平台，讓你把 notebook 丟到自己的 Spark 跑，…"
+date: "2026-10-19"
+postSlug: "open-lakehouse-compute-fabric"
+sourceUrl: "https://github.com/jddevtime/open-lakehouse-compute-fabric"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dep3dtlEtHo"
+channel: "data-engineering"
+---
+
+有個在微軟生態系打滾很久的技術人，實在受不了 Fabric 容量被砍、費用暴漲，自己刻了一整套開源 lakehouse 平台，讓你把 notebook 丟到自己的 Spark 跑，同時直接讀寫 OneLake——計費循環完全繞過。
+
+代價只有一個：機器得自己維護。但 Worker 主動向外連線，firewall 不用動。這點我認為比在雲端多開 VM 乾淨得多。
+
+我在意的是 Intelligence 那塊：lineage 的每條邊都有 confidence level，observed、derived、inferred 分清楚，連 unknown 都有。資料治理最讓人翻白眼的就是那種「100% 覆蓋率」的假數字——這套至少誠實。還有 73 條相容性規則，跑 notebook 前先擋掉不相容的，比 runtime 爆開有良知。
+
+用 Fabric 被容量上限或帳單折騰的話，這套值得認真評估。beta 階段有些未知數，沒有大公司撐腰，但底層邏輯是對的——算力該在你手裡，不是被別人掐著脖子計費。
