@@ -1,0 +1,18 @@
+---
+title: "LLM推論有個不可能的三角：KV快取大小、訓練計算量和模型品質…"
+description: "LLM推論有個不可能的三角：KV快取大小、訓練計算量和模型品質，三者無法同時最佳化——改善其中一項，就得犧牲另一項。"
+date: "2026-10-20"
+postSlug: "2610-17959"
+sourceUrl: "https://arxiv.org/abs/2610.17959"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DescQiJkkuZ"
+channel: "data-engineering"
+---
+
+LLM推論有個不可能的三角：KV快取大小、訓練計算量和模型品質，三者無法同時最佳化——改善其中一項，就得犧牲另一項。
+
+VHA團隊提出了Q Premix和Linear Postmix這兩個輕量級線性操作來破解這個問題。Q Premix在每個KV群組內對查詢套用近恆等變換，Linear Postmix則用低秩結構融合頭間特徵。關鍵是兩者都不需要任何非線性計算，可以直接融合進標準的GQA-2架構，等於完全重用所有現有推理優化，零額外工程成本。
+
+實驗結果也呼應了這個論點：同一訓練配置下，VHA在四個規模上都超越標準GQA——KV快取減少4倍、訓練和prefill FLOPs減少7.9%，模型品質反而提升0.05%至0.81%。在一個工業級30B MoE模型上，VHA在12項基準測試中領先MLA和GQA-4分別0.70%和2.60%。而只需2個KV heads，就能做到原本4個KV heads才有效果。
+
+NeurIPS 2026已接收，論文編號arXiv:2610.17959。
