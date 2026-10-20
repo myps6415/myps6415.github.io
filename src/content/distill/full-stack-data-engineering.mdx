@@ -1,0 +1,16 @@
+---
+title: "有個工程師想把「誰在哪個裝置看了什麼看到哪一秒離開」搞清楚…"
+description: "有個工程師想把「誰在哪個裝置看了什麼看到哪一秒離開」搞清楚，於是用 AWS 建了一套 end-to-end 串流資料平台：Kafka → Iceberg lake → Kimbal…"
+date: "2026-10-21"
+postSlug: "full-stack-data-engineering"
+sourceUrl: "https://github.com/schumannx/full-stack-data-engineering"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DevBDmwga6A"
+channel: "data-engineering"
+---
+
+有個工程師想把「誰在哪個裝置看了什麼看到哪一秒離開」搞清楚，於是用 AWS 建了一套 end-to-end 串流資料平台：Kafka → Iceberg lake → Kimball 維度模型 → Athena SQL 報表，Airflow 3 負責排程。
+
+我最有感的是他把代價分配想得很清楚。Landing zone 其實是 Kafka 的副本，真正的 replay 來源是 Kafka 保留七天的訊息，不是 landing。這種設計讓 landing 可以是可更新的 Iceberg 表格，而不是存一堆 immutable blob。五層湖各有好品質閘門，分數低於 70 就阻斷下游——這種紀律在大多數公司很少見。
+
+另外這套 stack 的選擇也很有意思。Kafka on EC2、Glue PySpark、dbt-athena，全部自管理。作者的邏輯是：serverless 便宜，但你永遠不會真的搞懂底層發生了什麼。維運負擔不輕，需要有全端資料工程能力的人才能駕馭。
