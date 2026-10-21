@@ -1,0 +1,20 @@
+---
+title: "Zhiyu Li 與 73 位作者交出 66 頁論文 MemT-1.0…"
+description: "Zhiyu Li 與 73 位作者交出 66 頁論文 MemT-1.0，主張記憶該是模型計算的一部分，不是外掛的檢索。"
+date: "2026-10-22"
+postSlug: "2610-26825"
+sourceUrl: "https://arxiv.org/abs/2610.26825"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dexl2QcARAW"
+channel: "data-engineering"
+---
+
+Zhiyu Li 與 73 位作者交出 66 頁論文 MemT-1.0，主張記憶該是模型計算的一部分，不是外掛的檢索。
+
+MemT-1.0 建立在 Metis 上，骨幹用 Gated DeltaNet-2，每回合做穩定的 token 級記憶更新，再以 Mixture-of-Storage 撐大容量。訓練分兩階段，共用 34B tokens 資料。作者宣稱平均贏過參數化記憶基準，釋出 MemT-1.0-Nano 與 MemT-1.0-Flash。
+
+推論端的數字更直接：歷史長度 128K tokens 時，Nano 端到端推論約快 1.86 倍，持久化儲存比塞滿上下文的 KV cache 少 66 倍。
+
+價值不在 benchmark，而在換了架構選擇的前提。把 context 塞滿是預算問題，記憶內生化是能力問題。至於內化的記憶怎麼更新、怎麼追溯來源，是落地時真正要花的時間。
+
+系統若正打算把檢索結果一路塞進 context，先看 128K 那組數字，再決定要不要換路。
