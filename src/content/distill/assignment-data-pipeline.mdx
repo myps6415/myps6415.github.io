@@ -1,0 +1,20 @@
+---
+title: "一個 AI 工程營的學員，把一份 205 列、30 欄的汽車原始表…"
+description: "一個 AI 工程營的學員，把一份 205 列、30 欄的汽車原始表，做成一條每次 push 都會自動重跑的 ETL 管線。"
+date: "2026-10-23"
+postSlug: "assignment-data-pipeline"
+sourceUrl: "https://github.com/arielshakaramiro/assignment-data-pipeline"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/De0KpVGgRyM"
+channel: "data-engineering"
+---
+
+一個 AI 工程營的學員，把一份 205 列、30 欄的汽車原始表，做成一條每次 push 都會自動重跑的 ETL 管線。
+
+他拿到的資料是故意弄髒的：17 格空值、4 列完全重複、品牌大小寫混雜、日期混了四種格式。清完後 205 列變 201 列，空值歸零，轉換完欄位從 30 膨脹到 51。
+
+我最有感的是那兩個沒填的日期。作者把交易日期留空，理由是日期只有一個真值，用中位數或眾數補上去等於捏造交易時間，正確做法是回頭找資料擁有者確認。缺資料最怕的不是空，是看起來完整。
+
+選型蠻樸素：數值欄位壓到 0 到 1，無順序類別用 One-Hot，品牌基數太高改用 Frequency Encoding，有高低順序的才給 ordinal。旁邊還放 15 個測試與 CI，每次 push 都重跑一次管線，確保換台機器也跑得動。
+
+如果你正在做類似 ETL，我建議你把這個專案當範本跑一遍，重點在於那個「該留空的欄位就留空」的判斷。
