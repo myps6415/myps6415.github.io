@@ -50,7 +50,7 @@ experience:
       - zh: >-
           <b>建立團隊的治理與交付方式</b>：資料治理盤點、成本歸屬 label、對 IT／維運方的資料存取需求清單、決策紀錄、新人 onboarding 階梯、跨專案知識庫 dd-knowledge、給主管與新進 DE 的專案簡報；為 AI agent 訂 repo 契約層（禁區、驗收指令、守門），讓人與 agent 在同一套規則下協作。
         en: >-
-          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, an access-request list negotiated with IT, decision records, staged onboarding, a cross-project knowledge base and a project briefing for executives and new engineers; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
+          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, an access-request list for IT, decision records, staged onboarding, a cross-project knowledge base and a project briefing for executives and new engineers; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
 
   - company: {zh: 澄映科技, en: Cleflex Technology}
     role: {zh: Data Team Lead, en: Data Team Lead}
@@ -105,7 +105,7 @@ skills:
         en: "Gemini via BigQuery AI.GENERATE · Vertex embeddings + KMEANS · RAG + LLM-as-judge · agent guardrails & cost control · XGBoost/LightGBM · Chinese NLP"}
   - k: {zh: 交付與協作, en: Delivery}
     v: {zh: "Streamlit（OIDC + ACL）· Superset／Looker Studio · Mann-Kendall／Sen's slope · Docker · Cloud Build／GitHub Actions · Ansible · Scrum · Jira／GitLab · Python · SQL",
-        en: "Streamlit (OIDC + ACL) · Superset · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
+        en: "Streamlit (OIDC + ACL) · Superset/Looker Studio · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
   - k: {zh: 開源貢獻, en: Open source}
     v: {zh: "Apache Airflow #67592（2026.10 合併）：修復 Airflow 3 缺少的 task.queued_duration 指標 · OpenClaw #84890（2026.05 合併）：修復 gateway 原地升級後無法重啟的死結",
         en: "Apache Airflow #67592 (merged Oct 2026): restored the task.queued_duration metric missing in Airflow 3 · OpenClaw #84890 (merged May 2026): fixed a deadlock that stopped the gateway restarting after in-place upgrades"}
