@@ -190,7 +190,7 @@ export const content: Record<Locale, SiteContent> = {
           href: "/zh/services/",
         },
         {
-          metric: "Gemini 上生產",
+          metric: "Gemini 已上線",
           metricLabel: "有品質把關",
           title: "不會越線的生成式 AI",
           body: [
