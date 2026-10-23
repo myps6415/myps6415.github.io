@@ -5,7 +5,7 @@
 
 meta:
   site: https://myps6415.github.io
-  updated: "2026-10-14"
+  updated: "2026-10-23"
   show_phone: true          # false → 網頁與 PDF 都不顯示電話
 
 person:
@@ -15,14 +15,14 @@ person:
     zh: 資料工程出身的 Data Lead
     en: Data Lead with a data-engineering spine
   eyebrow:
-    zh: Data Team Lead · Data Engineering · GenAI 上生產 · 台北
+    zh: Data Team Lead · Data Engineering · GenAI 上生產 · 桃園
     en: Data Lead · Data Engineering · GenAI in production
   summary:
     zh: >-
-      十年資料工程，帶過 Data Team 兩年半；近一年半獨立從零交付一套企業級 Data／AI 平台給集團主管、行銷主管與編輯——使用者全是非工程師。最能發揮的地方：用更少的預算做出同樣的結果（接手的資料管線，月成本從 $300 降到不到 $1）；讓 AI 真正上線、而且有品質把關（輸出品質一不達標，系統會自動攔下，不會默默變差）；以及把技術講成主管與使用者聽得懂、能據以決策的話。
+      十年資料工程經驗，其中兩年半帶領 Data Team。2026 年 4 月起在旺旺中時從零建立集團的 Data／AI 平台，使用者是主管、行銷與編輯，都不是工程師。接手的營收資料管線月成本從 $300 降到不到 $1；留言 RAG 與編輯台 agent 都有每週評測，品質低於門檻就讓排程失敗。
     en: >-
-      Ten years in data engineering, two and a half of them leading a Data Team. Most recently I shipped an enterprise Data/AI platform end-to-end for executives, marketing leads and newsroom editors — none of them engineers. Where I add the most value: getting the same result on a fraction of the budget (an inherited pipeline went from $300 to under $1 a month); putting AI into production with real quality control (when output quality slips, the system stops it rather than letting it quietly degrade); and explaining technical work in terms executives and users can act on.
-  location: {zh: 台北，台灣, en: Taipei, Taiwan}
+      Ten years in data engineering, two and a half of them leading a Data Team. Since April 2026 I have built the group's Data/AI platform at Want Want China Times from zero, for executives, marketing leads and editors, none of them engineers. I cut an inherited revenue pipeline from $300 to under $1 a month, and both the comment RAG layer and the newsroom agent have weekly evals that fail the job when quality drops.
+  location: {zh: 桃園，台灣, en: "Taoyuan, Taiwan"}
   phone: "0976-278696"
   email: myps6415@gmail.com
   links:
@@ -107,8 +107,11 @@ skills:
     v: {zh: "Streamlit（OIDC + ACL）· Superset／Looker Studio · Mann-Kendall／Sen's slope · Docker · Cloud Build／GitHub Actions · Ansible · Scrum · Jira／GitLab · Python · SQL",
         en: "Streamlit (OIDC + ACL) · Superset · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
   - k: {zh: 開源貢獻, en: Open source}
-    v: {zh: "Apache Airflow #67592（2026.10 合併）：修復 Airflow 3 遺失的 task.queued_duration metric，由 PMC 成員審核合併",
-        en: "Apache Airflow #67592 (merged Oct 2026): restored the task.queued_duration metric lost in Airflow 3; reviewed and merged by a PMC member"}
+    v: {zh: "Apache Airflow #67592（2026.10 合併）：修復 Airflow 3 缺少的 task.queued_duration 指標 · OpenClaw #84890（2026.05 合併）：修復 gateway 原地升級後無法重啟的死結",
+        en: "Apache Airflow #67592 (merged Oct 2026): restored the task.queued_duration metric missing in Airflow 3 · OpenClaw #84890 (merged May 2026): fixed a deadlock that stopped the gateway restarting after in-place upgrades"}
+  - k: {zh: 個人專案, en: Side projects}
+    v: {zh: "realping.tw：實價登錄 REST API 與 MCP server（已列於官方 MCP Registry）· bopomofokids.com：React 注音學習網站，2026 年 9 月約 4,500 次造訪",
+        en: "realping.tw: Taiwan property-price REST API and MCP server (listed in the official MCP Registry) · bopomofokids.com: React Zhuyin learning site, about 4,500 visits in Sept 2026"}
 
 education:
   - school: {zh: 國立臺灣科技大學 資訊管理系, en: NTUST — Information Management}

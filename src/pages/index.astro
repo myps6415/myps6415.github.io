@@ -17,7 +17,7 @@ const c = content.en;
     <About data={c.about} />
     <SelectedWork data={c.work} />
     <Writing data={c.writing} lang="en" />
-    <Now data={c.now} />
+    {c.now.items.length > 0 && <Now data={c.now} />}
     <Connect data={c.connect} />
   </main>
 </Base>
