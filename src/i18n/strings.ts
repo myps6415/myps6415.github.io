@@ -45,7 +45,7 @@ export const content: Record<Locale, SiteContent> = {
     meta: {
       title: "John Tung — Data Lead · Principal Data Engineer",
       description:
-        "Data Lead and Principal Data Engineer in Taipei. Builds enterprise Data/AI platforms on GCP — BigQuery, dbt, Cloud Run, Gemini — and leads the people who run them.",
+        "Data Lead and Principal Data Engineer in Taoyuan, Taiwan. Builds enterprise Data/AI platforms on GCP — BigQuery, dbt, Cloud Run, Gemini — and leads the people who run them.",
     },
     hero: {
       eyebrow: "John Tung · 童曉瑜",
@@ -57,7 +57,7 @@ export const content: Record<Locale, SiteContent> = {
     about: {
       label: "About",
       paragraphs: [
-        "Based in Taipei. I lead the data function at a media group and built its platform from zero: cross-platform ingestion (Facebook, Instagram, Threads, YouTube, GA4) into BigQuery, dbt modelling, three production tools that executives, marketing leads and editors open daily, and generative AI running in production with real quality gates. Before that I led a four-person Data Team for two and a half years.",
+        "Based in Taoyuan, Taiwan. I lead the data function at a media group and built its platform from zero: cross-platform ingestion (Facebook, Instagram, Threads, YouTube, GA4) into BigQuery, dbt modelling, three production tools that executives, marketing leads and editors open daily, and generative AI running in production with real quality gates. Before that I led a four-person Data Team for two and a half years.",
         "Across previous roles I've shipped on GCP, AWS, and Azure, orchestrating with Airflow and lightweight schedulers, and processed enough data with PySpark, dbt, and BigQuery to know that the right tool is the one that matches the actual requirement — including the team's ability to operate it.",
         "I spend equal time on data modeling and on the boring infrastructure that keeps tokens fresh, jobs idempotent, and bills small.",
         "What I care about most now is making AI trustworthy enough for a newsroom: grounded generation, evaluations that fail the job when quality slips, and agents that work inside explicit rules. It's really a return to the text mining and sentiment analysis I started out in.",
@@ -83,7 +83,7 @@ export const content: Record<Locale, SiteContent> = {
           metricLabel: "with quality gates",
           title: "Generative AI that stays inside the lines",
           body: [
-            "Gemini runs inside BigQuery (AI.GENERATE) to classify comment sentiment and post topics and to write commentary grounded only in the current figures; Vertex embeddings + KMEANS turn negative comments into named themes. A comment RAG layer is gated by a weekly LLM-as-judge evaluation — when retrieval quality drops, the job fails instead of quietly degrading.",
+            "Gemini runs inside BigQuery (AI.GENERATE) to classify comment sentiment and post topics and to write commentary grounded only in the current figures; Vertex embeddings + KMEANS turn negative comments into named themes. A comment RAG layer is gated by a weekly LLM-as-judge evaluation — when retrieval quality drops, the job fails.",
             "A four-tool newsroom agent is live: no free-form SQL, a mandatory self-check after every draft, hard cost caps, and a weekly replay eval. Shared caching keeps AI cost flat as usage grows.",
           ],
           tags: ["BigQuery AI.GENERATE", "RAG + LLM-as-judge", "Agent guardrails"],
@@ -119,13 +119,15 @@ export const content: Record<Locale, SiteContent> = {
           tags: ["Cloud Run Jobs", "dbt", "BigQuery"],
         },
         {
-          metric: "0 humans",
-          metricLabel: "in the auth loop",
-          title: "OAuth without tickets",
+          metric: "MCP server",
+          metricLabel: "in the official registry",
+          title: "RealPing: property data for people and agents",
           body: [
-            "Dual-account Threads OAuth across 8 scopes, with a weekly Cloud Run Job that rotates the 60-day token through Secret Manager — nobody gets paged to re-authorise. For the editors, a pure-frontend helper on Cloudflare Pages walks them through granting API access themselves: static hosting, zero backend, near-zero ops.",
+            "A side product I built and run alone. It cleans Taiwan's property-transaction records into comparable prices per usable area (實坪), then serves them through a REST API and an MCP server that share one query core. API keys are stored hashed and usage is metered per account.",
+            "Found that idle MCP clients reconnecting every few minutes were burning quota and cloud cost, and fixed it by switching to stateless HTTP. 291 tests, CI that fails closed.",
           ],
-          tags: ["OAuth 2.0", "Secret Manager", "Cloudflare Pages"],
+          tags: ["MCP", "FastAPI", "dbt-duckdb"],
+          href: "https://realping.tw",
         },
       ],
     },
@@ -141,16 +143,6 @@ export const content: Record<Locale, SiteContent> = {
       label: "Currently",
       intro: "What's on the workbench.",
       items: [
-        {
-          title: "Requirements as data",
-          body:
-            "A PoC that turns requirement interviews into a typed, traceable record store — every requirement points back to what the user actually said — audited by five checker agents on different models, with an A/B run against the previous approach.",
-        },
-        {
-          title: "Data governance that people can act on",
-          body:
-            "Closing the gaps found in a governance inventory — cost attribution, least-privilege access, access requests to IT — and writing each decision down so the team and its AI agents work from the same rules.",
-        },
       ],
     },
     connect: {
@@ -164,7 +156,7 @@ export const content: Record<Locale, SiteContent> = {
     meta: {
       title: "童曉瑜 — Data Lead · Principal Data Engineer",
       description:
-        "Data Lead・Principal Data Engineer，人在台北。在 GCP 上從零建企業級 Data／AI 平台（BigQuery、dbt、Cloud Run、Gemini），也帶運作它的團隊。",
+        "Data Lead・Principal Data Engineer，人在桃園。在 GCP 上從零建企業級 Data／AI 平台（BigQuery、dbt、Cloud Run、Gemini），也帶運作它的團隊。",
     },
     hero: {
       eyebrow: "童曉瑜 · John Tung",
@@ -176,7 +168,7 @@ export const content: Record<Locale, SiteContent> = {
     about: {
       label: "關於我",
       paragraphs: [
-        "人在台北。目前在媒體集團帶資料線，平台是從零建起來的：Facebook／Instagram／Threads／YouTube／GA4 跨平台 ingestion 進 BigQuery、dbt 建模、三個主管與編輯每天打開的上線產品，以及真的上了生產、而且有品質把關的生成式 AI。再往前，帶過 4 人的 Data Team 兩年半。",
+        "人在桃園。目前在媒體集團帶資料線，平台是從零建起來的：Facebook／Instagram／Threads／YouTube／GA4 跨平台 ingestion 進 BigQuery、dbt 建模、三個主管與編輯每天打開的上線產品，以及真的上了生產、而且有品質把關的生成式 AI。再往前，帶過 4 人的 Data Team 兩年半。",
         "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，工作流程編排用過 Airflow 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個。",
         "資料建模和基礎建設這兩塊花的時間差不多 — 後者像是讓 token 不會過期、讓 job 保持 idempotent、讓帳單一直停在很小的數字。",
         "現在最投入的，是讓 AI 可靠到能進編輯台：只依據數據生成、品質一掉就讓任務失敗的評測、在明確規則裡工作的 agent——其實就是回到本業：中文文字探勘與輿情分析。",
@@ -202,7 +194,7 @@ export const content: Record<Locale, SiteContent> = {
           metricLabel: "有品質把關",
           title: "不會越線的生成式 AI",
           body: [
-            "Gemini 直接在 BigQuery 裡跑（AI.GENERATE）：留言情緒與貼文主題分類、只依當期數字寫的 AI 觀點；Vertex 嵌入 + KMEANS 把負評分群、命名主題。留言 RAG 檢索每週跑一次 LLM-as-judge 評測——檢索品質一掉，任務直接失敗，不會默默變差。",
+            "Gemini 直接在 BigQuery 裡跑（AI.GENERATE）：留言情緒與貼文主題分類、只依當期數字寫的 AI 觀點；Vertex 嵌入 + KMEANS 把負評分群、命名主題。留言 RAG 檢索每週跑一次 LLM-as-judge 評測——檢索品質一掉，任務直接失敗。",
             "編輯台 4 工具 agent 已上線：不寫 SQL、每份草稿強制自檢、成本硬上限、每週回放評測。共用快取讓 AI 成本不隨使用人數膨脹。",
           ],
           tags: ["BigQuery AI.GENERATE", "RAG + LLM-as-judge", "Agent 守門"],
@@ -238,13 +230,15 @@ export const content: Record<Locale, SiteContent> = {
           tags: ["Cloud Run Jobs", "dbt", "BigQuery"],
         },
         {
-          metric: "0 人",
-          metricLabel: "在授權流程裡",
-          title: "不用開單的 OAuth",
+          metric: "MCP server",
+          metricLabel: "已列於官方 Registry",
+          title: "RealPing：給人和 agent 用的房產資料",
           body: [
-            "Threads 雙帳號 OAuth、8 種權限，每週一支 Cloud Run Job 透過 Secret Manager 自動換 60 天 token——沒有人會因為 token 過期被叫起來。給編輯的那一端，是 Cloudflare Pages 上的純前端自助頁：自己走完授權、零後端、幾乎零維運。",
+            "我獨立開發、營運的個人產品。把實價登錄整理成可比較的實坪單價，透過 REST API 與 MCP server 對外提供，兩者共用同一個查詢核心；API key 雜湊保存，用量按帳號計算。",
+            "曾發現閒置的 MCP client 每隔幾分鐘重連一次，持續消耗額度與雲端費用，改成 stateless HTTP 解決。測試 291 項，CI 不過就不上線。",
           ],
-          tags: ["OAuth 2.0", "Secret Manager", "Cloudflare Pages"],
+          tags: ["MCP", "FastAPI", "dbt-duckdb"],
+          href: "https://realping.tw",
         },
       ],
     },
@@ -260,16 +254,6 @@ export const content: Record<Locale, SiteContent> = {
       label: "正在做",
       intro: "目前手上在做的事。",
       items: [
-        {
-          title: "需求即資料",
-          body:
-            "一個 PoC：把需求訪談變成可追溯的型別化記錄庫——每條需求都指得回使用者原話——由五組不同模型的檢查員稽核，並與原做法跑 A/B 對照。",
-        },
-        {
-          title: "做得動的資料治理",
-          body:
-            "把治理盤點抓到的缺口一項項收掉——成本歸屬、最小權限、對 IT 的存取需求——每個決定都寫下來，讓團隊和 AI agent 照同一套規則做事。",
-        },
       ],
     },
     connect: {
