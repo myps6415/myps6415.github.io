@@ -168,7 +168,7 @@ export const content: Record<Locale, SiteContent> = {
     about: {
       label: "關於我",
       paragraphs: [
-        "人在桃園。目前在媒體集團帶資料線，平台是從零建起來的：Facebook／Instagram／Threads／YouTube／GA4 跨平台 ingestion 進 BigQuery、dbt 建模、三個主管與編輯每天打開的上線產品，以及真的上了生產、而且有品質把關的生成式 AI。再往前，帶過 4 人的 Data Team 兩年半。",
+        "人在桃園。目前在媒體集團帶資料線，平台是從零建起來的：Facebook／Instagram／Threads／YouTube／GA4 跨平台 ingestion 進 BigQuery、dbt 建模、三個主管與編輯每天打開的上線產品，以及真的上線、而且有品質把關的生成式 AI。再往前，帶過 4 人的 Data Team 兩年半。",
         "過去幾份工作，GCP、AWS、Azure 都有正式環境的經驗，工作流程編排用過 Airflow 和輕量的 scheduler，資料處理 PySpark、dbt、BigQuery 都跑過 — 累積下來的心得是：最適合的工具，是「對得上實際需求 + 團隊維護得起來」的那一個。",
         "資料建模和基礎建設這兩塊花的時間差不多 — 後者像是讓 token 不會過期、讓 job 保持 idempotent、讓帳單一直停在很小的數字。",
         "現在最投入的，是讓 AI 可靠到能進編輯台：只依據數據生成、品質一掉就讓任務失敗的評測、在明確規則裡工作的 agent——其實就是回到本業：中文文字探勘與輿情分析。",
@@ -190,7 +190,7 @@ export const content: Record<Locale, SiteContent> = {
           href: "/zh/services/",
         },
         {
-          metric: "Gemini 上生產",
+          metric: "Gemini 已上線",
           metricLabel: "有品質把關",
           title: "不會越線的生成式 AI",
           body: [

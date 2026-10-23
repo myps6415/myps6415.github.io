@@ -13,10 +13,10 @@ person:
   alt_name: {zh: John Tung · Hsiao-Yu Tung, en: 童曉瑜 · Hsiao-Yu Tung}
   headline:
     zh: 資料工程出身的 Data Lead
-    en: Data Lead with a data-engineering spine
+    en: Data Lead with a data engineering background
   eyebrow:
-    zh: Data Team Lead · Data Engineering · GenAI 上生產 · 桃園
-    en: Data Lead · Data Engineering · GenAI in production
+    zh: Data Lead · Data Engineering · AI 應用
+    en: Data Lead · Data Engineering · Applied AI
   summary:
     zh: >-
       十年資料工程經驗，其中兩年半帶領 Data Team。2026 年 4 月起在旺旺中時從零建立集團的 Data／AI 平台，使用者是主管、行銷與編輯，都不是工程師。接手的營收資料管線月成本從 $300 降到不到 $1；留言 RAG 與編輯台 agent 都有每週評測，品質低於門檻就讓排程失敗。
@@ -44,13 +44,13 @@ experience:
         en: >-
           <b>Rewrote an inherited revenue pipeline, $300 → under $1 a month</b>; shipped three production tools for non-engineers: a group revenue dashboard (C-level), a social-performance dashboard (marketing and editors) and a tool that typesets monthly revenue tables into print-ready newspaper PDFs. Google sign-in and a three-tier ACL let managers add and remove users themselves.
       - zh: >-
-          <b>生成式 AI 上生產，而且有守門</b>：BigQuery <span class="mono">AI.GENERATE</span>（Gemini）做留言情緒與貼文主題分類、只依當期數字的接地式 AI 觀點；Vertex 嵌入 + KMEANS 把負評分群命名；留言 RAG 檢索搭每週 LLM-as-judge 評測，品質跌破門檻即讓 job 失敗。編輯台 4 工具 agent 上線：不寫 SQL、強制自檢、成本上限，每週回放評測。
+          <b>生成式 AI 上線，並設有品質門檻</b>：BigQuery <span class="mono">AI.GENERATE</span>（Gemini）做留言情緒與貼文主題分類、只依當期數字生成的 AI 觀點；Vertex 嵌入 + KMEANS 將負評分群並命名主題；留言 RAG 檢索搭每週 LLM-as-judge 評測，品質跌破門檻即讓 job 失敗。編輯台 4 工具 agent 上線：不寫 SQL、強制自檢、成本上限，每週回放評測。
         en: >-
           <b>Generative AI in production, with guardrails</b>: BigQuery <span class="mono">AI.GENERATE</span> (Gemini) classifies comment sentiment and post topics and writes commentary grounded in current figures only; Vertex embeddings + KMEANS cluster and name negative-comment themes; a comment RAG layer is gated by a weekly LLM-as-judge eval that fails the job when quality drops. A four-tool newsroom agent is live — no free-form SQL, mandatory self-check, hard cost caps, weekly replay eval.
       - zh: >-
           <b>建立團隊的治理與交付方式</b>：資料治理盤點、成本歸屬 label、對 IT／維運方的資料存取需求清單、決策紀錄、新人 onboarding 階梯、跨專案知識庫 dd-knowledge、給主管與新進 DE 的專案簡報；為 AI agent 訂 repo 契約層（禁區、驗收指令、守門），讓人與 agent 在同一套規則下協作。
         en: >-
-          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, an access-request list negotiated with IT, decision records, staged onboarding, a cross-project knowledge base and a project briefing for executives and new engineers; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
+          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, an access-request list for IT, decision records, staged onboarding, a cross-project knowledge base and a project briefing for executives and new engineers; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
 
   - company: {zh: 澄映科技, en: Cleflex Technology}
     role: {zh: Data Team Lead, en: Data Team Lead}
@@ -61,7 +61,7 @@ experience:
         en: >-
           <b>Led a four-person Data Team</b> — scheduling, prioritisation and delivery quality — running Scrum (stand-ups, sprint planning, retros) on Jira/GitLab, and partnering with product to turn data into Superset dashboards used for decisions.
       - zh: >-
-          Airflow 資料爬取 ETL（Scrapy → S3／MongoDB）、定時讀取 ElasticSearch 供 AI 自動評論、Telegram 異常告警；建置 Apache Iceberg + Spark 資料湖（Lakehouse）支援分散式分析，以 Docker／makefile 標準化部署讓成員快速起環境。
+          Airflow 資料爬取 ETL（Scrapy → S3／MongoDB）、定時讀取 Elasticsearch 供 AI 自動評論、Telegram 異常告警；建置 Apache Iceberg + Spark 資料湖（Lakehouse）支援分散式分析，以 Docker／makefile 標準化部署讓成員快速起環境。
         en: >-
           Airflow crawling ETL (Scrapy → S3/MongoDB), scheduled Elasticsearch reads feeding AI reviews, Telegram alerts; built an Apache Iceberg + Spark lakehouse for distributed analysis and standardised deployment with Docker/makefiles so teammates could stand up environments fast.
 
@@ -100,12 +100,12 @@ skills:
   - k: {zh: 雲端, en: Cloud}
     v: {zh: "GCP（Cloud Run · Secret Manager · Monitoring · GKE · GCE · GCS）· AWS（Data Pipeline · S3）· Azure · 地端 IDC ↔ 雲混合",
         en: "GCP (Cloud Run · Secret Manager · Monitoring · GKE · GCE · GCS) · AWS (Data Pipeline · S3) · Azure · on-prem ↔ cloud"}
-  - k: {zh: AI／GenAI, en: AI / GenAI}
+  - k: {zh: AI, en: AI}
     v: {zh: "Gemini via BigQuery AI.GENERATE · Vertex 嵌入 + KMEANS · RAG + LLM-as-judge · agent 守門與成本控制 · XGBoost／LightGBM · 中文 NLP",
         en: "Gemini via BigQuery AI.GENERATE · Vertex embeddings + KMEANS · RAG + LLM-as-judge · agent guardrails & cost control · XGBoost/LightGBM · Chinese NLP"}
   - k: {zh: 交付與協作, en: Delivery}
     v: {zh: "Streamlit（OIDC + ACL）· Superset／Looker Studio · Mann-Kendall／Sen's slope · Docker · Cloud Build／GitHub Actions · Ansible · Scrum · Jira／GitLab · Python · SQL",
-        en: "Streamlit (OIDC + ACL) · Superset · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
+        en: "Streamlit (OIDC + ACL) · Superset/Looker Studio · Mann-Kendall/Sen's slope · Docker · Cloud Build/GitHub Actions · Ansible · Scrum · Jira/GitLab · Python · SQL"}
   - k: {zh: 開源貢獻, en: Open source}
     v: {zh: "Apache Airflow #67592（2026.10 合併）：修復 Airflow 3 缺少的 task.queued_duration 指標 · OpenClaw #84890（2026.05 合併）：修復 gateway 原地升級後無法重啟的死結",
         en: "Apache Airflow #67592 (merged Oct 2026): restored the task.queued_duration metric missing in Airflow 3 · OpenClaw #84890 (merged May 2026): fixed a deadlock that stopped the gateway restarting after in-place upgrades"}
@@ -134,4 +134,4 @@ labels:
   title_suffix: {zh: 履歷, en: Résumé}
   description:
     zh: 童曉瑜 John Tung 履歷——資料工程出身的 Data Lead，帶過 Data Team，從零交付企業級 Data／AI 平台，GCP／BigQuery／dbt／Gemini。
-    en: Résumé of John Tung (童曉瑜) — Data Lead with a data-engineering spine; led a Data Team and shipped an enterprise Data/AI platform from zero on GCP/BigQuery/dbt/Gemini.
+    en: Résumé of John Tung (童曉瑜) — Data Lead with a data engineering background; led a Data Team and shipped an enterprise Data/AI platform from zero on GCP/BigQuery/dbt/Gemini.
