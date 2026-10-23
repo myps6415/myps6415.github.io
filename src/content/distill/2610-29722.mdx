@@ -1,0 +1,20 @@
+---
+title: "把 450 組設定跑完之後，Ido Levy 等人發現一件不太好看的事…"
+description: "把 450 組設定跑完之後，Ido Levy 等人發現一件不太好看的事：RAG 各自測出的效果，湊在一起常常不成立。"
+date: "2026-10-24"
+postSlug: "2610-29722"
+sourceUrl: "https://arxiv.org/abs/2610.29722"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/De2vb_Yk5Ps"
+channel: "data-engineering"
+---
+
+把 450 組設定跑完之後，Ido Levy 等人發現一件不太好看的事：RAG 各自測出的效果，湊在一起常常不成立。
+
+這篇 arXiv 論文 Retrieval Augmented Generation Compositionality 預先登記三個假設，並推出開源框架 LASAGNA 做受控評測，涵蓋 8 個基準，語料從 5K 到 200K 份文件。
+
+三個發現很具體。單獨有效的技術不一定能疊加，三種檢索技術各自估算能帶來 +47% 的提升，一起使用只交付 +17%。檢索品質與答案忠實度站在不同方向，調好一邊可能讓另一邊變差。最佳組合也會隨語料規模改變，小語料上的贏家到了大規模未必還是贏家。
+
+這篇把「單獨測試有效」判了死刑。業界談 RAG 優化，習慣一個技巧一篇論文，數字漂亮就當定案；這份研究用 450 組設定說明，這種推論在真實管線裡經常不成立。
+
+所以新技術別再單獨驗證，把它放回整條管線跑一次，才知道它真正貢獻多少。LASAGNA 開源，就是為了讓這件事不必從頭蓋一個評測環境。
