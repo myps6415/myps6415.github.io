@@ -1,0 +1,20 @@
+---
+title: "Zhengye Bao 與另外五位作者在 arXiv 丟出一個不太客氣的問題…"
+description: "Zhengye Bao 與另外五位作者在 arXiv 丟出一個不太客氣的問題：LLM 的記憶系統，真的需要那麼複雜嗎？"
+date: "2026-10-25"
+postSlug: "2610-30755"
+sourceUrl: "https://arxiv.org/abs/2610.30755"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/De5UO3-E9-x"
+channel: "data-engineering"
+---
+
+Zhengye Bao 與另外五位作者在 arXiv 丟出一個不太客氣的問題：LLM 的記憶系統，真的需要那麼複雜嗎？
+
+他們測了個最土的對照組 Raw-RAG，用 dense retrieval 加 reranking 翻原始對話紀錄，再交給 reader LLM 回答。對照的是 agentic memory，基準用了 LoCoMo、LongMemEval、MEME、MemoryAgentBench。Raw-RAG 七組設定有六組排第一，比最強的 agentic memory 高 0.13 到 5.53 分。
+
+我的解讀是：agentic memory 多半不是加料，而是改寫。改寫就會掉資訊，掉的常常正是答案跟推導路徑的關係。原文分析也提到，Raw-RAG 勝出靠必要證據涵蓋率更高，能抵銷較低的利用率。
+
+你蓋的每一層記憶轉換，都可能悄悄刪掉日後需要的那段關聯。
+
+我建議先把手上的記憶系統拿掉，拿 Raw-RAG 當基線跑一次，再看要不要加回去。省下的複雜度，往往比多出的分數更值錢。
