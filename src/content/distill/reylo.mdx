@@ -1,0 +1,20 @@
+---
+title: "colinhacks 在 GitHub 上放了個新專案 reylo…"
+description: "colinhacks 在 GitHub 上放了個新專案 reylo：TypeScript 可以直接 import 一個 .sql 檔，查詢結果變成有完整型別的物件。"
+date: "2026-10-28"
+postSlug: "reylo"
+sourceUrl: "https://github.com/colinhacks/reylo"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DfBCnmOE1-I"
+channel: "data-engineering"
+---
+
+colinhacks 在 GitHub 上放了個新專案 reylo：TypeScript 可以直接 import 一個 .sql 檔，查詢結果變成有完整型別的物件。
+
+以往查詢寫在檔案裡，型別另外手寫一份，欄位一改名兩邊就不同步。reylo 換個思路：讓開發資料庫把查詢準備好但不執行，再讀回每一欄與每個參數的型別。可空性、單筆還是多筆、enum 聯集，都推得回來。
+
+【欄位打錯字會直接報型別錯誤】比對 unique key 結果是 Row | null。
+
+不用 codegen，也不用守著 watcher 重新產生檔案。Postgres、MySQL、SQLite 都支援。要 TypeScript 7.1（仍在 beta）加 Node 24 以上。
+
+亮眼的是這讓 SQL 變成 agent 改得動的原始碼，作者自己就把 agent-friendly 列為賣點。想試就 npm install reylo，但把 .sql 交出去之前，參數邊界與權限值得先想清楚。
