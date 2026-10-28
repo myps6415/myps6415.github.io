@@ -1,0 +1,22 @@
+---
+title: "模型越做越大，記憶體卻不夠用"
+description: "模型越做越大，記憶體卻不夠用。Jiacheng Liu 等八位作者盯上 Gemma 4 E4B 裡占 35.2% 參數的 per-layer embeddings，壓到約 100 …"
+date: "2026-10-29"
+postSlug: "2610-31309"
+sourceUrl: "https://arxiv.org/abs/2610.31309"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfDnaXCExOf"
+channel: "data-engineering"
+---
+
+模型越做越大，記憶體卻不夠用。Jiacheng Liu 等八位作者盯上 Gemma 4 E4B 裡占 35.2% 參數的 per-layer embeddings，壓到約 100 倍。
+
+OPTIC 每個 token 只存一組量化碼，換到每層再由該層專屬的 decoder 解開，而碼與 decoder 都照實際輸出路徑擬合，不去遷就儲存的向量。
+
+約 100 倍壓縮時，OPTIC 保住未壓縮模型在七項測試合計 97.8% 的表現，傳統基準裡最強的 product quantization 只剩 66.3%；594 倍 90.5%，1,002 倍 84.1%。
+
+部署面更實用：BF16 E4B 在 KV cache 同樣大小下少用 29.7% GPU 記憶體，速度最多慢 0.40%。
+
+我覺得這篇比省下的位元組更值得看：壓縮碼與解碼器都對齊模型真正的輸出路徑，等於承認量化本來就不是在還原向量。
+
+我會先量自己模型的 per-layer embeddings 吃掉多少記憶體，再決定誰該先壓。
