@@ -1,0 +1,22 @@
+---
+title: "Xuan He 和另外十位作者做了一場跨多個 benchmark…"
+description: "Xuan He 和另外十位作者做了一場跨多個 benchmark、多種模型 backbone 的大規模評測，結論不太討喜：不少專門設計的記憶系統，在很多情況下比 naive RAG…"
+date: "2026-10-30"
+postSlug: "2610-34073"
+sourceUrl: "https://arxiv.org/abs/2610.34073"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfGMNZSk8to"
+channel: "data-engineering"
+---
+
+Xuan He 和另外十位作者做了一場跨多個 benchmark、多種模型 backbone 的大規模評測，結論不太討喜：不少專門設計的記憶系統，在很多情況下比 naive RAG 還差，等於記憶帶來負的淨價值。
+
+他們把 RAG 當基準線，把記憶的淨價值拆成 memory benefit 跟 memory tax。前者是設計記憶時就預期的收益，後者才是重點。
+
+原因藏在記憶怎麼存取原始資訊。重組事實、蒸餾偏好這些動作是為了服務任務，但同一套動作也可能順手把證據移除或模糊掉，tax 就這樣冒出來。
+
+多數記憶工作盯著 benefit 表現，這篇把焦點挪到 tax，追它怎麼從系統面跟評測面一起長出來，再往外推到更多記憶應用情境。作者也說會把程式碼與結果開源。
+
+我覺得這篇的價值在於換了問法：記憶系統不該只比「我記得多少」，要比「記下來之後還剩多少線索可以用」。
+
+我的做法是，下次要加記憶層時，先拿同一組查詢跑 naive RAG 當基線，看淨值有沒有真的變正，再決定要不要讓記憶系統上線。
