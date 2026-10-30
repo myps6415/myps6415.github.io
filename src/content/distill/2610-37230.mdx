@@ -1,0 +1,20 @@
+---
+title: "Shuhuai Li 和另外四位作者做的那篇 TAO 論文…"
+description: "Shuhuai Li 和另外四位作者做的那篇 TAO 論文，把 agentic serving 的排程拆開重算了一次。做法有點反直覺：agentic 服務不是一直算著，它在叢集 G…"
+date: "2026-10-31"
+postSlug: "2610-37230"
+sourceUrl: "https://arxiv.org/abs/2610.37230"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfIxAEVEr72"
+channel: "data-engineering"
+---
+
+Shuhuai Li 和另外四位作者做的那篇 TAO 論文，把 agentic serving 的排程拆開重算了一次。做法有點反直覺：agentic 服務不是一直算著，它在叢集 GPU 上做模型推論，轉頭要去分佈式 CPU 等外部工具回應，兩段得一起排才算得準。
+
+現有系統的毛病很直白：評估時只看 GPU 端，工具何時回來不在考量裡，資源白白空轉；誰能進場、排在哪張卡，只靠啟發式規則。
+
+TAO 把「價值」定義成三個訊號：近期工具就緒程度、帶時間衰減的節點快取額度、token 佔量，再用動態規劃決定挑哪些 session 進來、放哪個節點。
+
+12 組設定下，相對各指標最好的現有方法，延遲最多降 26.8%，首字延遲（TTFT）最多降 36.3%，解碼吞吐量最多升 29.5%。
+
+最值得看的是它點破：「正在等工具」跟「正在算」是兩種狀態，硬塞進同一條佇列做負載平衡，效能天花板先被砍掉一半。服務接了外部工具卻一直抱怨 GPU 沒吃滿，這篇值得讀。
