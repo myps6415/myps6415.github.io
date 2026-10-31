@@ -1,0 +1,20 @@
+---
+title: "Adilet Metinov 和 Chingiz Arziev 的 Gl…"
+description: "Adilet Metinov 和 Chingiz Arziev 的 Glance 只做一件事：讓生成模型自己兼任重排器。"
+date: "2026-11-01"
+postSlug: "2610-40454"
+sourceUrl: "https://arxiv.org/abs/2610.40454"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfLVy72km2e"
+channel: "data-engineering"
+---
+
+Adilet Metinov 和 Chingiz Arziev 的 Glance 只做一件事：讓生成模型自己兼任重排器。
+
+傳統 RAG 常用兩個模型，一個負責重排文件、一個負責回答，常駐記憶體直接翻倍，同一批文件也處理兩次。Glance 換個做法，裝上輕量 adapter 與 pointer head，從同一份快取上下文分出短的相關性探針，每份候選文件拿到一個分數，不必逐組重新預填。
+
+單一 9B 模型微調 39 分鐘後，SciFact 的 nDCG@10 到 0.741，NFCorpus 是 0.345。HotpotQA 的 300 題，回答 F1 比 cross-encoder 高 0.045；共享預填評分到 200 個候選、43k tokens，品質仍在上升。
+
+最關鍵的是記憶體帳：每個決策技能只多 0.1 GiB，單一常駐模型同時負責生成與重排才變成可行。
+
+作者也提醒，測試只涵蓋兩個檢索資料集、一個 QA 資料集，換模型就得重跑一輪。
