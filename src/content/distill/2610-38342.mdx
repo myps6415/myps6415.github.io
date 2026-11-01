@@ -1,0 +1,22 @@
+---
+title: "Junchi Yan 和另外九位作者做了 Investor's Last…"
+description: "Junchi Yan 和另外九位作者做了 Investor's Last Exam 基準，測買方投資人每天做的事：翻財報、查新聞、算估值再下判斷。"
+date: "2026-11-02"
+postSlug: "2610-38342"
+sourceUrl: "https://arxiv.org/abs/2610.38342"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfN6lyzkrZo"
+channel: "data-engineering"
+---
+
+Junchi Yan 和另外九位作者做了 Investor's Last Exam 基準，測買方投資人每天做的事：翻財報、查新聞、算估值再下判斷。
+
+冠軍的分數只有 68.1。
+
+論文由買方投資人與基金經理主導，評估 86 份作業，看研究品質、預測準確度與模擬投資績效。GPT-6 Astra 拿下 68.1，Claude Opus 5.5 拿下 66.9，但 Astra 在 Forecast &amp; Model 只拿 52.5。
+
+我的解讀是，瓶頸不在找得到資料，而在把證據接成假設再收斂成預測。ILE 的評分框架連回來源、計算過程與假設，用財務依賴圖攤開整條鏈。研究能力跟投資判斷的落差，才照得出來。
+
+最有工程味的是版本化資料庫：3.43 million 個文件版本、九種來源類別，時間戳管住檢索與運算，防止模型看到未來。
+
+對做資料管線的人，管線的價值不在跑得順，而在每個輸出都追得回輸入和假設。手上已有投資或資料管線 agent 的，先做一次體檢，看斷點落在哪一段。
