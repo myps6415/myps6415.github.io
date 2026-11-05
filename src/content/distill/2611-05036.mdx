@@ -1,0 +1,22 @@
+---
+title: "Guanting Dong 帶 24 位共同作者，11 月 3 日丟出一篇論文…"
+description: "Guanting Dong 帶 24 位共同作者，11 月 3 日丟出一篇論文：同一批工具，換一種環境合成順序，Agent 平均分數從 23.0 拉到 41.0。"
+date: "2026-11-06"
+postSlug: "2611-05036"
+sourceUrl: "https://arxiv.org/abs/2611.05036"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfYNxUWE1nI"
+channel: "data-engineering"
+---
+
+Guanting Dong 帶 24 位共同作者，11 月 3 日丟出一篇論文：同一批工具，換一種環境合成順序，Agent 平均分數從 23.0 拉到 41.0。
+
+主流做法以資料為中心。先憑空造資料庫和情境，再衍生工具和任務。造出來的介面不像真的，工具組合也沒真的執行過，任務更少跨得過一個環境。
+
+ToolSpace 把順序倒過來。從真實 MCP 服務的執行軌跡裡，用確定性規則挖出相鄰呼叫間的資料、狀態與重試依賴，再把加權的工具組合圖分群成環境。只有會改狀態的環境才合成資料庫，其餘重播錄回來的回應。
+
+接著做帶回滾的狀態感知隨機漫步，把每條鏈拆成附斷言檢查的任務，只留下能重播成功的樣本。
+
+結果相當硬。AutomationBench 與 tau3-Bench Banking 上做出的 harder Pro 版本，七個前沿模型最多掉 38.2 分。
+
+價值不在 41.0，在順序：先有能執行的組合，才配有說得清的任務。要自己刻 MCP 環境的團隊，先該確認的反而是軌跡能不能重播。
