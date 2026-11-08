@@ -1,0 +1,22 @@
+---
+title: "12 間醫院、710 張病床、5 萬筆住院紀錄，一個 PowerShell 按鈕就生出來"
+description: "12 間醫院、710 張病床、5 萬筆住院紀錄，一個 PowerShell 按鈕就生出來。"
+date: "2026-11-09"
+postSlug: "fabric-mlv-agent-healthcare-starter"
+sourceUrl: "https://github.com/muhammadusamakhan911-bit/fabric-mlv-agent-healthcare-starter"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dff8KMWgZtm"
+channel: "data-engineering"
+---
+
+12 間醫院、710 張病床、5 萬筆住院紀錄，一個 PowerShell 按鈕就生出來。
+
+這個 starter kit 模擬多院區醫療網路，資料源有 EHR、排班、床位、帳務，示範用 MLV、Ontology、Data Agents 與 Activator，把臨床品質、營運、財務的問題用一句話問出來。
+
+三個工作區刻意分開：臨床資料受 PHI 管、財務受 SOX 管，更新頻率也不同，普查每小時、帳務每天、品質指標每週。MLV 跨區讀取，輸出受治理的 Delta table，沒有手刻 ETL。
+
+代價也寫清楚了：要 Fabric capacity，試用容量閒置會被掛起，完整 refresh 約一分鐘。
+
+代理答案太泛就照順序查：semantic model 有沒有刷新、agent instructions 有沒有貼上、ontology 有沒有註冊。少了 ontology，跨領域就接不起來。
+
+想接自己的資料，替換第一工作區的來源表 schema 就行。
