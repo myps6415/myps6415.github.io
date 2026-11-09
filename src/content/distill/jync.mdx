@@ -1,0 +1,20 @@
+---
+title: "寫出 5300 多個單元測試、讓單表全量同步跑到每秒 21.6 萬行的…"
+description: "寫出 5300 多個單元測試、讓單表全量同步跑到每秒 21.6 萬行的，是 GitHub 上的 @vfaner 與沐沐開源工坊。他們把政企系統搬去達夢、金倉這類國產資料庫最麻煩的一…"
+date: "2026-11-10"
+postSlug: "jync"
+sourceUrl: "https://github.com/vfaner/jync"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Dfig9BykyyR"
+channel: "data-engineering"
+---
+
+寫出 5300 多個單元測試、讓單表全量同步跑到每秒 21.6 萬行的，是 GitHub 上的 @vfaner 與沐沐開源工坊。他們把政企系統搬去達夢、金倉這類國產資料庫最麻煩的一段路，濃縮成一個 jar 檔。
+
+Jync 讀起來像 sync，J 是 Java。它不需要外部依賴，不用 Kafka 也不用 Flink。Spring Boot 起服務，瀏覽器點一點就能在內建的 34 種資料庫之間拉出同步或 ETL 鏈路。
+
+首次全量走 keyset 分塊、單表內並行、逐塊提交寫檢查點，崩潰最多重讀一塊。增量每輪只跑一條游標查詢，預設連 binlog 都不碰，只讀帳號就夠；六類來源可切日誌 CDC，延遲壓到秒級。目標端缺表缺索引，它自己建。
+
+痛點在於雙軌運行數月還要保持一致。用 Debezium 加 Kafka 得先架起叢集，Jync 一個 jar 就交差。
+
+告警也沒偷懶，同步失敗、CDC 停擺、資料漂移等七類狀況能推到釘釘或飛書。首次啟動記得改密碼。
