@@ -1,0 +1,18 @@
+---
+title: "Teresa Delgado 等五位作者 11 月 4 日提交 LowRAM 論文…"
+description: "Teresa Delgado 等五位作者 11 月 4 日提交 LowRAM 論文，瞄準 KV cache 裡一個常被忽略的地方：key 和 value 的結構其實不一樣。"
+date: "2026-11-11"
+postSlug: "2611-07025"
+sourceUrl: "https://arxiv.org/abs/2611.07025"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DflFvuhk2Z6"
+channel: "data-engineering"
+---
+
+Teresa Delgado 等五位作者 11 月 4 日提交 LowRAM 論文，瞄準 KV cache 裡一個常被忽略的地方：key 和 value 的結構其實不一樣。
+
+作者觀察到，同一個 attention head 內，value 大致可從對應的 key 推斷。他們提出 value cache amortisation：測試時為每個 head 配輕量預測器，只存預測最差那批 token 的 residual，單這一步就有 4 倍近似無損的 value 壓縮。
+
+再配上跨層的 low-rank key 壓縮，兩者組成不對稱的流程，在三個模型家族上貼近無損，4 倍壓縮下尖峰吞吐最高提升 5 倍。
+
+我覺得最值得看的是它不跟既有方法搶同一塊。token 間、層間的冗餘已被玩透，LowRAM 改從 keys 與 values 的結構差異下刀，還能跟量化、eviction 疊加，長文脈絡做到 26.9 倍壓縮、效能剩下 94.5%。batch size 上不去的人，值得讀原文。
