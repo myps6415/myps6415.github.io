@@ -1,0 +1,22 @@
+---
+title: "Mong Li Lee 帶四個同事，交出 20 頁 arXiv 論文 Flide"
+description: "Mong Li Lee 帶四個同事，交出 20 頁 arXiv 論文 Flide。"
+date: "2026-11-12"
+postSlug: "2610-42148"
+sourceUrl: "https://arxiv.org/abs/2610.42148"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfnqilHExBl"
+channel: "data-engineering"
+---
+
+Mong Li Lee 帶四個同事，交出 20 頁 arXiv 論文 Flide。
+
+對象是 Jev 這類決策模型，在 agent 系統裡做快速判斷。生成式引擎不適合這類負載，重算前綴浪費算力，輸出機率還會走樣。
+
+Flide 把決策請求的邏輯樹跟實際執行拆開，塞進同一條扁平 token 串流。ForkAttention 讓索引常駐 GPU，在標準 attention 與 Gated DeltaNet 層之間穿行，保證每個分支的結果跟獨立跑一次前向傳輸完全相同。分支拓撲寫在 GPU metadata，先錄成執行圖，agent 歷史變長能從舊 checkpoint 接算。
+
+實測比 vLLM、SGLang 快最多 9.5 倍，總變異距離最接近 float32 參考值。
+
+重點不在倍數，在「一模一樣」的保證。決策型 agent 分叉後，近似計算代表同一問題在不同分支可能得到不同答案。把它做成機制，比快幾倍更值。
+
+如果你正用生成式引擎跑分類判斷，值得讀原文看那些預錄的執行圖。
