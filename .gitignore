@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # generated résumé PDFs (scripts/build_cv.py --pdf)
 cv/dist/
+
+# job-type résumé variants (scripts/build_cv.py --source) — private, never committed
+cv/variants/

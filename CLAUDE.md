@@ -110,8 +110,21 @@ Editing rules:
 - `meta.show_phone: false` removes the phone from web + PDF. Employer names and phone are intentionally public (owner's decision, 2026-09-10).
 - **Print target is one A4 page in both languages.** English runs ~15% longer than Chinese, so `@media print` has `html[lang=en]` overrides. After ANY content change run `--pdf` (or Cmd+P) and check both PDFs are still 1 page; if not, cut content — don't shrink the font below what's there. Note headless Chromium without IBM Plex installed renders wider than the real page, so "fits in the container" is the conservative check.
 - Deliberately **not** the site design system: own inline CSS, IBM Plex Sans TC / Mono, green accent (`--accent:#1C6B57`). Don't fold it into `Base.astro`. Language switch is the plain top-right link; `hreflang` is emitted by the template.
-- Positioning as of 2026-09: "資料工程出身的 Data Lead" (management-track). Work claims are fact-checked against the local source repos before each change.
+- Positioning as of 2026-11: the public CV is the **general** version — "資料工程出身的 Data Lead" with a Cloud Platform eyebrow (management-track plus hands-on infra). Work claims are fact-checked against the local source repos before each change.
 - `cv/dist/` (PDF output) is gitignored.
+
+### Job-type variants (`cv/variants/`, private)
+
+The public CV is one of several renderings. Per job *type* there is a variant YAML in `cv/variants/` (gitignored — it would reveal what kind of roles are being applied for, and `myps6415` is public too, so variant PDFs never go there either):
+
+```
+python3 scripts/build_cv.py --source cv/variants/platform.yaml --pdf   # -> cv/dist/platform/index-{en,zh}.html + resume-platform-{en,zh}.pdf
+```
+
+- `cv/resume.yaml` stays the **fact bank**: numbers, dates and projects are changed there first, then in every variant. A variant only re-words, re-orders and drops — two documents giving different numbers for the same thing is the failure this rule prevents.
+- A variant never writes to `public/` (`build_cv.py` refuses); only `cv/resume.yaml` is published.
+- For a specific opening, copy the closest variant and change the headline, the summary's first sentence and which bullet comes first — keep everything else.
+- Same one-A4-page rule applies to every variant, in both languages.
 
 ## Design tokens
 

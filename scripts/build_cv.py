@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Render the bilingual one-page résumé from cv/resume.yaml.
+"""Render the bilingual one-page résumé from a YAML source.
 
-    python3 scripts/build_cv.py            # writes public/cv/index.html + public/zh/cv/index.html
-    python3 scripts/build_cv.py --pdf      # also prints both to cv/dist/*.pdf via headless Chromium (needs playwright)
+Public CV (default):
+    python3 scripts/build_cv.py            # cv/resume.yaml -> public/cv/index.html + public/zh/cv/index.html
+    python3 scripts/build_cv.py --pdf      # also prints both to cv/dist/resume-{en,zh}.pdf
+
+Job-type variants (cv/variants/, gitignored — never published):
+    python3 scripts/build_cv.py --source cv/variants/platform.yaml --pdf
+        -> cv/dist/platform/index-{en,zh}.html + resume-platform-{en,zh}.pdf
+
+A variant never writes into public/: only cv/resume.yaml feeds the live site.
+--pdf needs playwright (pip install playwright && playwright install chromium).
 
 Dependencies: pyyaml, jinja2  (pip install pyyaml jinja2)
 """
@@ -17,7 +25,9 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 ROOT = Path(__file__).resolve().parent.parent
 CV = ROOT / "cv"
-OUT = {"en": ROOT / "public" / "cv" / "index.html", "zh": ROOT / "public" / "zh" / "cv" / "index.html"}
+PUBLIC_SOURCE = CV / "resume.yaml"
+PUBLIC_OUT = {"en": ROOT / "public" / "cv" / "index.html", "zh": ROOT / "public" / "zh" / "cv" / "index.html"}
+LANGS = ("en", "zh")
 
 
 def make_t(lang: str):
@@ -37,19 +47,18 @@ def render(lang: str, data: dict) -> str:
     return env.get_template("template.html.j2").render(lang=lang, **data)
 
 
-def to_pdf(html_paths: dict[str, Path]) -> None:
+def to_pdf(html_paths: dict[str, Path], pdf_paths: dict[str, Path]) -> None:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         sys.exit("--pdf needs playwright: pip install playwright && playwright install chromium")
-    dist = CV / "dist"
-    dist.mkdir(exist_ok=True)
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
         for lang, path in html_paths.items():
+            out = pdf_paths[lang]
+            out.parent.mkdir(parents=True, exist_ok=True)
             page.goto(path.resolve().as_uri(), wait_until="networkidle")
-            out = dist / f"resume-{lang}.pdf"
             page.pdf(path=str(out), format="A4", prefer_css_page_size=True, print_background=True)
             print(f"  pdf  {out.relative_to(ROOT)}")
         browser.close()
@@ -57,16 +66,39 @@ def to_pdf(html_paths: dict[str, Path]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pdf", action="store_true", help="also export PDFs to cv/dist/")
+    ap.add_argument("--source", type=Path, default=PUBLIC_SOURCE,
+                    help="YAML to render (default: cv/resume.yaml, the public CV)")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="output dir for a variant (default: cv/dist/<source name>)")
+    ap.add_argument("--pdf", action="store_true", help="also export PDFs")
     args = ap.parse_args()
 
-    data = yaml.safe_load((CV / "resume.yaml").read_text(encoding="utf-8"))
-    for lang, out in OUT.items():
+    source = args.source if args.source.is_absolute() else (Path.cwd() / args.source)
+    source = source.resolve()
+    if not source.is_file():
+        sys.exit(f"source not found: {source}")
+    is_public = source == PUBLIC_SOURCE.resolve()
+
+    if is_public:
+        if args.out is not None:
+            sys.exit("--out is only for variants; the public CV always writes to public/")
+        html = PUBLIC_OUT
+        pdfs = {lang: CV / "dist" / f"resume-{lang}.pdf" for lang in LANGS}
+    else:
+        name = source.stem
+        out_dir = (args.out or (CV / "dist" / name)).resolve()
+        if (ROOT / "public").resolve() in out_dir.parents or out_dir == (ROOT / "public").resolve():
+            sys.exit("refusing to write a variant into public/: only cv/resume.yaml is published")
+        html = {lang: out_dir / f"index-{lang}.html" for lang in LANGS}
+        pdfs = {lang: out_dir / f"resume-{name}-{lang}.pdf" for lang in LANGS}
+
+    data = yaml.safe_load(source.read_text(encoding="utf-8"))
+    for lang, out in html.items():
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(render(lang, data), encoding="utf-8")
         print(f"  html {out.relative_to(ROOT)}")
     if args.pdf:
-        to_pdf(OUT)
+        to_pdf(html, pdfs)
 
 
 if __name__ == "__main__":
