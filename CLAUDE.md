@@ -126,6 +126,8 @@ python3 scripts/build_cv.py --source cv/variants/platform.yaml --pdf   # -> cv/d
 - A variant may set `meta.template` (path relative to `cv/`, e.g. `variants/micron.html.j2`) to use its own layout; the public CV must use the default template (`build_cv.py` refuses otherwise).
 - For a specific opening, copy the closest variant and change the headline, the summary's first sentence and which bullet comes first — keep everything else.
 - Same one-A4-page rule applies to every variant, in both languages.
+- **`cv/variants/` is its own private git repo** (`myps6415/cv-variants`, cloned into that path; the public repo ignores it). After changing a variant, commit **and push inside `cv/variants/`** — otherwise it exists on one laptop only. Restore on a new machine: clone this repo, then `git clone …/cv-variants.git cv/variants`.
+- **Record every résumé actually sent**: `python3 scripts/cv_submit.py <name>` copies `cv/dist/<name>/` PDFs to `cv/variants/submitted/<date>-<name>-<lang>.pdf`, commits and pushes (refuses if the PDF is older than its YAML). The fact bank keeps changing, so a rebuild later is not what the company received — read `submitted/` before an interview. `build_cv.py` prints this reminder after every variant build.
 
 ## Design tokens
 

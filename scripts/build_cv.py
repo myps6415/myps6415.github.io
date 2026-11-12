@@ -18,6 +18,7 @@ Dependencies: pyyaml, jinja2  (pip install pyyaml jinja2)
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -110,6 +111,25 @@ def main() -> None:
         print(f"  html {out.relative_to(ROOT)}")
     if args.pdf:
         to_pdf(html, pdfs)
+    if not is_public:
+        remind_variant(source, args.pdf)
+
+
+def remind_variant(source: Path, built_pdf: bool) -> None:
+    """Variants live in their own private repo (cv/variants) — easy to forget to save or record."""
+    variants = CV / "variants"
+    if (variants / ".git").exists():
+        status = subprocess.run(["git", "-C", str(variants), "status", "--porcelain"],
+                                capture_output=True, text=True).stdout.strip()
+        if status:
+            print("\n  ! cv/variants has uncommitted changes — commit and push them (private repo cv-variants)")
+    else:
+        print("\n  ! cv/variants is not a git repo — clone myps6415/cv-variants into it so variants are backed up")
+    name = source.stem
+    if built_pdf:
+        print(f"  → after you send it: python3 scripts/cv_submit.py {name}")
+    else:
+        print("  → add --pdf to get the PDFs you would send")
 
 
 if __name__ == "__main__":
