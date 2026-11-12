@@ -123,6 +123,7 @@ python3 scripts/build_cv.py --source cv/variants/platform.yaml --pdf   # -> cv/d
 
 - `cv/resume.yaml` stays the **fact bank**: numbers, dates and projects are changed there first, then in every variant. A variant only re-words, re-orders and drops — two documents giving different numbers for the same thing is the failure this rule prevents.
 - A variant never writes to `public/` (`build_cv.py` refuses); only `cv/resume.yaml` is published.
+- A variant may set `meta.template` (path relative to `cv/`, e.g. `variants/micron.html.j2`) to use its own layout; the public CV must use the default template (`build_cv.py` refuses otherwise).
 - For a specific opening, copy the closest variant and change the headline, the summary's first sentence and which bullet comes first — keep everything else.
 - Same one-A4-page rule applies to every variant, in both languages.
 

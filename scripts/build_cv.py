@@ -5,7 +5,8 @@ Public CV (default):
     python3 scripts/build_cv.py            # cv/resume.yaml -> public/cv/index.html + public/zh/cv/index.html
     python3 scripts/build_cv.py --pdf      # also prints both to cv/dist/resume-{en,zh}.pdf
 
-Job-type variants (cv/variants/, gitignored — never published):
+Job-type variants (cv/variants/, gitignored — never published; meta.template may point
+at a variant's own layout, e.g. variants/micron.html.j2):
     python3 scripts/build_cv.py --source cv/variants/platform.yaml --pdf
         -> cv/dist/platform/index-{en,zh}.html + resume-platform-{en,zh}.pdf
 
@@ -40,11 +41,19 @@ def make_t(lang: str):
     return t
 
 
+DEFAULT_TEMPLATE = "template.html.j2"
+
+
+def template_of(data: dict) -> str:
+    """A variant may set meta.template (path relative to cv/) to use its own layout."""
+    return (data.get("meta") or {}).get("template", DEFAULT_TEMPLATE)
+
+
 def render(lang: str, data: dict) -> str:
     env = Environment(loader=FileSystemLoader(CV), undefined=StrictUndefined, autoescape=False,
                       trim_blocks=True, lstrip_blocks=True)
     env.filters["t"] = make_t(lang)
-    return env.get_template("template.html.j2").render(lang=lang, **data)
+    return env.get_template(template_of(data)).render(lang=lang, **data)
 
 
 def to_pdf(html_paths: dict[str, Path], pdf_paths: dict[str, Path]) -> None:
@@ -93,6 +102,8 @@ def main() -> None:
         pdfs = {lang: out_dir / f"resume-{name}-{lang}.pdf" for lang in LANGS}
 
     data = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if is_public and template_of(data) != DEFAULT_TEMPLATE:
+        sys.exit("cv/resume.yaml must use the default template (meta.template is for variants)")
     for lang, out in html.items():
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(render(lang, data), encoding="utf-8")
