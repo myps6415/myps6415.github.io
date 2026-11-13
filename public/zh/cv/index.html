@@ -11,14 +11,15 @@
 <link rel="alternate" hreflang="x-default" href="https://myps6415.github.io/cv">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tinos:wght@400;700&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#F0F1EE; --sheet:#FFFFFF;
     --text:#2A3135; --ink:#14181B; --soft:#5A6268; --line:#D7D9D3;
     --accent:#1C6B57; --accent-ink:#13503F; --accent-tint:#E4ECE7;
-    --sans:"IBM Plex Sans TC",system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+    /* 英文 Times New Roman（沒有就用字形相同的 Tinos），中文新細明體（Mac 沒有時用宋體-繁，再退到思源宋體 Noto Serif TC）。 */
+    --sans:"Times New Roman",Times,Tinos,"PMingLiU","新細明體","MingLiU","Songti TC","Noto Serif TC",serif;
+    --mono:var(--sans);
   }
   *{box-sizing:border-box;}
   html{-webkit-text-size-adjust:100%;}
