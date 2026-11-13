@@ -43,8 +43,8 @@ experience:
         en: Put Gemini into production for comment and post classification, an editors' assistant and comment search, with weekly automated evaluation that alerts below threshold.
       - zh: 建置業務部的簽核系統（Cloud Run 與 Cloud SQL），權限與稽核紀錄實作在資料庫層。
         en: Built the sales department's approval system on Cloud Run and Cloud SQL, with permissions and the audit trail enforced in the database.
-      - zh: 用腳本從零建出 GCP 環境與部署流程，部署時間從 302 秒縮短到 85 秒；依稽核紀錄收窄服務帳號權限。
-        en: Built the GCP environment and deployment pipeline from scratch with scripts, cutting deploys from 302s to 85s; reduced service-account permissions based on audit logs.
+      - zh: 依稽核紀錄收窄服務帳號權限，上線前逐一測試 10 種情境。
+        en: Reduced service-account permissions to what audit logs showed was used, testing 10 cases before rollout.
       - zh: 營收資料管線月成本從 $300 降到 $1 以下；找出 dashboard 帳單偏高的原因，Cloud Run 運行時數減少約六成。
         en: Cut a revenue pipeline from $300 to under $1 a month, and found why dashboards were costly, reducing Cloud Run instance hours by about 60%.
       - zh: 建立團隊的決策紀錄、新人 onboarding 與跨專案知識庫。
