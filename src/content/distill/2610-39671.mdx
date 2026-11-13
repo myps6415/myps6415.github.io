@@ -1,0 +1,20 @@
+---
+title: "Lingkai Kong 跟另外 8 位作者讓大型語言模型自己翻課本、讀課本、再考自己"
+description: "Lingkai Kong 跟另外 8 位作者讓大型語言模型自己翻課本、讀課本、再考自己。同一顆 Intern-S2-Preview-35B，數學證明題正確率從 51.5% 拉到 7…"
+date: "2026-11-14"
+postSlug: "2610-39671"
+sourceUrl: "https://arxiv.org/abs/2610.39671"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Dfs0IT7gSag"
+channel: "data-engineering"
+---
+
+Lingkai Kong 跟另外 8 位作者讓大型語言模型自己翻課本、讀課本、再考自己。同一顆 Intern-S2-Preview-35B，數學證明題正確率從 51.5% 拉到 79.5%。
+
+起點很實際。語言模型靠參數知識加 RAG 片段，碰到陌生領域，只會查事實還不夠，解題得把新學到的東西跟推理綁在一起。原文把這種能力叫 self-learning：檢索研讀長文，當下就用。
+
+題目是教科書為本的數學解題，模型得自己在課本裡繞路找原理，再把練習題的證明拼出來，標準解答訓練時不給。
+
+訓練靠 BookNavigator 這個介面，把看課本的流程做成工具讓模型操作，報酬是細粒度的 RL 訊號。換課本換科目一樣管用，也贏過沒課本與固定檢索的 RL 基準。BrowseComp-Plus 高 1.7 個百分點，CL-bench 高 2.3 個百分點。
+
+我的判斷：這篇最值錢的不是那個百分比，而是它把查資料升級成讀完資料再做事。管線要不要留一個自學迴圈，讓模型跑壞時自己讀 log，這題值得測。
