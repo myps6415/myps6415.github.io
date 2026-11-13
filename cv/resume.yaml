@@ -35,20 +35,20 @@ experience:
     role: {zh: 主任資料工程師（Data Lead）, en: Data Lead · Principal Data Engineer}
     period: {zh: 2026.04 – 現在, en: Apr 2026 – present}
     bullets:
-      - zh: 建立跨平台資料平台：FB、IG、Threads、YouTube、GA4 資料經 34 個 Cloud Run Jobs 進 BigQuery，以 dbt 建模。
-        en: Built a data platform that brings Facebook, Instagram, Threads, YouTube and GA4 data into BigQuery through 34 Cloud Run Jobs, modelled with dbt.
-      - zh: 交付三個給非工程師的上線產品：集團營收儀表板、社群成效儀表板、報紙版面 PDF 產製工具。
-        en: "Shipped three production tools for non-engineers: a group revenue dashboard, a social-performance dashboard and a newspaper-layout PDF generator."
-      - zh: 以 Gemini 上線留言與貼文分類、編輯台助理與留言 RAG，每週自動評測，未達標會告警。
-        en: Put Gemini into production for comment and post classification, an editors' assistant and comment search, with weekly automated evaluation that alerts below threshold.
-      - zh: 建置業務部的簽核系統（Cloud Run 與 Cloud SQL），權限與稽核紀錄實作在資料庫層。
-        en: Built the sales department's approval system on Cloud Run and Cloud SQL, with permissions and the audit trail enforced in the database.
-      - zh: 依稽核紀錄收窄服務帳號權限，上線前逐一測試 10 種情境。
-        en: Reduced service-account permissions to what audit logs showed was used, testing 10 cases before rollout.
-      - zh: 營收資料管線月成本從 $300 降到 $1 以下；找出 dashboard 帳單偏高的原因，Cloud Run 運行時數減少約六成。
-        en: Cut a revenue pipeline from $300 to under $1 a month, and found why dashboards were costly, reducing Cloud Run instance hours by about 60%.
-      - zh: 建立團隊的決策紀錄、新人 onboarding 與跨專案知識庫。
-        en: Set up the team's decision records, onboarding and a cross-project knowledge base.
+      - zh: 每天自動收集 FB、IG、Threads、YouTube、GA4 的成效數據進 BigQuery（34 個排程任務），以 dbt 整理成分析用的資料表。
+        en: "Built daily collection of Facebook, Instagram, Threads, YouTube and GA4 performance data into BigQuery (34 scheduled jobs), modelled with dbt for analysis."
+      - zh: 交付三個給非工程師用的上線工具：集團營收儀表板、社群成效儀表板，以及把月營收表排成報紙版面的 PDF 產製工具。
+        en: "Shipped three production tools for non-engineers: a group revenue dashboard, a social-performance dashboard, and a tool that lays out monthly revenue tables as newspaper-ready PDFs."
+      - zh: 用 Gemini 自動分類讀者留言的情緒與貼文主題，並開發編輯部的 AI 助理；每週自動評測回答品質，未達標會告警。
+        en: "Used Gemini to classify reader-comment sentiment and post topics, and built an AI assistant for editors; answer quality is evaluated weekly and alerts below threshold."
+      - zh: 把業務部的紙本簽核流程改為線上系統（Cloud Run、Cloud SQL），權限與操作紀錄由資料庫控管。
+        en: "Moved the sales department's paper approval process online (Cloud Run, Cloud SQL), with permissions and an activity log enforced in the database."
+      - zh: 雲端專案資安審查時，依實際使用紀錄移除系統帳號的多餘權限，避免它讀到其他部門的機密；上線前逐一測試 10 種情境。
+        en: "During a security review of a shared cloud project, removed system-account permissions that usage logs showed were unused, so it could no longer reach other teams' secrets; tested 10 cases before rollout."
+      - zh: 營收資料流程的雲端費用從每月 $300 降到 $1 以下；儀表板因頁面一直開著讓伺服器無法關閉，改善後運行時數減少約六成。
+        en: "Cut the revenue data pipeline's cloud cost from $300 to under $1 a month; dashboards kept servers running while pages stayed open, and fixing that cut instance hours by about 60%."
+      - zh: 建立團隊的決策紀錄、新人上手流程與跨專案知識庫。
+        en: "Set up the team's decision records, onboarding process and a cross-project knowledge base."
 
   - company: {zh: 澄映科技, en: Cleflex Technology}
     role: {zh: Data Team Lead, en: Data Team Lead}
@@ -56,38 +56,38 @@ experience:
     bullets:
       - zh: 帶領 4 人 Data Team，以 Scrum 管理排程與交付，和產品團隊合作建 Superset 儀表板。
         en: Led a four-person Data Team, running scheduling and delivery with Scrum, and built Superset dashboards with the product team.
-      - zh: 建置 Airflow 爬蟲 ETL 與 Iceberg + Spark 資料湖，用 Docker 統一開發環境。
-        en: Built Airflow crawling ETL and an Iceberg + Spark lakehouse, and standardised environments with Docker.
+      - zh: 用 Airflow 排程網路爬蟲與資料處理，並建置 Iceberg + Spark 資料湖；用 Docker 統一團隊的開發環境。
+        en: "Scheduled crawlers and data processing with Airflow, built an Iceberg + Spark data lake, and standardised the team's environments with Docker."
 
   - company: {zh: 安璞資訊, en: Amber Technology}
     role: {zh: 資料工程師, en: Data Engineer}
     period: {zh: 2022.11 – 2023.04, en: Nov 2022 – Apr 2023}
     bullets:
-      - zh: 將地端資料以 Fluentd 送上 GCP，導入 PySpark，並規劃資料架構。
-        en: Moved on-prem data to GCP with Fluentd, introduced PySpark and planned the data architecture.
+      - zh: 把公司機房的資料以 Fluentd 自動送上 GCP，導入 PySpark 處理大量資料，並規劃資料架構。
+        en: "Automated moving on-prem data to GCP with Fluentd, introduced PySpark for large-scale processing, and planned the data architecture."
 
   - company: {zh: 痞客邦 PIXNET, en: PIXNET}
     role: {zh: 高級演算法工程師, en: Senior Algorithm Engineer}
     period: {zh: 2021.09 – 2022.11, en: Sep 2021 – Nov 2022}
     bullets:
-      - zh: 從零在 GKE 建置日誌收集服務 fluenthub，壓測峰值每秒約 1,900 個請求、無錯誤。
-        en: Built fluenthub, a log-collection service on GKE, from scratch; it handled about 1,900 requests per second in load tests with no errors.
-      - zh: 每日採集 900 萬筆 Search Console 資料；開發熱門議題、排序與推薦演算法。
-        en: Collected 9M rows of Search Console data a day; built trending-topic, ranking and recommendation algorithms.
+      - zh: 在 GKE（Kubernetes）從零建置資料收集服務 fluenthub，讓各團隊把資料送進 GCS／BigQuery；壓測峰值每秒約 1,900 個請求、無錯誤。
+        en: "Built fluenthub from scratch on GKE (Kubernetes), a collection service teams used to send data into GCS/BigQuery; load tests peaked at about 1,900 requests per second with no errors."
+      - zh: 每日收集 900 萬筆 Google 搜尋成效資料（Search Console）；開發熱門議題、排序與推薦演算法。
+        en: "Collected 9M rows of Google search-performance data (Search Console) a day; built trending-topic, ranking and recommendation algorithms."
 
   - company: {zh: 替您錄科技, en: LiTV}
     role: {zh: 軟體工程師, en: Software Engineer}
     period: {zh: 2019.10 – 2021.09, en: Oct 2019 – Sep 2021}
     bullets:
-      - zh: 用 Ansible 在 GCE 與地端機房部署 Fluentd，資料寫入 BigQuery；建置 AWS 跨雲 ETL 與使用者分群模型。
-        en: Deployed Fluentd with Ansible across GCE and an on-prem data centre into BigQuery; built cross-cloud ETL from AWS and user-segment models.
+      - zh: 用 Ansible 在雲端與公司機房大量部署資料收集程式（Fluentd），資料寫入 BigQuery；建置 AWS 到 GCP 的跨雲資料流程與使用者分群模型。
+        en: "Deployed data collectors (Fluentd) at scale with Ansible across the cloud and on-prem servers into BigQuery; built AWS-to-GCP data pipelines and user-segment models."
 
   - company: {zh: 早期經歷, en: Earlier}
     role: {zh: 國網中心 軟體工程師 · 臺科大 程式設計講師 · 浚鴻數據 資料分析師, en: NCHC Software Engineer · NTUST Programming Lecturer · Dataa Data Analyst}
     period: {zh: 2015.10 – 2019.08, en: Oct 2015 – Aug 2019}
     bullets:
-      - zh: AI 平台驗測、Python 教學、政府與企業輿情分析專案。
-        en: AI-platform testing, Python teaching, and sentiment-analysis projects for government and business clients.
+      - zh: 國網中心 AI 平台（TWCC）功能驗測、Python 教學、政府與企業輿情分析專案。
+        en: "Tested NCHC's TWCC AI platform, taught Python, and ran sentiment-analysis projects for government and business clients."
 
 skills:
   - k: {zh: 資料工程, en: Data engineering}
