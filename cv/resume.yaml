@@ -5,7 +5,7 @@
 
 meta:
   site: https://myps6415.github.io
-  updated: "2026-11-12"
+  updated: "2026-11-13"
   show_phone: true          # false → 網頁與 PDF 都不顯示電話
 
 person:
@@ -15,13 +15,13 @@ person:
     zh: 資料工程出身的 Data Lead
     en: Data Lead with a data engineering background
   eyebrow:
-    zh: Data Lead · Data Engineering · Cloud Platform · AI 應用
-    en: Data Lead · Data Engineering · Cloud Platform · Applied AI
+    zh: Data Lead · Data Platform · Cloud · AI
+    en: Data Lead · Data Platform · Cloud · AI
   summary:
     zh: >-
-      十年資料工程經驗，其中兩年半帶領 Data Team。2026 年 4 月起在旺旺中時從零建立集團的 Data／AI 平台，使用者是主管、行銷與編輯，都不是工程師；部署、權限到監控告警都自己建、自己維運。接手的營收資料管線月成本從 $300 降到不到 $1；留言 RAG 與編輯台 agent 都有每週評測，品質低於門檻就讓排程失敗。
+      十年資料工程經驗，帶過 4 人 Data Team 兩年半。2026 年起在旺旺中時從零建立集團的資料與 AI 平台，使用者是主管、行銷與編輯；平台的部署、權限與監控也由我負責。
     en: >-
-      Ten years in data engineering, two and a half of them leading a Data Team. Since April 2026 I have built the group's Data/AI platform at Want Want China Times from zero, for executives, marketing leads and editors, none of them engineers, and run it myself from deployment and IAM to monitoring. I cut an inherited revenue pipeline from $300 to under $1 a month, and both the comment RAG layer and the newsroom agent have weekly evals that fail the job when quality drops.
+      Ten years in data engineering, including two and a half years leading a four-person Data Team. Since 2026 I have built the Data/AI platform at Want Want China Times from scratch for executives, marketers and editors, and I also run the cloud under it.
   location: {zh: 桃園，台灣, en: "Taoyuan, Taiwan"}
   phone: "0976-278696"
   email: myps6415@gmail.com
@@ -35,92 +35,79 @@ experience:
     role: {zh: 主任資料工程師（Data Lead）, en: Data Lead · Principal Data Engineer}
     period: {zh: 2026.04 – 現在, en: Apr 2026 – present}
     bullets:
-      - zh: >-
-          <b>從零打造集團跨平台資料平台</b>：Facebook／Instagram／Threads／YouTube／GA4 端到端 ingestion，34 個 Cloud Run Jobs 錯峰排程 append-only 寫入 BigQuery、dbt 建模；dbt source freshness + 帳號級守門 + Cloud Monitoring 抓「job 成功卻沒寫資料」的靜默失敗。
-        en: >-
-          <b>Built the group's cross-platform data platform from zero</b>: Facebook, Instagram, Threads, YouTube and GA4 ingestion — 34 staggered Cloud Run Jobs writing append-only history into BigQuery, modelled with dbt; dbt source freshness, account-level checks and Cloud Monitoring catch "job succeeded but wrote nothing" silent failures.
-      - zh: >-
-          <b>雲端基礎設施與交付</b>：可重跑的 gcloud 腳本從零建出整套 GCP 環境（SA、IAM、Secret Manager、Artifact Registry、排程、告警）；Cloud Build push 即部署（302s → 85s），快取擋掉每月約 46GB 映像堆積；依稽核 log 收窄共用 project 的 SA 權限（IAM condition + 資源層級綁定，可 rollback）。
-        en: >-
-          <b>Cloud infrastructure and delivery</b>: a re-runnable gcloud script builds the GCP environment from zero (service accounts, IAM, Secret Manager, Artifact Registry, schedules, alerts); Cloud Build deploys on push (302s → 85s) and its cache stopped ~46GB/month of image growth; narrowed a shared project's service-account access to what audit logs showed it used (IAM conditions + resource-level bindings, with rollback).
-      - zh: >-
-          <b>接手營收 pipeline 重寫，月成本 $300 → <$1</b>；並交付三個給非工程師的上線產品：集團數位營收儀表板（C-level）、社群成效儀表板（行銷主管／編輯）、月營收一覽表報紙版面 PDF 產製工具。Google 登入 + 三層 ACL，主管自助增刪成員。
-        en: >-
-          <b>Rewrote an inherited revenue pipeline, $300 → under $1 a month</b>; shipped three production tools for non-engineers: a group revenue dashboard (C-level), a social-performance dashboard (marketing and editors) and a tool that typesets monthly revenue tables into print-ready newspaper PDFs. Google sign-in and a three-tier ACL let managers add and remove users themselves.
-      - zh: >-
-          <b>生成式 AI 上線，並設有品質門檻</b>：BigQuery <span class="mono">AI.GENERATE</span>（Gemini）做留言情緒、貼文主題與負評對象分類，以及只依當期數字生成的 AI 觀點；留言 RAG（Vertex 嵌入檢索）搭每週 LLM-as-judge 評測，品質跌破門檻即讓 job 失敗。編輯台 4 工具 agent：不寫 SQL、強制自檢、成本上限、每週回放評測。
-        en: >-
-          <b>Generative AI in production, with guardrails</b>: BigQuery <span class="mono">AI.GENERATE</span> (Gemini) classifies comment sentiment, post topics and what negative comments target, and writes commentary grounded in current figures only; a comment RAG layer (Vertex embeddings) is gated by a weekly LLM-as-judge eval that fails the job when quality drops. A four-tool newsroom agent is live — no free-form SQL, mandatory self-check, hard cost caps, weekly replay eval.
-      - zh: >-
-          <b>建立團隊的治理與交付方式</b>：資料治理盤點、成本歸屬 label、決策紀錄、新人 onboarding 階梯、跨專案知識庫；為 AI agent 訂 repo 契約層（禁區、驗收指令、守門），讓人與 agent 在同一套規則下協作。
-        en: >-
-          <b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, decision records, staged onboarding and a cross-project knowledge base; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.
+      - zh: 建立跨平台資料平台：FB、IG、Threads、YouTube、GA4 資料經 34 個 Cloud Run Jobs 進 BigQuery，以 dbt 建模。
+        en: Built a data platform that brings Facebook, Instagram, Threads, YouTube and GA4 data into BigQuery through 34 Cloud Run Jobs, modelled with dbt.
+      - zh: 交付三個給非工程師的上線產品：集團營收儀表板、社群成效儀表板、報紙版面 PDF 產製工具。
+        en: "Shipped three production tools for non-engineers: a group revenue dashboard, a social-performance dashboard and a newspaper-layout PDF generator."
+      - zh: 以 Gemini 上線留言與貼文分類、編輯台助理與留言 RAG，每週自動評測，未達標會告警。
+        en: Put Gemini into production for comment and post classification, an editors' assistant and comment search, with weekly automated evaluation that alerts below threshold.
+      - zh: 建置業務部的簽核系統（Cloud Run 與 Cloud SQL），權限與稽核紀錄實作在資料庫層。
+        en: Built the sales department's approval system on Cloud Run and Cloud SQL, with permissions and the audit trail enforced in the database.
+      - zh: 用腳本從零建出 GCP 環境與部署流程，部署時間從 302 秒縮短到 85 秒；依稽核紀錄收窄服務帳號權限。
+        en: Built the GCP environment and deployment pipeline from scratch with scripts, cutting deploys from 302s to 85s; reduced service-account permissions based on audit logs.
+      - zh: 營收資料管線月成本從 $300 降到 $1 以下；找出 dashboard 帳單偏高的原因，Cloud Run 運行時數減少約六成。
+        en: Cut a revenue pipeline from $300 to under $1 a month, and found why dashboards were costly, reducing Cloud Run instance hours by about 60%.
+      - zh: 建立團隊的決策紀錄、新人 onboarding 與跨專案知識庫。
+        en: Set up the team's decision records, onboarding and a cross-project knowledge base.
 
   - company: {zh: 澄映科技, en: Cleflex Technology}
     role: {zh: Data Team Lead, en: Data Team Lead}
     period: {zh: 2023.05 – 2025.10, en: May 2023 – Oct 2025}
     bullets:
-      - zh: >-
-          <b>帶領 4 人 Data Team</b>，負責排程、優先序與交付品質；以 Scrum（每日站會、衝刺規劃、回顧）與 Jira／GitLab 運作，並與產品團隊合作把資料自動化成 Superset 儀表板供決策。
-        en: >-
-          <b>Led a four-person Data Team</b> — scheduling, prioritisation and delivery quality — running Scrum (stand-ups, sprint planning, retros) on Jira/GitLab, and partnering with product to turn data into Superset dashboards used for decisions.
-      - zh: >-
-          Airflow 爬取 ETL（Scrapy → S3／MongoDB）、Telegram 異常告警；建置 Apache Iceberg + Spark 資料湖，以 Docker／makefile 標準化部署讓成員快速起環境。
-        en: >-
-          Airflow crawling ETL (Scrapy → S3/MongoDB) with Telegram alerts; built an Apache Iceberg + Spark lakehouse and standardised deployment with Docker/makefiles so teammates could stand up environments fast.
+      - zh: 帶領 4 人 Data Team，以 Scrum 管理排程與交付，和產品團隊合作建 Superset 儀表板。
+        en: Led a four-person Data Team, running scheduling and delivery with Scrum, and built Superset dashboards with the product team.
+      - zh: 建置 Airflow 爬蟲 ETL 與 Iceberg + Spark 資料湖，用 Docker 統一開發環境。
+        en: Built Airflow crawling ETL and an Iceberg + Spark lakehouse, and standardised environments with Docker.
 
   - company: {zh: 安璞資訊, en: Amber Technology}
     role: {zh: 資料工程師, en: Data Engineer}
     period: {zh: 2022.11 – 2023.04, en: Nov 2022 – Apr 2023}
     bullets:
-      - zh: Fluentd 地端 → GCP Cloud Storage ETL 自動化、Airflow 每日資料演算、導入 PySpark 分散式處理，並規劃整體資料架構。
-        en: Automated on-prem → GCP Cloud Storage ETL with Fluentd, daily Airflow computations, introduced PySpark for distributed processing and planned the overall data architecture.
+      - zh: 將地端資料以 Fluentd 送上 GCP，導入 PySpark，並規劃資料架構。
+        en: Moved on-prem data to GCP with Fluentd, introduced PySpark and planned the data architecture.
 
   - company: {zh: 痞客邦 PIXNET, en: PIXNET}
     role: {zh: 高級演算法工程師, en: Senior Algorithm Engineer}
     period: {zh: 2021.09 – 2022.11, en: Sep 2021 – Nov 2022}
     bullets:
-      - zh: >-
-          <b>從零建置 GKE 上的 Fluentd 收集服務 fluenthub</b>（6 副本滾動更新、Ingress + 靜態 IP）寫入 GCS／BigQuery，用 Spark 重放 40 萬筆真實文章壓測：峰值約 1,900 req/s、0 錯誤；Search Console API 每日 900 萬筆採集；排序與推薦演算法、SEO。
-        en: >-
-          <b>Built fluenthub from zero, a Fluentd collection service on GKE</b> (6 replicas with rolling updates, Ingress + static IP) writing to GCS/BigQuery; load-tested by replaying 400k real articles through Spark: ~1,900 req/s peak, zero errors. Search Console API collection at 9M rows/day; ranking and recommendation algorithms; SEO.
+      - zh: 從零在 GKE 建置日誌收集服務 fluenthub，壓測峰值每秒約 1,900 個請求、無錯誤。
+        en: Built fluenthub, a log-collection service on GKE, from scratch; it handled about 1,900 requests per second in load tests with no errors.
+      - zh: 每日採集 900 萬筆 Search Console 資料；開發熱門議題、排序與推薦演算法。
+        en: Collected 9M rows of Search Console data a day; built trending-topic, ranking and recommendation algorithms.
 
   - company: {zh: 替您錄科技, en: LiTV}
     role: {zh: 軟體工程師, en: Software Engineer}
     period: {zh: 2019.10 – 2021.09, en: Oct 2019 – Sep 2021}
     bullets:
-      - zh: Ansible 大量部署 Fluentd（GCE + IDC 地端）自動寫入 BigQuery；AWS Data Pipeline 跨雲 ETL；Data Studio 自動化報表；未登入用戶性別預測與客戶演算法（XGBoost／RandomForest／SVM）。
-        en: Ansible-deployed Fluentd fleets (GCE + on-prem IDC) streaming into BigQuery; AWS Data Pipeline cross-cloud ETL; automated Data Studio reporting; gender prediction for anonymous users and customer algorithms (XGBoost/RandomForest/SVM).
+      - zh: 用 Ansible 在 GCE 與地端機房部署 Fluentd，資料寫入 BigQuery；建置 AWS 跨雲 ETL 與使用者分群模型。
+        en: Deployed Fluentd with Ansible across GCE and an on-prem data centre into BigQuery; built cross-cloud ETL from AWS and user-segment models.
 
   - company: {zh: 早期經歷, en: Earlier}
     role: {zh: 國網中心 軟體工程師 · 臺科大 程式設計講師 · 浚鴻數據 資料分析師, en: NCHC Software Engineer · NTUST Programming Lecturer · Dataa Data Analyst}
     period: {zh: 2015.10 – 2019.08, en: Oct 2015 – Aug 2019}
     bullets:
-      - zh: TWCC AI 平台功能驗測與資料市集（CKAN）自動化；Python 資料分析教學；承接政府與企業輿情分析專案（爬蟲 → 文字探勘 → 報告）。
-        en: TWCC AI-platform acceptance testing and CKAN data-market automation; taught Python data analysis; delivered public-sector and enterprise sentiment-analysis projects (crawl → text mining → reports).
+      - zh: AI 平台驗測、Python 教學、政府與企業輿情分析專案。
+        en: AI-platform testing, Python teaching, and sentiment-analysis projects for government and business clients.
 
 skills:
   - k: {zh: 資料工程, en: Data engineering}
-    v: {zh: "BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark／Spark · Apache Iceberg · Fluentd · Scrapy",
-        en: "BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark/Spark · Apache Iceberg · Fluentd · Scrapy"}
+    v: {zh: "BigQuery、dbt、Airflow、Spark、Iceberg、Fluentd、PostgreSQL",
+        en: "BigQuery, dbt, Airflow, Spark, Iceberg, Fluentd, PostgreSQL"}
   - k: {zh: 雲端, en: Cloud}
-    v: {zh: "GCP（Cloud Run · IAM · Secret Manager · GKE · GCE · GCS）· AWS · Azure · 地端 IDC ↔ 雲混合 · Cloudflare",
-        en: "GCP (Cloud Run · IAM · Secret Manager · GKE · GCE · GCS) · AWS · Azure · on-prem ↔ cloud · Cloudflare"}
+    v: {zh: "GCP（Cloud Run、Cloud SQL、GKE、IAM）、AWS、Azure、混合雲",
+        en: "GCP (Cloud Run, Cloud SQL, GKE, IAM), AWS, Azure, hybrid cloud"}
   - k: {zh: DevOps, en: DevOps}
-    v: {zh: "Docker · Kubernetes · GitHub Actions · Cloud Build · Ansible · Prometheus／Grafana · Linux · Bash · Python",
-        en: "Docker · Kubernetes · GitHub Actions · Cloud Build · Ansible · Prometheus/Grafana · Linux · Bash · Python"}
+    v: {zh: "Docker、Kubernetes、GitHub Actions、Cloud Build、Ansible、Prometheus、Grafana",
+        en: "Docker, Kubernetes, GitHub Actions, Cloud Build, Ansible, Prometheus, Grafana"}
   - k: {zh: AI, en: AI}
-    v: {zh: "Gemini（AI.GENERATE · Vertex）· RAG + LLM-as-judge · agent 守門 · XGBoost／LightGBM · 中文 NLP",
-        en: "Gemini (AI.GENERATE · Vertex) · RAG + LLM-as-judge · agent guardrails · XGBoost/LightGBM · Chinese NLP"}
-  - k: {zh: 交付與協作, en: Delivery}
-    v: {zh: "Streamlit · Superset／Looker Studio · Scrum · Jira／GitLab · SQL",
-        en: "Streamlit · Superset/Looker Studio · Scrum · Jira/GitLab · SQL"}
+    v: {zh: "Gemini、AI agent、RAG、LLM 評測、中文文字探勘",
+        en: "Gemini, AI agents, RAG, LLM evaluation, Chinese text mining"}
   - k: {zh: 開源貢獻, en: Open source}
-    v: {zh: "Apache Airflow #67592（2026.10 合併，補回 Airflow 3 缺少的 queued_duration 指標）· OpenClaw #84890（2026.05 合併，修復 gateway 重啟死結）",
-        en: "Apache Airflow #67592 (merged Oct 2026; restored a metric lost in Airflow 3) · OpenClaw #84890 (merged May 2026; fixed a gateway restart deadlock)"}
+    v: {zh: "Apache Airflow #67592、OpenClaw #84890（皆已合併）",
+        en: "Apache Airflow #67592, OpenClaw #84890 (both merged)"}
   - k: {zh: 個人專案, en: Side projects}
-    v: {zh: "realping.tw：實價登錄 REST API 與 MCP server（列於官方 MCP Registry），CI 容器冒煙、部署後驗版本 · bopomofokids.com：React 注音學習網站（2026.09 約 4,500 次造訪） · homelab：5 組 Docker stack，Prometheus + Grafana 監控",
-        en: "realping.tw: property-price REST API and MCP server (in the official MCP Registry), container smoke tests in CI, post-deploy version checks · bopomofokids.com: React Zhuyin site (~4,500 visits, Sept 2026) · homelab: five Docker stacks, Prometheus + Grafana monitoring"}
+    v: {zh: "realping.tw（房價資料 API 與 MCP 服務）、bopomofokids.com（注音學習網站）",
+        en: "realping.tw (property-price API and MCP service), bopomofokids.com (Zhuyin learning site)"}
 
 education:
   - school: {zh: 國立臺灣科技大學 資訊管理系, en: NTUST — Information Management}

@@ -124,7 +124,7 @@
 <main class="sheet">
   <header>
     <div>
-      <span class="eyebrow">Data Lead · Data Engineering · Cloud Platform · AI 應用</span>
+      <span class="eyebrow">Data Lead · Data Platform · Cloud · AI</span>
       <h1>童曉瑜<span class="alt">John Tung · Hsiao-Yu Tung</span></h1>
       <p class="headline">資料工程出身的 Data Lead</p>
     </div>
@@ -132,7 +132,7 @@
       桃園，台灣<br>
 <a href="tel:0976278696">0976-278696</a><br>      <a href="mailto:myps6415@gmail.com">myps6415@gmail.com</a><br>
 <a href="https://www.linkedin.com/in/hsiao-yu-tung-67547a119/">LinkedIn</a> · <a href="https://github.com/myps6415">GitHub</a> · <a href="https://myps6415.github.io">個人站</a>    </div>
-    <p class="summary">十年資料工程經驗，其中兩年半帶領 Data Team。2026 年 4 月起在旺旺中時從零建立集團的 Data／AI 平台，使用者是主管、行銷與編輯，都不是工程師；部署、權限到監控告警都自己建、自己維運。接手的營收資料管線月成本從 $300 降到不到 $1；留言 RAG 與編輯台 agent 都有每週評測，品質低於門檻就讓排程失敗。</p>
+    <p class="summary">十年資料工程經驗，帶過 4 人 Data Team 兩年半。2026 年起在旺旺中時從零建立集團的資料與 AI 平台，使用者是主管、行銷與編輯；平台的部署、權限與監控也由我負責。</p>
   </header>
 
   <section>
@@ -142,42 +142,42 @@
         <div><span class="co">旺旺中時媒體集團</span><span class="role">主任資料工程師（Data Lead）</span></div>
         <div class="period">2026.04 – 現在</div>
       </div>
-      <ul><li><b>從零打造集團跨平台資料平台</b>：Facebook／Instagram／Threads／YouTube／GA4 端到端 ingestion，34 個 Cloud Run Jobs 錯峰排程 append-only 寫入 BigQuery、dbt 建模；dbt source freshness + 帳號級守門 + Cloud Monitoring 抓「job 成功卻沒寫資料」的靜默失敗。</li><li><b>雲端基礎設施與交付</b>：可重跑的 gcloud 腳本從零建出整套 GCP 環境（SA、IAM、Secret Manager、Artifact Registry、排程、告警）；Cloud Build push 即部署（302s → 85s），快取擋掉每月約 46GB 映像堆積；依稽核 log 收窄共用 project 的 SA 權限（IAM condition + 資源層級綁定，可 rollback）。</li><li><b>接手營收 pipeline 重寫，月成本 $300 → <$1</b>；並交付三個給非工程師的上線產品：集團數位營收儀表板（C-level）、社群成效儀表板（行銷主管／編輯）、月營收一覽表報紙版面 PDF 產製工具。Google 登入 + 三層 ACL，主管自助增刪成員。</li><li><b>生成式 AI 上線，並設有品質門檻</b>：BigQuery <span class="mono">AI.GENERATE</span>（Gemini）做留言情緒、貼文主題與負評對象分類，以及只依當期數字生成的 AI 觀點；留言 RAG（Vertex 嵌入檢索）搭每週 LLM-as-judge 評測，品質跌破門檻即讓 job 失敗。編輯台 4 工具 agent：不寫 SQL、強制自檢、成本上限、每週回放評測。</li><li><b>建立團隊的治理與交付方式</b>：資料治理盤點、成本歸屬 label、決策紀錄、新人 onboarding 階梯、跨專案知識庫；為 AI agent 訂 repo 契約層（禁區、驗收指令、守門），讓人與 agent 在同一套規則下協作。</li></ul>
+      <ul><li>建立跨平台資料平台：FB、IG、Threads、YouTube、GA4 資料經 34 個 Cloud Run Jobs 進 BigQuery，以 dbt 建模。</li><li>交付三個給非工程師的上線產品：集團營收儀表板、社群成效儀表板、報紙版面 PDF 產製工具。</li><li>以 Gemini 上線留言與貼文分類、編輯台助理與留言 RAG，每週自動評測，未達標會告警。</li><li>建置業務部的簽核系統（Cloud Run 與 Cloud SQL），權限與稽核紀錄實作在資料庫層。</li><li>用腳本從零建出 GCP 環境與部署流程，部署時間從 302 秒縮短到 85 秒；依稽核紀錄收窄服務帳號權限。</li><li>營收資料管線月成本從 $300 降到 $1 以下；找出 dashboard 帳單偏高的原因，Cloud Run 運行時數減少約六成。</li><li>建立團隊的決策紀錄、新人 onboarding 與跨專案知識庫。</li></ul>
     </div>
     <div class="job">
       <div class="job-head">
         <div><span class="co">澄映科技</span><span class="role">Data Team Lead</span></div>
         <div class="period">2023.05 – 2025.10</div>
       </div>
-      <ul><li><b>帶領 4 人 Data Team</b>，負責排程、優先序與交付品質；以 Scrum（每日站會、衝刺規劃、回顧）與 Jira／GitLab 運作，並與產品團隊合作把資料自動化成 Superset 儀表板供決策。</li><li>Airflow 爬取 ETL（Scrapy → S3／MongoDB）、Telegram 異常告警；建置 Apache Iceberg + Spark 資料湖，以 Docker／makefile 標準化部署讓成員快速起環境。</li></ul>
+      <ul><li>帶領 4 人 Data Team，以 Scrum 管理排程與交付，和產品團隊合作建 Superset 儀表板。</li><li>建置 Airflow 爬蟲 ETL 與 Iceberg + Spark 資料湖，用 Docker 統一開發環境。</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">安璞資訊</span><span class="role">資料工程師</span></div>
         <div class="period">2022.11 – 2023.04</div>
       </div>
-      <ul><li>Fluentd 地端 → GCP Cloud Storage ETL 自動化、Airflow 每日資料演算、導入 PySpark 分散式處理，並規劃整體資料架構。</li></ul>
+      <ul><li>將地端資料以 Fluentd 送上 GCP，導入 PySpark，並規劃資料架構。</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">痞客邦 PIXNET</span><span class="role">高級演算法工程師</span></div>
         <div class="period">2021.09 – 2022.11</div>
       </div>
-      <ul><li><b>從零建置 GKE 上的 Fluentd 收集服務 fluenthub</b>（6 副本滾動更新、Ingress + 靜態 IP）寫入 GCS／BigQuery，用 Spark 重放 40 萬筆真實文章壓測：峰值約 1,900 req/s、0 錯誤；Search Console API 每日 900 萬筆採集；排序與推薦演算法、SEO。</li></ul>
+      <ul><li>從零在 GKE 建置日誌收集服務 fluenthub，壓測峰值每秒約 1,900 個請求、無錯誤。</li><li>每日採集 900 萬筆 Search Console 資料；開發熱門議題、排序與推薦演算法。</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">替您錄科技</span><span class="role">軟體工程師</span></div>
         <div class="period">2019.10 – 2021.09</div>
       </div>
-      <ul><li>Ansible 大量部署 Fluentd（GCE + IDC 地端）自動寫入 BigQuery；AWS Data Pipeline 跨雲 ETL；Data Studio 自動化報表；未登入用戶性別預測與客戶演算法（XGBoost／RandomForest／SVM）。</li></ul>
+      <ul><li>用 Ansible 在 GCE 與地端機房部署 Fluentd，資料寫入 BigQuery；建置 AWS 跨雲 ETL 與使用者分群模型。</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">早期經歷</span><span class="role">國網中心 軟體工程師 · 臺科大 程式設計講師 · 浚鴻數據 資料分析師</span></div>
         <div class="period">2015.10 – 2019.08</div>
       </div>
-      <ul><li>TWCC AI 平台功能驗測與資料市集（CKAN）自動化；Python 資料分析教學；承接政府與企業輿情分析專案（爬蟲 → 文字探勘 → 報告）。</li></ul>
+      <ul><li>AI 平台驗測、Python 教學、政府與企業輿情分析專案。</li></ul>
     </div>
   </section>
 
@@ -185,7 +185,7 @@
     <section>
       <h2>技能</h2>
       <div class="rows">
-<div class="row"><div class="k">資料工程</div><div class="v">BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark／Spark · Apache Iceberg · Fluentd · Scrapy</div></div><div class="row"><div class="k">雲端</div><div class="v">GCP（Cloud Run · IAM · Secret Manager · GKE · GCE · GCS）· AWS · Azure · 地端 IDC ↔ 雲混合 · Cloudflare</div></div><div class="row"><div class="k">DevOps</div><div class="v">Docker · Kubernetes · GitHub Actions · Cloud Build · Ansible · Prometheus／Grafana · Linux · Bash · Python</div></div><div class="row"><div class="k">AI</div><div class="v">Gemini（AI.GENERATE · Vertex）· RAG + LLM-as-judge · agent 守門 · XGBoost／LightGBM · 中文 NLP</div></div><div class="row"><div class="k">交付與協作</div><div class="v">Streamlit · Superset／Looker Studio · Scrum · Jira／GitLab · SQL</div></div><div class="row"><div class="k">開源貢獻</div><div class="v">Apache Airflow #67592（2026.10 合併，補回 Airflow 3 缺少的 queued_duration 指標）· OpenClaw #84890（2026.05 合併，修復 gateway 重啟死結）</div></div><div class="row"><div class="k">個人專案</div><div class="v">realping.tw：實價登錄 REST API 與 MCP server（列於官方 MCP Registry），CI 容器冒煙、部署後驗版本 · bopomofokids.com：React 注音學習網站（2026.09 約 4,500 次造訪） · homelab：5 組 Docker stack，Prometheus + Grafana 監控</div></div>      </div>
+<div class="row"><div class="k">資料工程</div><div class="v">BigQuery、dbt、Airflow、Spark、Iceberg、Fluentd、PostgreSQL</div></div><div class="row"><div class="k">雲端</div><div class="v">GCP（Cloud Run、Cloud SQL、GKE、IAM）、AWS、Azure、混合雲</div></div><div class="row"><div class="k">DevOps</div><div class="v">Docker、Kubernetes、GitHub Actions、Cloud Build、Ansible、Prometheus、Grafana</div></div><div class="row"><div class="k">AI</div><div class="v">Gemini、AI agent、RAG、LLM 評測、中文文字探勘</div></div><div class="row"><div class="k">開源貢獻</div><div class="v">Apache Airflow #67592、OpenClaw #84890（皆已合併）</div></div><div class="row"><div class="k">個人專案</div><div class="v">realping.tw（房價資料 API 與 MCP 服務）、bopomofokids.com（注音學習網站）</div></div>      </div>
     </section>
     <section>
       <h2>學歷</h2>
@@ -196,7 +196,7 @@
   </div>
 </main>
 
-<div class="foot">更新於 2026-11-12 · https://myps6415.github.io/zh/cv</div>
+<div class="foot">更新於 2026-11-13 · https://myps6415.github.io/zh/cv</div>
 
 <!-- GoatCounter — privacy-first analytics (no cookies). Skip your own visits: load any page with #toggle-goatcounter once per browser. -->
 <script data-goatcounter="https://myps6415.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>

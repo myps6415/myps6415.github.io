@@ -124,7 +124,7 @@
 <main class="sheet">
   <header>
     <div>
-      <span class="eyebrow">Data Lead · Data Engineering · Cloud Platform · Applied AI</span>
+      <span class="eyebrow">Data Lead · Data Platform · Cloud · AI</span>
       <h1>John Tung<span class="alt">童曉瑜 · Hsiao-Yu Tung</span></h1>
       <p class="headline">Data Lead with a data engineering background</p>
     </div>
@@ -132,7 +132,7 @@
       Taoyuan, Taiwan<br>
 <a href="tel:0976278696">0976-278696</a><br>      <a href="mailto:myps6415@gmail.com">myps6415@gmail.com</a><br>
 <a href="https://www.linkedin.com/in/hsiao-yu-tung-67547a119/">LinkedIn</a> · <a href="https://github.com/myps6415">GitHub</a> · <a href="https://myps6415.github.io">Site</a>    </div>
-    <p class="summary">Ten years in data engineering, two and a half of them leading a Data Team. Since April 2026 I have built the group's Data/AI platform at Want Want China Times from zero, for executives, marketing leads and editors, none of them engineers, and run it myself from deployment and IAM to monitoring. I cut an inherited revenue pipeline from $300 to under $1 a month, and both the comment RAG layer and the newsroom agent have weekly evals that fail the job when quality drops.</p>
+    <p class="summary">Ten years in data engineering, including two and a half years leading a four-person Data Team. Since 2026 I have built the Data/AI platform at Want Want China Times from scratch for executives, marketers and editors, and I also run the cloud under it.</p>
   </header>
 
   <section>
@@ -142,42 +142,42 @@
         <div><span class="co">Want Want China Times Media Group</span><span class="role">Data Lead · Principal Data Engineer</span></div>
         <div class="period">Apr 2026 – present</div>
       </div>
-      <ul><li><b>Built the group's cross-platform data platform from zero</b>: Facebook, Instagram, Threads, YouTube and GA4 ingestion — 34 staggered Cloud Run Jobs writing append-only history into BigQuery, modelled with dbt; dbt source freshness, account-level checks and Cloud Monitoring catch "job succeeded but wrote nothing" silent failures.</li><li><b>Cloud infrastructure and delivery</b>: a re-runnable gcloud script builds the GCP environment from zero (service accounts, IAM, Secret Manager, Artifact Registry, schedules, alerts); Cloud Build deploys on push (302s → 85s) and its cache stopped ~46GB/month of image growth; narrowed a shared project's service-account access to what audit logs showed it used (IAM conditions + resource-level bindings, with rollback).</li><li><b>Rewrote an inherited revenue pipeline, $300 → under $1 a month</b>; shipped three production tools for non-engineers: a group revenue dashboard (C-level), a social-performance dashboard (marketing and editors) and a tool that typesets monthly revenue tables into print-ready newspaper PDFs. Google sign-in and a three-tier ACL let managers add and remove users themselves.</li><li><b>Generative AI in production, with guardrails</b>: BigQuery <span class="mono">AI.GENERATE</span> (Gemini) classifies comment sentiment, post topics and what negative comments target, and writes commentary grounded in current figures only; a comment RAG layer (Vertex embeddings) is gated by a weekly LLM-as-judge eval that fails the job when quality drops. A four-tool newsroom agent is live — no free-form SQL, mandatory self-check, hard cost caps, weekly replay eval.</li><li><b>Set up how the team governs and delivers</b>: data-governance inventory, cost-attribution labels, decision records, staged onboarding and a cross-project knowledge base; a repo contract layer (no-go zones, acceptance commands, guards) so people and AI agents work under the same rules.</li></ul>
+      <ul><li>Built a data platform that brings Facebook, Instagram, Threads, YouTube and GA4 data into BigQuery through 34 Cloud Run Jobs, modelled with dbt.</li><li>Shipped three production tools for non-engineers: a group revenue dashboard, a social-performance dashboard and a newspaper-layout PDF generator.</li><li>Put Gemini into production for comment and post classification, an editors' assistant and comment search, with weekly automated evaluation that alerts below threshold.</li><li>Built the sales department's approval system on Cloud Run and Cloud SQL, with permissions and the audit trail enforced in the database.</li><li>Built the GCP environment and deployment pipeline from scratch with scripts, cutting deploys from 302s to 85s; reduced service-account permissions based on audit logs.</li><li>Cut a revenue pipeline from $300 to under $1 a month, and found why dashboards were costly, reducing Cloud Run instance hours by about 60%.</li><li>Set up the team's decision records, onboarding and a cross-project knowledge base.</li></ul>
     </div>
     <div class="job">
       <div class="job-head">
         <div><span class="co">Cleflex Technology</span><span class="role">Data Team Lead</span></div>
         <div class="period">May 2023 – Oct 2025</div>
       </div>
-      <ul><li><b>Led a four-person Data Team</b> — scheduling, prioritisation and delivery quality — running Scrum (stand-ups, sprint planning, retros) on Jira/GitLab, and partnering with product to turn data into Superset dashboards used for decisions.</li><li>Airflow crawling ETL (Scrapy → S3/MongoDB) with Telegram alerts; built an Apache Iceberg + Spark lakehouse and standardised deployment with Docker/makefiles so teammates could stand up environments fast.</li></ul>
+      <ul><li>Led a four-person Data Team, running scheduling and delivery with Scrum, and built Superset dashboards with the product team.</li><li>Built Airflow crawling ETL and an Iceberg + Spark lakehouse, and standardised environments with Docker.</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">Amber Technology</span><span class="role">Data Engineer</span></div>
         <div class="period">Nov 2022 – Apr 2023</div>
       </div>
-      <ul><li>Automated on-prem → GCP Cloud Storage ETL with Fluentd, daily Airflow computations, introduced PySpark for distributed processing and planned the overall data architecture.</li></ul>
+      <ul><li>Moved on-prem data to GCP with Fluentd, introduced PySpark and planned the data architecture.</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">PIXNET</span><span class="role">Senior Algorithm Engineer</span></div>
         <div class="period">Sep 2021 – Nov 2022</div>
       </div>
-      <ul><li><b>Built fluenthub from zero, a Fluentd collection service on GKE</b> (6 replicas with rolling updates, Ingress + static IP) writing to GCS/BigQuery; load-tested by replaying 400k real articles through Spark: ~1,900 req/s peak, zero errors. Search Console API collection at 9M rows/day; ranking and recommendation algorithms; SEO.</li></ul>
+      <ul><li>Built fluenthub, a log-collection service on GKE, from scratch; it handled about 1,900 requests per second in load tests with no errors.</li><li>Collected 9M rows of Search Console data a day; built trending-topic, ranking and recommendation algorithms.</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">LiTV</span><span class="role">Software Engineer</span></div>
         <div class="period">Oct 2019 – Sep 2021</div>
       </div>
-      <ul><li>Ansible-deployed Fluentd fleets (GCE + on-prem IDC) streaming into BigQuery; AWS Data Pipeline cross-cloud ETL; automated Data Studio reporting; gender prediction for anonymous users and customer algorithms (XGBoost/RandomForest/SVM).</li></ul>
+      <ul><li>Deployed Fluentd with Ansible across GCE and an on-prem data centre into BigQuery; built cross-cloud ETL from AWS and user-segment models.</li></ul>
     </div>
     <div class="job compact">
       <div class="job-head">
         <div><span class="co">Earlier</span><span class="role">NCHC Software Engineer · NTUST Programming Lecturer · Dataa Data Analyst</span></div>
         <div class="period">Oct 2015 – Aug 2019</div>
       </div>
-      <ul><li>TWCC AI-platform acceptance testing and CKAN data-market automation; taught Python data analysis; delivered public-sector and enterprise sentiment-analysis projects (crawl → text mining → reports).</li></ul>
+      <ul><li>AI-platform testing, Python teaching, and sentiment-analysis projects for government and business clients.</li></ul>
     </div>
   </section>
 
@@ -185,7 +185,7 @@
     <section>
       <h2>Skills</h2>
       <div class="rows">
-<div class="row"><div class="k">Data engineering</div><div class="v">BigQuery · dbt · Cloud Run Jobs + Scheduler · Airflow · PySpark/Spark · Apache Iceberg · Fluentd · Scrapy</div></div><div class="row"><div class="k">Cloud</div><div class="v">GCP (Cloud Run · IAM · Secret Manager · GKE · GCE · GCS) · AWS · Azure · on-prem ↔ cloud · Cloudflare</div></div><div class="row"><div class="k">DevOps</div><div class="v">Docker · Kubernetes · GitHub Actions · Cloud Build · Ansible · Prometheus/Grafana · Linux · Bash · Python</div></div><div class="row"><div class="k">AI</div><div class="v">Gemini (AI.GENERATE · Vertex) · RAG + LLM-as-judge · agent guardrails · XGBoost/LightGBM · Chinese NLP</div></div><div class="row"><div class="k">Delivery</div><div class="v">Streamlit · Superset/Looker Studio · Scrum · Jira/GitLab · SQL</div></div><div class="row"><div class="k">Open source</div><div class="v">Apache Airflow #67592 (merged Oct 2026; restored a metric lost in Airflow 3) · OpenClaw #84890 (merged May 2026; fixed a gateway restart deadlock)</div></div><div class="row"><div class="k">Side projects</div><div class="v">realping.tw: property-price REST API and MCP server (in the official MCP Registry), container smoke tests in CI, post-deploy version checks · bopomofokids.com: React Zhuyin site (~4,500 visits, Sept 2026) · homelab: five Docker stacks, Prometheus + Grafana monitoring</div></div>      </div>
+<div class="row"><div class="k">Data engineering</div><div class="v">BigQuery, dbt, Airflow, Spark, Iceberg, Fluentd, PostgreSQL</div></div><div class="row"><div class="k">Cloud</div><div class="v">GCP (Cloud Run, Cloud SQL, GKE, IAM), AWS, Azure, hybrid cloud</div></div><div class="row"><div class="k">DevOps</div><div class="v">Docker, Kubernetes, GitHub Actions, Cloud Build, Ansible, Prometheus, Grafana</div></div><div class="row"><div class="k">AI</div><div class="v">Gemini, AI agents, RAG, LLM evaluation, Chinese text mining</div></div><div class="row"><div class="k">Open source</div><div class="v">Apache Airflow #67592, OpenClaw #84890 (both merged)</div></div><div class="row"><div class="k">Side projects</div><div class="v">realping.tw (property-price API and MCP service), bopomofokids.com (Zhuyin learning site)</div></div>      </div>
     </section>
     <section>
       <h2>Education</h2>
@@ -196,7 +196,7 @@
   </div>
 </main>
 
-<div class="foot">Updated 2026-11-12 · https://myps6415.github.io/cv</div>
+<div class="foot">Updated 2026-11-13 · https://myps6415.github.io/cv</div>
 
 <!-- GoatCounter — privacy-first analytics (no cookies). Skip your own visits: load any page with #toggle-goatcounter once per browser. -->
 <script data-goatcounter="https://myps6415.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
