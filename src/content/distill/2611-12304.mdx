@@ -1,0 +1,20 @@
+---
+title: "Hao Kang 帶著 Song Han 等 11 位作者，交出 arXiv 論文…"
+description: "Hao Kang 帶著 Song Han 等 11 位作者，交出 arXiv 論文：agent 型工作負載正在把 LLM 推論架構逼到牆角。256 張 GB300 上測試，比 NV…"
+date: "2026-11-15"
+postSlug: "2611-12304"
+sourceUrl: "https://arxiv.org/abs/2611.12304"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DfvY7OagZrn"
+channel: "data-engineering"
+---
+
+Hao Kang 帶著 Song Han 等 11 位作者，交出 arXiv 論文：agent 型工作負載正在把 LLM 推論架構逼到牆角。256 張 GB300 上測試，比 NVIDIA 框架 Dynamo 平均延遲快 4.1 倍，P95 TTFT 快 14 倍。
+
+prefill、decode 分離架構把算力配置和 KV cache 管理綁在一起，節奏調不動。agent 反覆用同一段上下文，KV cache 卻被當一般快取踢掉。
+
+Evolving Infra 拆開這兩件事：節點可在兩種角色間切換，planner 依負載組成決定比例，KV manager 拿上下文訊號決定哪些快取要留、哪些要搬。測試用 GLM-5.2 和 Kimi K2.6，涵蓋 coding、math、computer-use。
+
+最值得讀的不是 4.1 倍，而是它承認 agent 負載跟人類對話是兩回事。若服務還照聊天的方式切流量，KV 一直重算、節點一直空轉，代價就是每次多等那幾秒。
+
+想動手改，先量測 KV 命中率。
