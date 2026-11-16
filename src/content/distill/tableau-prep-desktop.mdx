@@ -1,0 +1,20 @@
+---
+title: "8 GB 記憶體、雙核心 CPU…"
+description: "8 GB 記憶體、雙核心 CPU，普通工作站就撐得起 Tableau Prep 2026 的完整資料準備流程，而且不需要連網。"
+date: "2026-11-17"
+postSlug: "tableau-prep-desktop"
+sourceUrl: "https://github.com/swiftmoor21/tableau-prep-desktop"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Df0ihNRD9th"
+channel: "data-engineering"
+---
+
+8 GB 記憶體、雙核心 CPU，普通工作站就撐得起 Tableau Prep 2026 的完整資料準備流程，而且不需要連網。
+
+這份 GitHub 專案提供的是 Windows x64 的獨立離線封裝，把執行環境、內建連接器與設定樣板打包成一個壓縮檔。抓一次、算一次 SHA256、封存起來，日後在幾十台機器上重鋪同一個版本，不必再連外部服務。
+
+我覺得它真正的價值不在「Tableau Prep 能用」，而在重現性。版本被釘死、雜湊值公開，稽核或機房重灌時有東西可以對。安裝只寫入使用者層級的程式目錄，不動 Windows 系統路徑，不裝背景服務，也不建立排程工作。
+
+要注意的是，這是第三方維護者自行打包的版本，官方未曾背書，倉庫的 CC BY-SA 4.0 只涵蓋內容本身，上游軟體仍受原廠授權條款約束，首次安裝 SmartScreen 也會擋未簽署的安裝檔。
+
+常在內網機房重建 ETL 環境的團隊，值得先用一台機器試試，但授權與來源風險要先跟主管講清楚。
