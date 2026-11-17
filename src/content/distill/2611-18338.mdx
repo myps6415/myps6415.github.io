@@ -1,0 +1,22 @@
+---
+title: "Xiaoqi Wang 等八位作者把 823 條驗證過的 SQL 放進記憶體…"
+description: "Xiaoqi Wang 等八位作者把 823 條驗證過的 SQL 放進記憶體，六個語言模型的執行準確率從 37.1% 升到 50.0%，輸入 token 少 76.6%。"
+date: "2026-11-18"
+postSlug: "2611-18338"
+sourceUrl: "https://arxiv.org/abs/2611.18338"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Df3HT5Tj74O"
+channel: "data-engineering"
+---
+
+Xiaoqi Wang 等八位作者把 823 條驗證過的 SQL 放進記憶體，六個語言模型的執行準確率從 37.1% 升到 50.0%，輸入 token 少 76.6%。
+
+Text-to-SQL 評測多半把每題當獨立題目，模型每次從零猜 schema。但真實工作很少這樣：同一個庫問完一題，下一題常常只是同一批維度換個條件。
+
+MEM-SQL 的記憶分三層：整段查詢範本、可重複使用的 SQL 片段、領域概念對應 schema 元素的對照表。一層只有在它負責的每個需求都找到比門檻更高的匹配時才啟用。
+
+搭配 On-demand Schema Linking，只有沒有任何一層合格時，系統才真的去翻 schema，平均延遲降 68.8%。
+
+問題要同時複用好幾條舊查詢時，準確率從 56.7% 掉到 29.7%，掉最狠的是複用部分得放進新結構，或跟共用 join 混在一起。
+
+歷史查詢不是越多越好，要看你後來問的跟舊的有多像，偏離越大記憶越容易帶錯方向。做內部 BI 問答的團隊，值得讀原文。
