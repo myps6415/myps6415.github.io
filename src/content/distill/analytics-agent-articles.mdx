@@ -1,0 +1,18 @@
+---
+title: "LangChain 團隊把自助式分析的提問量推到 40 倍…"
+description: "LangChain 團隊把自助式分析的提問量推到 40 倍，這條線索來自一份 GitHub 策展清單：GetCassis/analytics-agent-articles，專收資料…"
+date: "2026-11-19"
+postSlug: "analytics-agent-articles"
+sourceUrl: "https://github.com/GetCassis/analytics-agent-articles"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/Df5sG4eD3tT"
+channel: "data-engineering"
+---
+
+LangChain 團隊把自助式分析的提問量推到 40 倍，這條線索來自一份 GitHub 策展清單：GetCassis/analytics-agent-articles，專收資料團隊自建分析代理的實戰文章，Anthropic、OpenAI、DoorDash 都寫了，附上技術堆疊與閱讀筆記。
+
+清單按問題分頁：給代理脈絡、測試答案、修錯並跟上資料模型變動、降低成本與延遲。同樣的問題在十幾家公司重複出現，做法卻各不相同。
+
+KOHO 用約 375 個真實分析師問題組成評估理事會，測一隻只准查已認證 dbt marts 的 Claude skill。ClickHouse 的 benchmark 拿 201 個真實問題評分，還做了汙染檢查。DoorDash 的 Vera 把評估交給指標領域的負責人，這個安排我覺得比任何提示技巧都關鍵。
+
+我的判斷是，瓶頸已經不在模型，而在誰擁有並持續維護那份脈絡。想認真做，先讀清單裡跟你資料堆疊最像的那一家。
