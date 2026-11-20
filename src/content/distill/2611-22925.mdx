@@ -1,0 +1,20 @@
+---
+title: "十一位作者的 Invoker-Render，跑出 30 分鐘賽車影片還不掉樣"
+description: "十一位作者的 Invoker-Render，跑出 30 分鐘賽車影片還不掉樣。"
+date: "2026-11-21"
+postSlug: "2611-22925"
+sourceUrl: "https://arxiv.org/abs/2611.22925"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/Df-1sdPEiyq"
+channel: "data-engineering"
+---
+
+十一位作者的 Invoker-Render，跑出 30 分鐘賽車影片還不掉樣。
+
+Code World Model 2.0（arXiv:2611.22925）解的是代理（proxy）粒度不一：上游可以是粗版面，也可以是細的關節幾何，串流推理還得在四個因果步內做完，不能因自生成歷史累積漂移。
+
+Invoker-Render 分兩軌，雙向創作模型管離線剪輯，四步因果串流模型管即時互動，共用同一組條件介面，餵結構代理、外觀參考和語言。訓練用約 200 小時多粒度語料，代理細就守幾何約束，代理粗就自己補合理動作，細節度能在執行期切換。
+
+串流靠 Progressive Forcing（ProForcing）：先訓因果預測器，再用訓練影片的歷史蒸餾成四步渲染器，之後改用連續自生成 rollout，避免步驟壓縮和漂移互相雪崩。實驗比近期串流基線有提升，30 分鐘賽車 rollout 場景與主角外觀都穩住。
+
+賣點其實是介面鬆：代理能在執行期由粗到細降級，算力緊就先退回版面級。做互動內容管線的值得偷師。
