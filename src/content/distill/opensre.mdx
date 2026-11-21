@@ -1,0 +1,22 @@
+---
+title: "CI 每次轉紅，真正開始查的常常是那位剛好有空的高階工程師；OpenSRE 想接走這個角色"
+description: "CI 每次轉紅，真正開始查的常常是那位剛好有空的高階工程師；OpenSRE 想接走這個角色。"
+date: "2026-11-22"
+postSlug: "opensre"
+sourceUrl: "https://github.com/Tracer-Cloud/opensre"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DgBafd6kjp3"
+channel: "data-engineering"
+---
+
+CI 每次轉紅，真正開始查的常常是那位剛好有空的高階工程師；OpenSRE 想接走這個角色。
+
+Tracer-Cloud 開源的 OpenSRE 是命令列的 agent，跑在你自己的機器上、用你自己的模型，目前還是 public alpha。
+
+run 一失敗它就去讀 log、測假設、把修好的 commit 推到 PR branch 等你 review。它分得清哪種失敗是 CI 造成的、哪種是程式碼造成的，不用再靠人肉猜該修哪一邊。也會算 CI 到底多貴：失敗率、開發者耗掉的工時、main 紅了多久。
+
+不只 CI，同一個 agent 也能查線上事故，接上 Kubernetes、Grafana、Slack 這些你本來就在用的系統。互動式 shell 之外，還有 headless CLI 或 Python API。
+
+授權 Apache 2.0，transcript 預設留在本地。
+
+值得試的是先在一個 repo 跑一次，下次 main 亮紅時，你手上就多一雙眼睛。
