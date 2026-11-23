@@ -1,0 +1,20 @@
+---
+title: "Siqiao Xue 等六人在 2026 年 11 月丟出一篇 arXiv 論文…"
+description: "Siqiao Xue 等六人在 2026 年 11 月丟出一篇 arXiv 論文，用超過 91 個真實倉庫重新檢驗 dense retrieval 對 BM25 的優勢，結論是那個…"
+date: "2026-11-24"
+postSlug: "2611-20455"
+sourceUrl: "https://arxiv.org/abs/2611.20455"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DgGkFElkuw1"
+channel: "data-engineering"
+---
+
+Siqiao Xue 等六人在 2026 年 11 月丟出一篇 arXiv 論文，用超過 91 個真實倉庫重新檢驗 dense retrieval 對 BM25 的優勢，結論是那個優勢有一半是量出來的。
+
+Repo-Premium 在真實倉庫裡排檔案，query 分人工整理和原樣兩種，涵蓋 Python、Go、Rust 等六種語言，pull request 橫跨 2022 到 2026 年。
+
+dense 贏在兩處。評分方式偏袒它，把檔案切塊再餵 BM25，被改過的測試也算相關。另一個是 query 裡沒有罕見的識別字，語意模型能靠上下文猜，BM25 只能乾瞪眼。
+
+反過來，讓 LLM 先幫 query 補上識別字再丟 grep，BM25 受益的幅度遠超 dense，在每個 Python 測試池都追平。沒有方法能預測某個 query 最後誰會贏。
+
+三條建議很直接：用公平的字詞基準量 dense 增益，兩種檢索混著用，query 少了程式碼的詞就補回去。
