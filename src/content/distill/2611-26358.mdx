@@ -1,0 +1,20 @@
+---
+title: "Adam Abdulhamid 等 229 位作者的 Beam 技術報告…"
+description: "Adam Abdulhamid 等 229 位作者的 Beam 技術報告，主角是稀疏 Mixture-of-Experts 模型，總參數 501.3B、啟用參數 23.4B，預訓練…"
+date: "2026-11-26"
+postSlug: "2611-26358"
+sourceUrl: "https://arxiv.org/abs/2611.26358"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DgLtq2xk1EP"
+channel: "data-engineering"
+---
+
+Adam Abdulhamid 等 229 位作者的 Beam 技術報告，主角是稀疏 Mixture-of-Experts 模型，總參數 501.3B、啟用參數 23.4B，預訓練吃掉 23.8T token，推理運算量比同級模型少 3 到 4 倍。
+
+亮點在後訓練：團隊在 10.5K 張 GB300 上跑非同步強化學習，四週產生超過 100M 筆 rollout，是開放實驗室至今最大規模的 RL 訓練之一。
+
+這種規模的 RL 工程，才是開放權重模型追上閉源的分水嶺。持續加碼 RL 運算量時能力還在往上走，看不到平台期。
+
+部署面：1M token 的 context window 靠兩階段 midtraining 做出來，搭配 FP8/NVFP4 量化，另配 1.93B 參數的推測解碼 drafter DFlash 2。88.9% 的有害請求被拒絕或轉向，81.5% 的無害請求照常執行。
+
+若你在評估開放權重模型能否放進管線，值得細讀 RL 規模與硬體協同設計。
