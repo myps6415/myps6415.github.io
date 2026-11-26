@@ -1,0 +1,20 @@
+---
+title: "Shifang Zhao 跟另外 12 位作者在 arXiv 丟出 15 款遊戲的考題…"
+description: "Shifang Zhao 跟另外 12 位作者在 arXiv 丟出 15 款遊戲的考題：現代 coding agent 能不能自己寫出遊戲程式，不靠語言模型逐幀推理？"
+date: "2026-11-27"
+postSlug: "2611-31974"
+sourceUrl: "https://arxiv.org/abs/2611.31974"
+sourceName: "arxiv.org"
+threadUrl: "https://www.threads.com/@myps6415/post/DgOSd9tE7BV"
+channel: "data-engineering"
+---
+
+Shifang Zhao 跟另外 12 位作者在 arXiv 丟出 15 款遊戲的考題：現代 coding agent 能不能自己寫出遊戲程式，不靠語言模型逐幀推理？
+
+現有遊戲 benchmark 多半把語言模型當電腦操作 agent，每個動作都要回頭問一次模型。即時遊戲裡環境持續在動，推理成本卻一路累積。論文換了角度：讓 coding agent 待在 sandbox 反覆試，寫出一支能自己跑的程式。
+
+Coding4Games 三個設計點：15 款需求各異的遊戲；開發與測試分離，選出來的程式凍結後獨立測試，全程不做語言模型推理；結果與過程並評，既看表現也看 agent 怎麼改程式。
+
+數字出來了。每款最好的程式有 13 款贏過最強的 GUI baseline，1 款平手。人類玩家在 10 款遊戲上贏過所有 agent。
+
+我的解讀是，這把成本結構整個翻轉。語言模型從執行迴圈搬到開發期，付一次錢，換一支能重複跑的程式。手上若有得靠模型逐次決策才做不完的工作，值得看這篇怎麼搬到離線。
