@@ -1,0 +1,18 @@
+---
+title: "DeliveryPulse 的作者 Aashritha-2005 把最後…"
+description: "DeliveryPulse 的作者 Aashritha-2005 把最後一哩物流做成可重播的批次管線，50,484 筆訂單列跑完，最後只有 49,450 筆被判定為合格。"
+date: "2026-11-28"
+postSlug: "deliverypulse-last-mile-logistics-data-platform"
+sourceUrl: "https://github.com/Aashritha-2005/DeliveryPulse-Last-Mile-Logistics-Data-Platform"
+sourceName: "github.com"
+threadUrl: "https://www.threads.com/@myps6415/post/DgQ3QvNk1n9"
+channel: "data-engineering"
+---
+
+DeliveryPulse 的作者 Aashritha-2005 把最後一哩物流做成可重播的批次管線，50,484 筆訂單列跑完，最後只有 49,450 筆被判定為合格。
+
+做法不花俏。每一列原始資料都先被指派一種處置去向，accepted、rejected、duplicate、stale 各自留著，提交前還得過品質閘門，否則整批退回，失敗原因另用一筆交易寫下。整套機制用 4,395 個 manifest 案例驗證，每個來源與批次都剛好平帳。
+
+我特別留意的是它的誠實。5,000 筆訂單搭配 500 位司機跑出 38.708 秒，作者就寫 38.708 秒。pandas 在 4 GiB 記憶體上限前停住，Spark 跑完兩百萬筆訂單花了 63.169 秒，交叉點大約在一百萬筆。連覆蓋率 84.30% 這種不上台面的數字都照登。
+
+多數資料專案只給架構圖，這份把量測範圍與記憶體天花板都寫進去。如果你在找一個能直接跑、每個數字都追得回去的參考實作，這份值得讀。
